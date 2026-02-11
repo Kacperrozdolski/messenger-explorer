@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,47 +6,44 @@
 
 @layer base {
   :root {
-    --background: 220 20% 7%;
-    --foreground: 220 10% 92%;
+    --background: 224 14% 8%;
+    --foreground: 210 20% 92%;
 
-    --card: 220 18% 10%;
-    --card-foreground: 220 10% 92%;
+    --card: 224 14% 11%;
+    --card-foreground: 210 20% 92%;
 
-    --popover: 220 18% 10%;
-    --popover-foreground: 220 10% 92%;
+    --popover: 224 14% 11%;
+    --popover-foreground: 210 20% 92%;
 
-    --primary: 36 90% 55%;
-    --primary-foreground: 220 20% 7%;
+    --primary: 213 94% 58%;
+    --primary-foreground: 224 14% 8%;
 
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 220 10% 75%;
+    --secondary: 220 13% 16%;
+    --secondary-foreground: 215 14% 65%;
 
-    --muted: 220 15% 13%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 220 13% 14%;
+    --muted-foreground: 215 14% 50%;
 
-    --accent: 220 15% 18%;
-    --accent-foreground: 220 10% 85%;
+    --accent: 220 13% 18%;
+    --accent-foreground: 215 14% 80%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 15% 16%;
-    --input: 220 15% 16%;
-    --ring: 36 90% 55%;
+    --border: 220 13% 17%;
+    --input: 220 13% 17%;
+    --ring: 213 94% 58%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 220 18% 10%;
-    --sidebar-foreground: 220 10% 75%;
-    --sidebar-primary: 36 90% 55%;
-    --sidebar-primary-foreground: 220 20% 7%;
-    --sidebar-accent: 220 15% 15%;
-    --sidebar-accent-foreground: 220 10% 85%;
-    --sidebar-border: 220 15% 16%;
-    --sidebar-ring: 36 90% 55%;
-
-    --font-display: 'Space Grotesk', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
+    --sidebar-background: 224 14% 10%;
+    --sidebar-foreground: 215 14% 65%;
+    --sidebar-primary: 213 94% 58%;
+    --sidebar-primary-foreground: 224 14% 8%;
+    --sidebar-accent: 220 13% 15%;
+    --sidebar-accent-foreground: 215 14% 80%;
+    --sidebar-border: 220 13% 17%;
+    --sidebar-ring: 213 94% 58%;
   }
 }
 
@@ -56,37 +53,27 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body antialiased;
-    font-family: var(--font-body);
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
   }
 }
 
 @layer utilities {
   .glass {
     @apply bg-card/60 backdrop-blur-xl border border-border/50;
-  }
-  
-  .image-hover {
-    @apply transition-all duration-500 ease-out;
-  }
-
-  .image-hover:hover {
-    @apply scale-[1.02];
-  }
-
-  .filter-chip {
-    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer select-none;
-  }
-
-  .filter-chip-active {
-    @apply bg-primary text-primary-foreground;
-  }
-
-  .filter-chip-inactive {
-    @apply bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground;
   }
 }
