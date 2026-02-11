@@ -1,39 +1,45 @@
-import type { ImageItem } from "@/data/images";
+import { MessageCircle } from "lucide-react";
+import type { ImageEntry } from "@/data/messages";
 
 interface ImageCardProps {
-  image: ImageItem;
+  image: ImageEntry;
   index: number;
+  onClick: () => void;
 }
 
-const ImageCard = ({ image, index }: ImageCardProps) => {
+const formatTime = (ts: string) => {
+  const d = new Date(ts);
+  return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+};
+
+const ImageCard = ({ image, index, onClick }: ImageCardProps) => {
   return (
     <div
-      className="group relative overflow-hidden rounded-lg image-hover opacity-0 animate-fade-in"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="group relative overflow-hidden rounded-md cursor-pointer opacity-0 animate-fade-in break-inside-avoid mb-3"
+      style={{ animationDelay: `${index * 40}ms` }}
+      onClick={onClick}
     >
       <img
         src={image.src}
-        alt={image.title}
-        className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
+        alt={`Photo by ${image.sender}`}
+        className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
         loading="lazy"
       />
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex flex-col justify-end p-5">
-        <h3 className="font-display font-semibold text-foreground text-lg leading-tight">
-          {image.title}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">by {image.author}</p>
-        <div className="flex gap-2 mt-3">
-          {image.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+        <p className="text-[13px] font-medium text-foreground">{image.sender}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{formatTime(image.timestamp)}</p>
+        <button
+          className="flex items-center gap-1.5 mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
+        >
+          <MessageCircle className="h-3 w-3" />
+          Show Context
+        </button>
       </div>
     </div>
   );
