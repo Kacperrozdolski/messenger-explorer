@@ -76,5 +76,32 @@
   },
   "common": {
     "loading": "Laden..."
+  },
+  "tutorial": {
+    "title": "So laden Sie Ihre Daten herunter",
+    "openGuide": "Wie bekomme ich meine Daten?",
+    "close": "Verstanden",
+    "intro": "Befolgen Sie die folgenden Schritte für Ihre Plattform, um Ihren Datenexport herunterzuladen.",
+    "tabFacebook": "Von Facebook",
+    "tabMessenger": "Von Messenger",
+    "fbStep1title": "Facebook-Einstellungen öffnen",
+    "fbStep1": "Gehen Sie zu Facebook, klicken Sie oben rechts auf Ihr Profilbild und wählen Sie \"Einstellungen und Privatsphäre\" > \"Einstellungen\".",
+    "fbStep2title": "Zu Ihren Informationen navigieren",
+    "fbStep2": "Klicken Sie auf \"Mehr in der Kontenübersicht anzeigen\", dann auf \"Deine Informationen und Berechtigungen\" und wählen Sie \"Deine Informationen exportieren\".",
+    "fbDirectLink": "Facebook-Kontenübersicht direkt öffnen",
+    "msgStep1title": "Zu Privatsphäre und Sicherheit",
+    "msgStep1": "Öffnen Sie Messenger, tippen Sie auf Ihr Profilbild und gehen Sie dann zu \"Privatsphäre und Sicherheit\".",
+    "msgStep2title": "Nachrichtenspeicher-Daten herunterladen",
+    "msgStep2": "Tippen Sie auf \"Ende-zu-Ende-verschlüsselte Chats\", dann auf \"Nachrichtenspeicher\" und anschließend auf \"Nachrichtenspeicher-Daten herunterladen\".",
+    "msgStep3title": "Datei herunterladen",
+    "msgStep3": "Wenn die Datei bereit ist, tippen Sie auf \"Datei herunterladen\". Entpacken Sie die ZIP-Datei und verweisen Sie diese App auf den entpackten Ordner.",
+    "msgDirectLink": "Messenger-Nachrichtenspeicher direkt öffnen",
+    "step3title": "Download anfordern",
+    "step3": "Tippen Sie auf \"Informationen herunterladen oder übertragen\". Wählen Sie Ihr Konto, dann \"Bestimmte Arten von Informationen\" und markieren Sie \"Nachrichten\" (oder wählen Sie alles aus).",
+    "step4title": "Format und Qualität wählen",
+    "step4": "Wählen Sie \"Auf Gerät herunterladen\". Stellen Sie das Format auf JSON ein (wichtig — nicht HTML), wählen Sie den gewünschten Zeitraum und die Medienqualität. Tippen Sie dann auf \"Dateien erstellen\".",
+    "step5title": "Herunterladen und entpacken",
+    "step5": "Sie werden benachrichtigt, wenn Ihr Export bereit ist (kann Minuten bis Stunden dauern). Laden Sie die ZIP-Datei herunter, entpacken Sie sie und verweisen Sie diese App auf den entpackten Ordner.",
+    "tip": "Tipp: Wählen Sie das JSON-Format, nicht HTML. Diese App benötigt das JSON-Format, um Ihre Nachrichten und Medien zu verarbeiten."
   }
 }

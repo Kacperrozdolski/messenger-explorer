@@ -76,5 +76,32 @@
   },
   "common": {
     "loading": "Cargando..."
+  },
+  "tutorial": {
+    "title": "Cómo descargar tus datos",
+    "openGuide": "¿Cómo obtengo mis datos?",
+    "close": "Entendido",
+    "intro": "Sigue los pasos a continuación según tu plataforma para descargar tu exportación de datos.",
+    "tabFacebook": "Desde Facebook",
+    "tabMessenger": "Desde Messenger",
+    "fbStep1title": "Abre la configuración de Facebook",
+    "fbStep1": "Ve a Facebook, haz clic en tu foto de perfil en la esquina superior derecha y selecciona \"Configuración y privacidad\" > \"Configuración\".",
+    "fbStep2title": "Ve a tu información",
+    "fbStep2": "Haz clic en \"Ver más en el Centro de cuentas\", luego en \"Tu información y permisos\" y selecciona \"Exportar tu información\".",
+    "fbDirectLink": "Abrir el Centro de cuentas de Facebook directamente",
+    "msgStep1title": "Ve a Privacidad y seguridad",
+    "msgStep1": "Abre Messenger, toca tu foto de perfil y luego ve a \"Privacidad y seguridad\".",
+    "msgStep2title": "Descarga los datos del almacenamiento de mensajes",
+    "msgStep2": "Toca \"Chats cifrados de extremo a extremo\", luego \"Almacenamiento de mensajes\" y después \"Descargar datos del almacenamiento de mensajes\".",
+    "msgStep3title": "Descarga el archivo",
+    "msgStep3": "Cuando el archivo esté listo, toca \"Descargar archivo\". Extrae el ZIP y apunta esta aplicación a la carpeta extraída.",
+    "msgDirectLink": "Abrir el almacenamiento seguro de Messenger directamente",
+    "step3title": "Solicita una descarga",
+    "step3": "Toca \"Descargar o transferir información\". Selecciona tu cuenta, luego elige \"Tipos específicos de información\" y marca \"Mensajes\" (o selecciona todo).",
+    "step4title": "Elige el formato y la calidad",
+    "step4": "Selecciona \"Descargar en el dispositivo\". Establece el formato en JSON (importante — no HTML), elige el rango de fechas y la calidad de los medios que prefieras. Luego toca \"Crear archivos\".",
+    "step5title": "Descarga y extrae",
+    "step5": "Recibirás una notificación cuando tu exportación esté lista (puede tardar de minutos a horas). Descarga el archivo ZIP, extráelo y luego apunta esta aplicación a la carpeta extraída.",
+    "tip": "Consejo: Elige el formato JSON, no HTML. Esta aplicación necesita el formato JSON para leer tus mensajes y medios."
   }
 }

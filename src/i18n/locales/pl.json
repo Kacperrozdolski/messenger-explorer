@@ -76,5 +76,32 @@
   },
   "common": {
     "loading": "Ładowanie..."
+  },
+  "tutorial": {
+    "title": "Jak pobrać swoje dane",
+    "openGuide": "Jak pobrać moje dane?",
+    "close": "Rozumiem",
+    "intro": "Wykonaj poniższe kroki dla swojej platformy, aby pobrać eksport danych.",
+    "tabFacebook": "Z Facebooka",
+    "tabMessenger": "Z Messengera",
+    "fbStep1title": "Otwórz ustawienia Facebooka",
+    "fbStep1": "Wejdź na Facebooka, kliknij swoje zdjęcie profilowe w prawym górnym rogu, a następnie wybierz \"Ustawienia i prywatność\" > \"Ustawienia\".",
+    "fbStep2title": "Przejdź do swoich informacji",
+    "fbStep2": "Kliknij \"Zobacz więcej w Centrum kont\", następnie \"Twoje informacje i uprawnienia\", a potem wybierz \"Wyeksportuj swoje informacje\".",
+    "fbDirectLink": "Otwórz Centrum kont Facebooka bezpośrednio",
+    "msgStep1title": "Przejdź do Prywatności i bezpieczeństwa",
+    "msgStep1": "Otwórz Messengera, kliknij swoje zdjęcie profilowe, a następnie przejdź do \"Prywatność i bezpieczeństwo\".",
+    "msgStep2title": "Pobierz dane z pamięci wiadomości",
+    "msgStep2": "Kliknij \"W pełni szyfrowane czaty\", następnie \"Pamięć wiadomości\", a potem \"Pobierz dane z pamięci wiadomości\".",
+    "msgStep3title": "Pobierz plik",
+    "msgStep3": "Gdy plik będzie gotowy, kliknij \"Pobierz plik\". Rozpakuj plik ZIP i wskaż tej aplikacji rozpakowany folder.",
+    "msgDirectLink": "Otwórz pamięć wiadomości Messengera bezpośrednio",
+    "step3title": "Złóż prośbę o pobieranie",
+    "step3": "Kliknij \"Pobierz lub prześlij informacje\". Wybierz swoje konto, następnie zaznacz \"Określone typy informacji\" i wybierz \"Wiadomości\" (lub zaznacz wszystko).",
+    "step4title": "Wybierz format i jakość",
+    "step4": "Wybierz \"Pobierz na urządzenie\". Ustaw format na JSON (ważne — nie HTML), wybierz preferowany zakres dat i jakość mediów. Następnie kliknij \"Utwórz pliki\".",
+    "step5title": "Pobierz i rozpakuj",
+    "step5": "Otrzymasz powiadomienie, gdy eksport będzie gotowy (może to zająć od kilku minut do kilku godzin). Pobierz plik ZIP, rozpakuj go, a następnie wskaż tej aplikacji rozpakowany folder.",
+    "tip": "Wskazówka: Wybierz format JSON, nie HTML. Ta aplikacja wymaga formatu JSON do odczytania Twoich wiadomości i mediów."
   }
 }

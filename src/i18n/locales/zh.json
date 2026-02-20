@@ -76,5 +76,32 @@
   },
   "common": {
     "loading": "加载中..."
+  },
+  "tutorial": {
+    "title": "如何下载你的数据",
+    "openGuide": "如何获取我的数据？",
+    "close": "知道了",
+    "intro": "请根据你使用的平台，按照以下步骤下载你的数据导出。",
+    "tabFacebook": "从 Facebook",
+    "tabMessenger": "从 Messenger",
+    "fbStep1title": "打开 Facebook 设置",
+    "fbStep1": "前往 Facebook，点击右上角的头像，然后选择\"设置与隐私\" > \"设置\"。",
+    "fbStep2title": "进入你的信息页面",
+    "fbStep2": "点击\"在账号中心查看更多\"，然后点击\"你的信息和权限\"，并选择\"导出你的信息\"。",
+    "fbDirectLink": "直接打开 Facebook 账号中心",
+    "msgStep1title": "前往隐私与安全",
+    "msgStep1": "打开 Messenger，点击你的头像，然后前往\"隐私与安全\"。",
+    "msgStep2title": "下载消息存储数据",
+    "msgStep2": "点击\"端到端加密聊天\"，然后点击\"消息存储\"，再点击\"下载消息存储数据\"。",
+    "msgStep3title": "下载文件",
+    "msgStep3": "当文件准备就绪后，点击\"下载文件\"。解压 ZIP 文件，然后将本应用指向解压后的文件夹。",
+    "msgDirectLink": "直接打开 Messenger 安全存储",
+    "step3title": "请求下载",
+    "step3": "点击\"下载或转移信息\"。选择你的账号，然后选择\"特定类型的信息\"并勾选\"消息\"（或全选）。",
+    "step4title": "选择格式和质量",
+    "step4": "选择\"下载到设备\"。将格式设置为 JSON（重要——不要选 HTML），选择你需要的日期范围和媒体质量，然后点击\"创建文件\"。",
+    "step5title": "下载并解压",
+    "step5": "当导出准备就绪时你会收到通知（可能需要几分钟到几小时）。下载 ZIP 文件并解压，然后将本应用指向解压后的文件夹。",
+    "tip": "提示：请选择 JSON 格式，而非 HTML。本应用需要 JSON 格式来解析你的消息和媒体文件。"
   }
 }

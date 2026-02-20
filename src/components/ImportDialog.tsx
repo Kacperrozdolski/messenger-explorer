@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
-import { FolderOpen, Loader2, X, Plus } from "lucide-react";
+import { open as openUrl } from "@tauri-apps/plugin-shell";
+import { FolderOpen, Loader2, X, Plus, HelpCircle, AlertTriangle, ExternalLink } from "lucide-react";
 import * as api from "@/lib/api";
 import LanguageSelector from "@/components/LanguageSelector";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface ImportDialogProps {
   onImportComplete: () => void;
@@ -15,6 +25,108 @@ interface FolderEntry {
   error: string | null;
   detecting: boolean;
 }
+
+const StepRow = ({ num, titleKey, bodyKey }: { num: number; titleKey: string; bodyKey: string }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex gap-3">
+      <div className="shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-[12px] font-semibold mt-0.5">
+        {num}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-foreground">{t(titleKey)}</p>
+        <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">{t(bodyKey)}</p>
+      </div>
+    </div>
+  );
+};
+
+const FB_STEPS = [
+  { titleKey: "tutorial.fbStep1title", bodyKey: "tutorial.fbStep1" },
+  { titleKey: "tutorial.fbStep2title", bodyKey: "tutorial.fbStep2" },
+  { titleKey: "tutorial.step3title", bodyKey: "tutorial.step3" },
+  { titleKey: "tutorial.step4title", bodyKey: "tutorial.step4" },
+  { titleKey: "tutorial.step5title", bodyKey: "tutorial.step5" },
+];
+
+const MSG_STEPS = [
+  { titleKey: "tutorial.msgStep1title", bodyKey: "tutorial.msgStep1" },
+  { titleKey: "tutorial.msgStep2title", bodyKey: "tutorial.msgStep2" },
+  { titleKey: "tutorial.msgStep3title", bodyKey: "tutorial.msgStep3" },
+];
+
+const FACEBOOK_LINK = "https://accountscenter.facebook.com/info_and_permissions";
+const MESSENGER_LINK = "https://www.messenger.com/secure_storage/dyi";
+
+const TutorialDialog = () => {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="inline-flex items-center gap-1.5 text-[13px] text-primary hover:text-primary/80 transition-colors">
+          <HelpCircle className="h-3.5 w-3.5" />
+          {t("tutorial.openGuide")}
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-base">{t("tutorial.title")}</DialogTitle>
+          <DialogDescription>{t("tutorial.intro")}</DialogDescription>
+        </DialogHeader>
+
+        <Tabs defaultValue="facebook" className="mt-2">
+          <TabsList className="w-full">
+            <TabsTrigger value="facebook" className="flex-1 text-[13px]">
+              {t("tutorial.tabFacebook")}
+            </TabsTrigger>
+            <TabsTrigger value="messenger" className="flex-1 text-[13px]">
+              {t("tutorial.tabMessenger")}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="facebook" className="space-y-4 mt-4">
+            {/* Direct link */}
+            <button
+              onClick={() => openUrl(FACEBOOK_LINK)}
+              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3 text-[12px] text-primary hover:bg-primary/10 transition-colors text-left"
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              <span className="leading-relaxed">{t("tutorial.fbDirectLink")}</span>
+            </button>
+
+            {FB_STEPS.map((s, i) => (
+              <StepRow key={s.titleKey} num={i + 1} titleKey={s.titleKey} bodyKey={s.bodyKey} />
+            ))}
+
+            {/* JSON tip */}
+            <div className="flex gap-2.5 bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3">
+              <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-[12px] text-foreground leading-relaxed">
+                {t("tutorial.tip")}
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="messenger" className="space-y-4 mt-4">
+            {/* Direct link */}
+            <button
+              onClick={() => openUrl(MESSENGER_LINK)}
+              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3 text-[12px] text-primary hover:bg-primary/10 transition-colors text-left"
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              <span className="leading-relaxed">{t("tutorial.msgDirectLink")}</span>
+            </button>
+
+            {MSG_STEPS.map((s, i) => (
+              <StepRow key={s.titleKey} num={i + 1} titleKey={s.titleKey} bodyKey={s.bodyKey} />
+            ))}
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
   const { t } = useTranslation();
@@ -118,6 +230,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
           <p className="text-[13px] text-muted-foreground leading-relaxed">
             {t("import.description")}
           </p>
+          <TutorialDialog />
         </div>
 
         {stats ? (

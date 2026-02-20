@@ -76,5 +76,32 @@
   },
   "common": {
     "loading": "Loading..."
+  },
+  "tutorial": {
+    "title": "How to Download Your Data",
+    "openGuide": "How do I get my data?",
+    "close": "Got it",
+    "intro": "Follow the steps below for your platform to download your data export.",
+    "tabFacebook": "From Facebook",
+    "tabMessenger": "From Messenger",
+    "fbStep1title": "Open Facebook Settings",
+    "fbStep1": "Go to Facebook, click your profile picture in the top-right, then select \"Settings & privacy\" > \"Settings\".",
+    "fbStep2title": "Go to Your Information",
+    "fbStep2": "Click \"See more in Accounts Center\", then \"Your information and permissions\", and select \"Export your information\".",
+    "fbDirectLink": "Open Facebook Accounts Center directly",
+    "msgStep1title": "Go to Privacy & Safety",
+    "msgStep1": "Open Messenger, tap your profile picture, then go to \"Privacy & Safety\".",
+    "msgStep2title": "Download message storage data",
+    "msgStep2": "Tap \"End-to-end encrypted chats\", then \"Message storage\", then \"Download message storage data\".",
+    "msgStep3title": "Download the file",
+    "msgStep3": "When the file is ready, tap \"Download file\". Extract the ZIP and point this app at the extracted folder.",
+    "msgDirectLink": "Open Messenger secure storage directly",
+    "step3title": "Request a Download",
+    "step3": "Tap \"Download or transfer information\". Select your account, then choose \"Specific types of information\" and pick \"Messages\" (or select all).",
+    "step4title": "Choose Format & Quality",
+    "step4": "Select \"Download to device\". Set the format to JSON (important — not HTML), pick your preferred date range and media quality. Then tap \"Create files\".",
+    "step5title": "Download & Extract",
+    "step5": "You will be notified when your export is ready (can take minutes to hours). Download the ZIP file, extract it, then point this app at the extracted folder.",
+    "tip": "Tip: Choose JSON format, not HTML. This app requires the JSON format to parse your messages and media."
   }
 }

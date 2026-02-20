@@ -76,5 +76,32 @@
   },
   "common": {
     "loading": "Carregando..."
+  },
+  "tutorial": {
+    "title": "Como baixar seus dados",
+    "openGuide": "Como obtenho meus dados?",
+    "close": "Entendi",
+    "intro": "Siga os passos abaixo de acordo com sua plataforma para baixar sua exportação de dados.",
+    "tabFacebook": "Do Facebook",
+    "tabMessenger": "Do Messenger",
+    "fbStep1title": "Abra as configurações do Facebook",
+    "fbStep1": "Acesse o Facebook, clique na sua foto de perfil no canto superior direito e selecione \"Configurações e privacidade\" > \"Configurações\".",
+    "fbStep2title": "Acesse suas informações",
+    "fbStep2": "Clique em \"Ver mais na Central de Contas\", depois em \"Suas informações e permissões\" e selecione \"Exportar suas informações\".",
+    "fbDirectLink": "Abrir a Central de Contas do Facebook diretamente",
+    "msgStep1title": "Acesse Privacidade e segurança",
+    "msgStep1": "Abra o Messenger, toque na sua foto de perfil e vá para \"Privacidade e segurança\".",
+    "msgStep2title": "Baixe os dados do armazenamento de mensagens",
+    "msgStep2": "Toque em \"Conversas criptografadas de ponta a ponta\", depois em \"Armazenamento de mensagens\" e então em \"Baixar dados do armazenamento de mensagens\".",
+    "msgStep3title": "Baixe o arquivo",
+    "msgStep3": "Quando o arquivo estiver pronto, toque em \"Baixar arquivo\". Extraia o ZIP e aponte este aplicativo para a pasta extraída.",
+    "msgDirectLink": "Abrir o armazenamento seguro do Messenger diretamente",
+    "step3title": "Solicite um download",
+    "step3": "Toque em \"Baixar ou transferir informações\". Selecione sua conta, depois escolha \"Tipos específicos de informações\" e marque \"Mensagens\" (ou selecione tudo).",
+    "step4title": "Escolha o formato e a qualidade",
+    "step4": "Selecione \"Baixar no dispositivo\". Defina o formato como JSON (importante — não HTML), escolha o período desejado e a qualidade de mídia. Em seguida, toque em \"Criar arquivos\".",
+    "step5title": "Baixe e extraia",
+    "step5": "Você será notificado quando a exportação estiver pronta (pode levar de minutos a horas). Baixe o arquivo ZIP, extraia-o e aponte este aplicativo para a pasta extraída.",
+    "tip": "Dica: Escolha o formato JSON, não HTML. Este aplicativo precisa do formato JSON para ler suas mensagens e mídias."
   }
 }

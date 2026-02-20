@@ -11,8 +11,8 @@ import ja from "./locales/ja.json";
 import pt from "./locales/pt.json";
 
 export const LANGUAGES = [
-  { code: "en", label: "English", flag: "GB" },
   { code: "pl", label: "Polski", flag: "PL" },
+  { code: "en", label: "English", flag: "GB" },
   { code: "es", label: "Español", flag: "ES" },
   { code: "de", label: "Deutsch", flag: "DE" },
   { code: "it", label: "Italiano", flag: "IT" },
@@ -21,7 +21,7 @@ export const LANGUAGES = [
   { code: "pt", label: "Português", flag: "BR" },
 ] as const;
 
-const savedLang = localStorage.getItem("app-language") || "en";
+const savedLang = localStorage.getItem("app-language") || "pl";
 
 i18n.use(initReactI18next).init({
   resources: {
