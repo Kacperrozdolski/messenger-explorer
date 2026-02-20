@@ -1,5 +1,7 @@
-import { X, MessageCircle } from "lucide-react";
-import type { ImageEntry, ChatMessage } from "@/data/messages";
+import { X, MessageCircle, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { ImageEntry, ChatMessage } from "@/data/types";
+import * as api from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface ContextModalProps {
@@ -7,12 +9,12 @@ interface ContextModalProps {
   onClose: () => void;
 }
 
-const formatTime = (ts: string) => {
+const formatTime = (ts: number) => {
   const d = new Date(ts);
   return d.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
 };
 
-const formatDate = (ts: string) => {
+const formatDate = (ts: number) => {
   const d = new Date(ts);
   return d.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 };
@@ -34,6 +36,11 @@ const ChatBubble = ({ msg, isImageSender }: { msg: ChatMessage; isImageSender: b
 );
 
 const ContextModal = ({ image, onClose }: ContextModalProps) => {
+  const { data: context, isLoading } = useQuery({
+    queryKey: ["context", image.id],
+    queryFn: () => api.getContext(image.id),
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
       {/* Backdrop */}
@@ -54,11 +61,19 @@ const ContextModal = ({ image, onClose }: ContextModalProps) => {
 
         {/* Image */}
         <div className="flex-1 flex items-center justify-center bg-background/50 min-w-0 p-4">
-          <img
-            src={image.src}
-            alt={`Photo by ${image.sender}`}
-            className="max-w-full max-h-[80vh] object-contain rounded-md"
-          />
+          {image.fileType === "video" ? (
+            <video
+              src={image.src}
+              controls
+              className="max-w-full max-h-[80vh] object-contain rounded-md"
+            />
+          ) : (
+            <img
+              src={image.src}
+              alt={`Photo by ${image.sender}`}
+              className="max-w-full max-h-[80vh] object-contain rounded-md"
+            />
+          )}
         </div>
 
         {/* Chat context panel */}
@@ -75,23 +90,31 @@ const ContextModal = ({ image, onClose }: ContextModalProps) => {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {/* Before */}
-            {image.contextBefore.map((msg, i) => (
-              <ChatBubble key={`before-${i}`} msg={msg} isImageSender={msg.sender === image.sender} />
-            ))}
-
-            {/* The image message */}
-            <div className={cn("flex flex-col gap-0.5", "items-end")}>
-              <span className="text-[10px] text-muted-foreground px-1">{image.sender} · {formatTime(image.timestamp)}</span>
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-1.5 rounded-br-sm">
-                <img src={image.src} alt="" className="h-24 w-auto rounded object-cover" />
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Before */}
+                {context?.contextBefore.map((msg, i) => (
+                  <ChatBubble key={`before-${i}`} msg={msg} isImageSender={msg.sender === image.sender} />
+                ))}
 
-            {/* After */}
-            {image.contextAfter.map((msg, i) => (
-              <ChatBubble key={`after-${i}`} msg={msg} isImageSender={msg.sender === image.sender} />
-            ))}
+                {/* The image message */}
+                <div className={cn("flex flex-col gap-0.5", "items-end")}>
+                  <span className="text-[10px] text-muted-foreground px-1">{image.sender} · {formatTime(image.timestamp)}</span>
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-1.5 rounded-br-sm">
+                    <img src={image.src} alt="" className="h-24 w-auto rounded object-cover" />
+                  </div>
+                </div>
+
+                {/* After */}
+                {context?.contextAfter.map((msg, i) => (
+                  <ChatBubble key={`after-${i}`} msg={msg} isImageSender={msg.sender === image.sender} />
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>

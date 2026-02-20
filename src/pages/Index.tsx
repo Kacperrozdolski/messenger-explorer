@@ -1,79 +1,117 @@
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ArchiveSidebar from "@/components/ArchiveSidebar";
 import TopBar from "@/components/TopBar";
 import Gallery from "@/components/Gallery";
 import ContextModal from "@/components/ContextModal";
-import { imageEntries, type SortOption, type ViewMode, type FileTypeFilter, type ImageEntry } from "@/data/messages";
+import ImportDialog from "@/components/ImportDialog";
+import * as api from "@/lib/api";
+import type {
+  SortOption,
+  ViewMode,
+  FileTypeFilter,
+  ImageEntry,
+} from "@/data/types";
 
 const Index = () => {
+  const queryClient = useQueryClient();
+
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("date-desc");
   const [view, setView] = useState<ViewMode>("grid");
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [selectedSender, setSelectedSender] = useState<string | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const [selectedSenderId, setSelectedSenderId] = useState<number | null>(null);
   const [fileType, setFileType] = useState<FileTypeFilter>("all");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [modalImage, setModalImage] = useState<ImageEntry | null>(null);
 
-  // Build timeline data
-  const timelineData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    imageEntries.forEach((img) => {
-      const d = new Date(img.timestamp);
-      const key = `${d.toLocaleString("en-US", { month: "short" })} ${d.getFullYear()}`;
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    // Sort chronologically
-    const entries = Object.entries(counts).sort((a, b) => {
-      const parseKey = (k: string) => new Date(k);
-      return parseKey(b[0]).getTime() - parseKey(a[0]).getTime();
-    });
-    return entries.map(([label, count]) => ({ label, count }));
-  }, []);
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const filtered = useMemo(() => {
-    let result = imageEntries.filter((img) => {
-      if (selectedChat && img.chat !== selectedChat) return false;
-      if (selectedSender && img.sender !== selectedSender) return false;
-      if (fileType !== "all" && img.fileType !== fileType) return false;
-      if (selectedMonth) {
-        const d = new Date(img.timestamp);
-        const key = `${d.toLocaleString("en-US", { month: "short" })} ${d.getFullYear()}`;
-        if (key !== selectedMonth) return false;
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        const matchSender = img.sender.toLowerCase().includes(q);
-        const matchChat = img.chat.toLowerCase().includes(q);
-        const matchContext = [...img.contextBefore, ...img.contextAfter].some((m) =>
-          m.text.toLowerCase().includes(q) || m.sender.toLowerCase().includes(q)
-        );
-        const matchDate = img.timestamp.includes(q);
-        if (!matchSender && !matchChat && !matchContext && !matchDate) return false;
-      }
-      return true;
-    });
+  // Check if we have data
+  const { data: status, isLoading: statusLoading } = useQuery({
+    queryKey: ["import-status"],
+    queryFn: api.getImportStatus,
+  });
 
-    // Sort
-    if (sort === "date-desc") result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    else if (sort === "date-asc") result.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    else result.sort((a, b) => a.sender.localeCompare(b.sender));
+  const hasData = status?.has_data ?? false;
 
-    return result;
-  }, [search, sort, selectedChat, selectedSender, fileType, selectedMonth]);
+  // Sidebar data
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: api.getConversations,
+    enabled: hasData,
+  });
+
+  const { data: senders = [] } = useQuery({
+    queryKey: ["senders"],
+    queryFn: api.getSenders,
+    enabled: hasData,
+  });
+
+  const { data: timeline = [] } = useQuery({
+    queryKey: ["timeline"],
+    queryFn: api.getTimeline,
+    enabled: hasData,
+  });
+
+  // Main media query
+  const { data: images = [] } = useQuery({
+    queryKey: [
+      "media",
+      selectedChatId,
+      selectedSenderId,
+      fileType,
+      selectedMonth,
+      debouncedSearch,
+      sort,
+    ],
+    queryFn: () =>
+      api.getMedia({
+        conversationId: selectedChatId ?? undefined,
+        senderId: selectedSenderId ?? undefined,
+        fileType: fileType === "all" ? undefined : fileType,
+        month: selectedMonth ?? undefined,
+        search: debouncedSearch || undefined,
+        sort,
+      }),
+    enabled: hasData,
+  });
+
+  const handleImportComplete = () => {
+    queryClient.invalidateQueries();
+  };
+
+  if (statusLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!hasData) {
+    return <ImportDialog onImportComplete={handleImportComplete} />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <ArchiveSidebar
-        selectedChat={selectedChat}
-        onSelectChat={setSelectedChat}
-        selectedSender={selectedSender}
-        onSelectSender={setSelectedSender}
+        conversations={conversations}
+        senders={senders}
+        selectedChat={selectedChatId}
+        onSelectChat={setSelectedChatId}
+        selectedSender={selectedSenderId}
+        onSelectSender={setSelectedSenderId}
         fileType={fileType}
         onFileTypeChange={setFileType}
         selectedMonth={selectedMonth}
         onSelectMonth={setSelectedMonth}
-        timelineData={timelineData}
+        timelineData={timeline}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -84,15 +122,17 @@ const Index = () => {
           onSortChange={setSort}
           view={view}
           onViewChange={setView}
-          resultCount={filtered.length}
+          resultCount={images.length}
         />
 
         <div className="flex-1 overflow-y-auto">
-          <Gallery images={filtered} view={view} onImageClick={setModalImage} />
+          <Gallery images={images} view={view} onImageClick={setModalImage} />
         </div>
       </div>
 
-      {modalImage && <ContextModal image={modalImage} onClose={() => setModalImage(null)} />}
+      {modalImage && (
+        <ContextModal image={modalImage} onClose={() => setModalImage(null)} />
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
-import { Search, Grid3X3, List, ArrowUpDown } from "lucide-react";
-import type { SortOption, ViewMode } from "@/data/messages";
+import { useNavigate } from "react-router-dom";
+import { Search, Grid3X3, List, ArrowUpDown, Settings } from "lucide-react";
+import type { SortOption, ViewMode } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 interface TopBarProps {
@@ -13,6 +14,8 @@ interface TopBarProps {
 }
 
 const TopBar = ({ search, onSearchChange, sort, onSortChange, view, onViewChange, resultCount }: TopBarProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="h-14 border-b border-border flex items-center gap-3 px-5 bg-card/50 shrink-0">
       {/* Search */}
@@ -67,6 +70,14 @@ const TopBar = ({ search, onSearchChange, sort, onSortChange, view, onViewChange
           <List className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Settings */}
+      <button
+        onClick={() => navigate("/settings")}
+        className="p-1.5 rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
+      >
+        <Settings className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 };

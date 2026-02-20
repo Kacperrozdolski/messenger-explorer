@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Users, User, Image, Video, Sparkles, Calendar } from "lucide-react";
-import { chatSources, senders, type FileTypeFilter } from "@/data/messages";
+import type { ChatSource, SenderInfo, FileTypeFilter } from "@/data/types";
+import type { TimelineEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface ArchiveSidebarProps {
-  selectedChat: string | null;
-  onSelectChat: (chat: string | null) => void;
-  selectedSender: string | null;
-  onSelectSender: (sender: string | null) => void;
+  conversations: ChatSource[];
+  senders: SenderInfo[];
+  selectedChat: number | null;
+  onSelectChat: (id: number | null) => void;
+  selectedSender: number | null;
+  onSelectSender: (id: number | null) => void;
   fileType: FileTypeFilter;
   onFileTypeChange: (ft: FileTypeFilter) => void;
   selectedMonth: string | null;
   onSelectMonth: (month: string | null) => void;
-  timelineData: { label: string; count: number }[];
+  timelineData: TimelineEntry[];
 }
 
 const Section = ({
@@ -43,6 +46,8 @@ const Section = ({
 };
 
 const ArchiveSidebar = ({
+  conversations,
+  senders,
   selectedChat,
   onSelectChat,
   selectedSender,
@@ -53,8 +58,8 @@ const ArchiveSidebar = ({
   onSelectMonth,
   timelineData,
 }: ArchiveSidebarProps) => {
-  const groups = chatSources.filter((c) => c.type === "group");
-  const dms = chatSources.filter((c) => c.type === "dm");
+  const groups = conversations.filter((c) => c.type === "group");
+  const dms = conversations.filter((c) => c.type === "dm");
   const maxCount = Math.max(...timelineData.map((d) => d.count), 1);
 
   return (
@@ -68,46 +73,54 @@ const ArchiveSidebar = ({
       <div className="flex-1 overflow-y-auto py-2">
         {/* Sources */}
         <Section title="Sources" icon={Users}>
-          <p className="px-3 py-1 text-[11px] text-muted-foreground font-medium">Group Chats</p>
-          {groups.map((g) => (
-            <button
-              key={g.name}
-              onClick={() => onSelectChat(selectedChat === g.name ? null : g.name)}
-              className={cn(
-                "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
-                selectedChat === g.name
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-              )}
-            >
-              <span className="truncate">{g.name}</span>
-              <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
-                {g.photoCount}
-              </span>
-            </button>
-          ))}
+          {groups.length > 0 && (
+            <>
+              <p className="px-3 py-1 text-[11px] text-muted-foreground font-medium">Group Chats</p>
+              {groups.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => onSelectChat(selectedChat === g.id ? null : g.id)}
+                  className={cn(
+                    "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
+                    selectedChat === g.id
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  )}
+                >
+                  <span className="truncate">{g.name}</span>
+                  <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
+                    {g.mediaCount}
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
 
-          <p className="px-3 py-1 mt-2 text-[11px] text-muted-foreground font-medium">Direct Messages</p>
-          {dms.map((d) => (
-            <button
-              key={d.name}
-              onClick={() => onSelectChat(selectedChat === d.name ? null : d.name)}
-              className={cn(
-                "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
-                selectedChat === d.name
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-              )}
-            >
-              <span className="flex items-center gap-1.5">
-                <User className="h-3 w-3" />
-                {d.name}
-              </span>
-              <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
-                {d.photoCount}
-              </span>
-            </button>
-          ))}
+          {dms.length > 0 && (
+            <>
+              <p className="px-3 py-1 mt-2 text-[11px] text-muted-foreground font-medium">Direct Messages</p>
+              {dms.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => onSelectChat(selectedChat === d.id ? null : d.id)}
+                  className={cn(
+                    "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
+                    selectedChat === d.id
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  )}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <User className="h-3 w-3" />
+                    {d.name}
+                  </span>
+                  <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
+                    {d.mediaCount}
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
         </Section>
 
         {/* Smart Filters */}
@@ -115,17 +128,17 @@ const ArchiveSidebar = ({
           <p className="px-3 py-1 text-[11px] text-muted-foreground font-medium">By Sender</p>
           {senders.map((s) => (
             <button
-              key={s}
-              onClick={() => onSelectSender(selectedSender === s ? null : s)}
+              key={s.id}
+              onClick={() => onSelectSender(selectedSender === s.id ? null : s.id)}
               className={cn(
                 "flex items-center gap-2 w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
-                selectedSender === s
+                selectedSender === s.id
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50"
               )}
             >
               <User className="h-3 w-3" />
-              {s}
+              {s.name}
             </button>
           ))}
 
@@ -152,11 +165,11 @@ const ArchiveSidebar = ({
           <div className="px-3 space-y-0.5">
             {timelineData.map((d) => (
               <button
-                key={d.label}
-                onClick={() => onSelectMonth(selectedMonth === d.label ? null : d.label)}
+                key={d.month_key}
+                onClick={() => onSelectMonth(selectedMonth === d.month_key ? null : d.month_key)}
                 className={cn(
                   "flex items-center gap-2 w-full py-1 text-[12px] rounded transition-colors group",
-                  selectedMonth === d.label ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  selectedMonth === d.month_key ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span className="w-16 text-left shrink-0">{d.label}</span>
@@ -164,7 +177,7 @@ const ArchiveSidebar = ({
                   <div
                     className={cn(
                       "h-full rounded-sm transition-all",
-                      selectedMonth === d.label ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-muted-foreground/50"
+                      selectedMonth === d.month_key ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-muted-foreground/50"
                     )}
                     style={{ width: `${(d.count / maxCount) * 100}%` }}
                   />

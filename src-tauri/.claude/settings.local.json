@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del \"%LOCALAPPDATA%\\\\archive-explorer\\\\explorer.db\")",
+      "Bash(cargo check:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

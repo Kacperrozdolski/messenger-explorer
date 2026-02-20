@@ -1,5 +1,4 @@
-import type { ImageEntry } from "@/data/messages";
-import type { ViewMode } from "@/data/messages";
+import type { ImageEntry, ViewMode } from "@/data/types";
 import ImageCard from "./ImageCard";
 import ImageListRow from "./ImageListRow";
 
@@ -9,7 +8,7 @@ interface GalleryProps {
   onImageClick: (image: ImageEntry) => void;
 }
 
-const formatMonthYear = (ts: string) => {
+const formatMonthYear = (ts: number) => {
   const d = new Date(ts);
   return d.toLocaleString("en-US", { month: "long", year: "numeric" });
 };

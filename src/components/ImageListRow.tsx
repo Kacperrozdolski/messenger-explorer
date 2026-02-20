@@ -1,5 +1,5 @@
 import { MessageCircle } from "lucide-react";
-import type { ImageEntry } from "@/data/messages";
+import type { ImageEntry } from "@/data/types";
 
 interface ImageListRowProps {
   image: ImageEntry;
@@ -7,7 +7,7 @@ interface ImageListRowProps {
   onClick: () => void;
 }
 
-const formatTime = (ts: string) => {
+const formatTime = (ts: number) => {
   const d = new Date(ts);
   return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 };
