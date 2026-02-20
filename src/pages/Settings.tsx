@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Database, Trash2, HardDrive, Loader2 } from "lucide-react";
+import { open } from "@tauri-apps/plugin-dialog";
+import {
+  ArrowLeft,
+  Database,
+  Trash2,
+  HardDrive,
+  Loader2,
+  FolderOpen,
+  Plus,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,6 +44,8 @@ const Settings = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [clearing, setClearing] = useState(false);
+  const [addingSource, setAddingSource] = useState(false);
+  const [removingPath, setRemovingPath] = useState<string | null>(null);
 
   const { data: storageInfo } = useQuery({
     queryKey: ["storage-info"],
@@ -45,6 +57,11 @@ const Settings = () => {
     queryFn: api.getImportStatus,
   });
 
+  const { data: sources = [] } = useQuery({
+    queryKey: ["sources"],
+    queryFn: api.getSources,
+  });
+
   const handleClearDatabase = async () => {
     setClearing(true);
     try {
@@ -52,6 +69,36 @@ const Settings = () => {
       queryClient.invalidateQueries();
     } finally {
       setClearing(false);
+    }
+  };
+
+  const handleAddSource = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        title: "Select Export Folder to Add",
+      });
+      if (!selected) return;
+
+      setAddingSource(true);
+      await api.addSource(selected as string);
+      queryClient.invalidateQueries();
+    } catch (e) {
+      console.error("Failed to add source:", e);
+    } finally {
+      setAddingSource(false);
+    }
+  };
+
+  const handleRemoveSource = async (sourcePath: string) => {
+    setRemovingPath(sourcePath);
+    try {
+      await api.removeSource(sourcePath);
+      queryClient.invalidateQueries();
+    } catch (e) {
+      console.error("Failed to remove source:", e);
+    } finally {
+      setRemovingPath(null);
     }
   };
 
@@ -75,6 +122,100 @@ const Settings = () => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-2xl mx-auto space-y-6">
+            {/* Data Sources Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle className="text-base">Data Sources</CardTitle>
+                </div>
+                <CardDescription>
+                  Manage imported Facebook and Messenger export folders
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {sources.length > 0 ? (
+                  <div className="space-y-2">
+                    {sources.map((source) => (
+                      <div
+                        key={source.source_path}
+                        className="flex items-center gap-3 rounded-lg border border-border px-4 py-3"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className="text-sm font-medium truncate"
+                              title={source.source_path}
+                            >
+                              {source.source_path.split(/[\\/]/).pop()}
+                            </p>
+                            <span className="shrink-0 inline-block px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium capitalize">
+                              {source.source_type}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {source.conversations} conversations, {source.media_count} media
+                          </p>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive"
+                              disabled={removingPath === source.source_path}
+                            >
+                              {removingPath === source.source_path ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <X className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove source?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove all imported data from this source.
+                                Your original export files will not be affected.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemoveSource(source.source_path)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No sources imported yet.
+                  </p>
+                )}
+
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleAddSource}
+                  disabled={addingSource}
+                >
+                  {addingSource ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  Add Source
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Storage Card */}
             <Card>
               <CardHeader>
