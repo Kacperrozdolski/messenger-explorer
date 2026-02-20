@@ -27,38 +27,44 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
     try {
       const selected = await open({
         directory: true,
-        title: "Select Export Folder",
+        multiple: true,
+        title: "Select Export Folders",
       });
 
       if (!selected) return;
 
-      const path = selected as string;
+      // Normalize to array — single select returns string, multi returns string[]
+      const paths = Array.isArray(selected) ? selected : [selected];
 
-      // Don't add duplicates
-      if (folders.some((f) => f.path === path)) return;
+      for (const path of paths) {
+        // Don't add duplicates
+        if (folders.some((f) => f.path === path)) continue;
 
-      const entry: FolderEntry = {
-        path,
-        format: null,
-        error: null,
-        detecting: true,
-      };
-      setFolders((prev) => [...prev, entry]);
+        const entry: FolderEntry = {
+          path,
+          format: null,
+          error: null,
+          detecting: true,
+        };
+        setFolders((prev) => [...prev, entry]);
 
-      try {
-        const format = await api.detectFormat(path);
-        setFolders((prev) =>
-          prev.map((f) =>
-            f.path === path ? { ...f, format, detecting: false } : f
-          )
-        );
-      } catch (e) {
-        setFolders((prev) =>
-          prev.map((f) =>
-            f.path === path
-              ? { ...f, error: String(e), detecting: false }
-              : f
-          )
+        api.detectFormat(path).then(
+          (format) => {
+            setFolders((prev) =>
+              prev.map((f) =>
+                f.path === path ? { ...f, format, detecting: false } : f
+              )
+            );
+          },
+          (e) => {
+            setFolders((prev) =>
+              prev.map((f) =>
+                f.path === path
+                  ? { ...f, error: String(e), detecting: false }
+                  : f
+              )
+            );
+          }
         );
       }
     } catch (e) {
