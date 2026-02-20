@@ -1,19 +1,19 @@
 use rusqlite::Connection;
 use crate::parser::{ParseResult, ParsedConversation, ParsedMedia, ContextMsg};
 
-/// Insert all parsed data into the database in a single transaction.
-pub fn insert_all(conn: &mut Connection, result: &ParseResult) -> Result<ImportStats, String> {
-    let tx = conn.transaction().map_err(|e| e.to_string())?;
+/// Insert all parsed data into the database.
+/// Caller is responsible for transaction management.
+pub fn insert_all(conn: &Connection, result: &ParseResult) -> Result<ImportStats, String> {
     let mut stats = ImportStats::default();
 
     for conv in &result.conversations {
-        let conv_id = insert_conversation(&tx, conv)?;
+        let conv_id = insert_conversation(conn, conv)?;
         stats.conversations += 1;
 
         // Insert participants
         for participant_name in &conv.participants {
-            let sender_id = get_or_create_sender(&tx, participant_name)?;
-            tx.execute(
+            let sender_id = get_or_create_sender(conn, participant_name)?;
+            conn.execute(
                 "INSERT OR IGNORE INTO conversation_participants (conversation_id, sender_id) VALUES (?1, ?2)",
                 rusqlite::params![conv_id, sender_id],
             ).map_err(|e| e.to_string())?;
@@ -21,28 +21,27 @@ pub fn insert_all(conn: &mut Connection, result: &ParseResult) -> Result<ImportS
 
         // Insert media
         for media in &conv.media {
-            let sender_id = get_or_create_sender(&tx, &media.sender_name)?;
-            let media_id = insert_media(&tx, conv_id, sender_id, media)?;
+            let sender_id = get_or_create_sender(conn, &media.sender_name)?;
+            let media_id = insert_media(conn, conv_id, sender_id, media)?;
             stats.media += 1;
 
             // Insert context messages
             for (i, ctx) in media.context_before.iter().enumerate() {
                 let position = -(media.context_before.len() as i32) + i as i32;
-                insert_context_message(&tx, media_id, ctx, position)?;
+                insert_context_message(conn, media_id, ctx, position)?;
             }
             for (i, ctx) in media.context_after.iter().enumerate() {
                 let position = (i + 1) as i32;
-                insert_context_message(&tx, media_id, ctx, position)?;
+                insert_context_message(conn, media_id, ctx, position)?;
             }
         }
     }
 
     // Count unique senders
-    stats.senders = tx
+    stats.senders = conn
         .query_row("SELECT COUNT(*) FROM senders", [], |row| row.get(0))
         .map_err(|e| e.to_string())?;
 
-    tx.commit().map_err(|e| e.to_string())?;
     Ok(stats)
 }
 

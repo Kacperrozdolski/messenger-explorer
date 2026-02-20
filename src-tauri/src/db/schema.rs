@@ -145,12 +145,14 @@ pub fn clear_source(conn: &Connection, source_path: &str) -> Result<(), rusqlite
         rusqlite::params![source_path],
     )?;
 
-    // Clean up orphaned senders (senders with no media and no conversation_participants)
+    // Clean up orphaned senders (senders with no media, no participants, and no context messages)
     conn.execute_batch(
         "DELETE FROM senders WHERE id NOT IN (
             SELECT DISTINCT sender_id FROM media
             UNION
             SELECT DISTINCT sender_id FROM conversation_participants
+            UNION
+            SELECT DISTINCT sender_id FROM context_messages
         )"
     )?;
 

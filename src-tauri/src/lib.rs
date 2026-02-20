@@ -32,8 +32,9 @@ fn cmd_import_export(
 ) -> Result<ImportStats, String> {
     let window_size = context_window.unwrap_or(5);
 
-    // Parse all paths
+    // Parse all paths first (before touching the database)
     let mut all_conversations = Vec::new();
+    let mut normalized_paths = Vec::new();
     for path_str in &export_paths {
         let export_root = PathBuf::from(path_str);
         if !export_root.exists() {
@@ -43,16 +44,23 @@ fn cmd_import_export(
         let parse_result = parser::parse_export(&export_root, window_size)
             .map_err(|e| format!("Error parsing {}: {}", path_str, e))?;
         all_conversations.extend(parse_result.conversations);
+        normalized_paths.push(export_root.to_string_lossy().to_string());
     }
 
     let combined = parser::ParseResult {
         conversations: all_conversations,
     };
 
-    // Clear existing data and insert new
+    // Clear and insert within a single transaction
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
-    db::schema::clear_all(&conn).map_err(|e| e.to_string())?;
-    let stats = db::writer::insert_all(&mut conn, &combined)?;
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
+
+    for norm_path in &normalized_paths {
+        db::schema::clear_source(&tx, norm_path).map_err(|e| e.to_string())?;
+    }
+
+    let stats = db::writer::insert_all(&tx, &combined)?;
+    tx.commit().map_err(|e| e.to_string())?;
 
     log::info!(
         "Import complete: {} conversations, {} media, {} senders",
@@ -77,19 +85,26 @@ fn cmd_add_source(
         return Err(format!("Export path does not exist: {}", export_path));
     }
 
+    // Parse first (before touching the database)
     let parse_result = parser::parse_export(&export_root, window_size)?;
 
+    // Use normalized path to match what the parser stores in source_path
+    let normalized_path = export_root.to_string_lossy().to_string();
+
+    // Clear and insert within a single transaction
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     // Clear any existing data from this source path (handles re-import of same folder)
-    db::schema::clear_source(&conn, &export_path).map_err(|e| e.to_string())?;
+    db::schema::clear_source(&tx, &normalized_path).map_err(|e| e.to_string())?;
 
     // Insert additively (no global clear)
-    let stats = db::writer::insert_all(&mut conn, &parse_result)?;
+    let stats = db::writer::insert_all(&tx, &parse_result)?;
+    tx.commit().map_err(|e| e.to_string())?;
 
     log::info!(
         "Added source {}: {} conversations, {} media, {} senders",
-        export_path,
+        normalized_path,
         stats.conversations,
         stats.media,
         stats.senders
@@ -202,6 +217,9 @@ pub fn run() {
 
             let conn = Connection::open(&db_path)
                 .expect("Failed to open database");
+            // Disable FK enforcement — we manage cascading deletes manually in clear_source
+            conn.execute_batch("PRAGMA foreign_keys = OFF;")
+                .expect("Failed to set pragmas");
             db::schema::initialize(&conn)
                 .expect("Failed to initialize database schema");
 

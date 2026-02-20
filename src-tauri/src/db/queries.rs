@@ -178,18 +178,42 @@ pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaI
     }
     if let Some(ref search) = filters.search {
         if !search.is_empty() {
-            let pattern = format!("%{}%", search);
+            // Word-boundary match: find the search term as a whole word
+            // Match when the term is surrounded by non-alphanumeric chars (or start/end of string)
+            let word_pattern = format!("%{}%", search);
+            let exact_pattern = search.clone();
             sql.push_str(
-                " AND (s.name LIKE ? OR c.title LIKE ? OR m.message_content LIKE ?
-                  OR m.id IN (SELECT cm.media_id FROM context_messages cm
-                              INNER JOIN senders cs ON cs.id = cm.sender_id
-                              WHERE cm.content LIKE ? OR cs.name LIKE ?))",
+                " AND (
+                    s.name LIKE ? OR c.title LIKE ?
+                    OR m.message_content = ?
+                    OR ' ' || m.message_content || ' ' LIKE '% ' || ? || ' %'
+                    OR ' ' || m.message_content || ' ' LIKE '% ' || ? || '.%'
+                    OR ' ' || m.message_content || ' ' LIKE '% ' || ? || ',%'
+                    OR ' ' || m.message_content || ' ' LIKE '% ' || ? || '!%'
+                    OR ' ' || m.message_content || ' ' LIKE '% ' || ? || '?%'
+                    OR m.id IN (SELECT cm.media_id FROM context_messages cm
+                                INNER JOIN senders cs ON cs.id = cm.sender_id
+                                WHERE cs.name LIKE ?
+                                   OR cm.content = ?
+                                   OR ' ' || cm.content || ' ' LIKE '% ' || ? || ' %'
+                                   OR ' ' || cm.content || ' ' LIKE '% ' || ? || '.%'
+                                   OR ' ' || cm.content || ' ' LIKE '% ' || ? || ',%'
+                                   OR ' ' || cm.content || ' ' LIKE '% ' || ? || '!%'
+                                   OR ' ' || cm.content || ' ' LIKE '% ' || ? || '?%')
+                )",
             );
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern));
+            // s.name LIKE, c.title LIKE — keep substring for names/titles
+            params.push(Box::new(word_pattern.clone()));
+            params.push(Box::new(word_pattern));
+            // message_content: exact match + word boundaries (space, period, comma, !, ?)
+            for _ in 0..6 {
+                params.push(Box::new(exact_pattern.clone()));
+            }
+            // context: sender name substring + content word boundaries
+            params.push(Box::new(format!("%{}%", search)));
+            for _ in 0..5 {
+                params.push(Box::new(exact_pattern.clone()));
+            }
         }
     }
 

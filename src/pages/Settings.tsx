@@ -46,6 +46,7 @@ const Settings = () => {
   const [clearing, setClearing] = useState(false);
   const [addingSource, setAddingSource] = useState(false);
   const [removingPath, setRemovingPath] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const { data: storageInfo } = useQuery({
     queryKey: ["storage-info"],
@@ -74,6 +75,7 @@ const Settings = () => {
 
   const handleAddSource = async () => {
     try {
+      setAddError(null);
       const selected = await open({
         directory: true,
         title: "Select Export Folder to Add",
@@ -84,7 +86,7 @@ const Settings = () => {
       await api.addSource(selected as string);
       queryClient.invalidateQueries();
     } catch (e) {
-      console.error("Failed to add source:", e);
+      setAddError(String(e));
     } finally {
       setAddingSource(false);
     }
@@ -213,6 +215,12 @@ const Settings = () => {
                   )}
                   Add Source
                 </Button>
+
+                {addError && (
+                  <p className="text-[12px] text-destructive bg-destructive/10 rounded-md p-3">
+                    {addError}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
