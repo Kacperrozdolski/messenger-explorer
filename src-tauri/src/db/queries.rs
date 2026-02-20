@@ -178,28 +178,18 @@ pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaI
     }
     if let Some(ref search) = filters.search {
         if !search.is_empty() {
-            // Whole-word match for message content and context:
-            // Normalize punctuation to spaces, pad with spaces, then LIKE '% word %'
-            let word_pat = format!("% {} %", search);
-            let name_pat = format!("%{}%", search);
-            const NORM: &str = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(";
-            const NORM_END: &str = ", ',', ' '), '.', ' '), '!', ' '), '?', ' '), '\"', ' '), ''',' ')";
-            let word_expr = |col: &str| -> String {
-                format!("(' ' || {NORM}{col}{NORM_END} || ' ') LIKE ?")
-            };
-            let mc_expr = word_expr("m.message_content");
-            let cc_expr = word_expr("cm.content");
-            sql.push_str(&format!(
-                " AND (s.name LIKE ? OR c.title LIKE ? OR {mc_expr}
+            let pattern = format!("%{}%", search);
+            sql.push_str(
+                " AND (s.name LIKE ? OR c.title LIKE ? OR m.message_content LIKE ?
                   OR m.id IN (SELECT cm.media_id FROM context_messages cm
                               INNER JOIN senders cs ON cs.id = cm.sender_id
-                              WHERE cs.name LIKE ? OR {cc_expr}))",
-            ));
-            params.push(Box::new(name_pat.clone())); // s.name
-            params.push(Box::new(name_pat.clone())); // c.title
-            params.push(Box::new(word_pat.clone()));  // message_content
-            params.push(Box::new(name_pat));          // cs.name
-            params.push(Box::new(word_pat));           // cm.content
+                              WHERE cm.content LIKE ? OR cs.name LIKE ?))",
+            );
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern));
         }
     }
 
