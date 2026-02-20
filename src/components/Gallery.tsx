@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { ImageEntry, ViewMode } from "@/data/types";
 import ImageCard from "./ImageCard";
 import ImageListRow from "./ImageListRow";
@@ -14,11 +15,13 @@ const formatMonthYear = (ts: number) => {
 };
 
 const Gallery = ({ images, view, onImageClick }: GalleryProps) => {
+  const { t } = useTranslation();
+
   if (images.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <p className="text-muted-foreground text-sm">No images match your filters</p>
-        <p className="text-[12px] text-muted-foreground/60 mt-1">Try adjusting your search or filters</p>
+        <p className="text-muted-foreground text-sm">{t("gallery.noMatch")}</p>
+        <p className="text-[12px] text-muted-foreground/60 mt-1">{t("gallery.noMatchHint")}</p>
       </div>
     );
   }
@@ -39,7 +42,7 @@ const Gallery = ({ images, view, onImageClick }: GalleryProps) => {
         <section key={monthYear}>
           <h2 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3 sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
             {monthYear}
-            <span className="ml-2 text-[11px] font-normal text-muted-foreground/60">{items.length} photos</span>
+            <span className="ml-2 text-[11px] font-normal text-muted-foreground/60">{t("gallery.photos", { count: items.length })}</span>
           </h2>
 
           {view === "grid" ? (

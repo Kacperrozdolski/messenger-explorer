@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { FolderOpen, Loader2, X, Plus } from "lucide-react";
 import * as api from "@/lib/api";
+import LanguageSelector from "@/components/LanguageSelector";
 
 interface ImportDialogProps {
   onImportComplete: () => void;
@@ -15,6 +17,7 @@ interface FolderEntry {
 }
 
 const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
+  const { t } = useTranslation();
   const [folders, setFolders] = useState<FolderEntry[]>([]);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,30 +93,36 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
     format === "facebook" ? "Facebook" : "Messenger";
 
   return (
-    <div className="flex h-screen items-center justify-center bg-background">
+    <div className="relative flex h-screen items-center justify-center bg-background">
+      <div className="absolute top-4 right-5">
+        <LanguageSelector />
+      </div>
+
       <div className="max-w-lg w-full mx-auto p-8 text-center space-y-6">
         <div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">
-            Archive Explorer
+            {t("brand.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Messenger Media Browser
+            {t("brand.subtitle")}
           </p>
         </div>
 
         <div className="space-y-3">
           <p className="text-[13px] text-muted-foreground leading-relaxed">
-            Select your Facebook or Messenger data export folders to get
-            started. You can add multiple sources at once.
+            {t("import.description")}
           </p>
         </div>
 
         {stats ? (
           <div className="bg-secondary rounded-lg p-4 text-[13px] text-foreground space-y-1">
-            <p className="font-medium">Import complete!</p>
+            <p className="font-medium">{t("import.importComplete")}</p>
             <p className="text-muted-foreground">
-              {stats.conversations} conversations, {stats.media} media files,{" "}
-              {stats.senders} senders
+              {t("import.stats", {
+                conversations: stats.conversations,
+                media: stats.media,
+                senders: stats.senders,
+              })}
             </p>
           </div>
         ) : (
@@ -133,7 +142,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                       {folder.detecting && (
                         <p className="text-muted-foreground flex items-center gap-1">
                           <Loader2 className="h-3 w-3 animate-spin" />
-                          Detecting format...
+                          {t("import.detectingFormat")}
                         </p>
                       )}
                       {folder.format && (
@@ -165,12 +174,12 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
               {folders.length === 0 ? (
                 <>
                   <FolderOpen className="h-4 w-4" />
-                  Select Export Folder
+                  {t("import.selectFolder")}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4" />
-                  Add Another Folder
+                  {t("import.addAnother")}
                 </>
               )}
             </button>
@@ -186,12 +195,13 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                   {importing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Importing...
+                      {t("import.importing")}
                     </>
                   ) : (
                     <>
-                      Import {validFolders.length} source
-                      {validFolders.length > 1 ? "s" : ""}
+                      {validFolders.length > 1
+                        ? t("import.importButtonPlural", { count: validFolders.length })
+                        : t("import.importButton", { count: validFolders.length })}
                     </>
                   )}
                 </button>

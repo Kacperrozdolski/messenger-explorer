@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { X, MessageCircle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { ImageEntry, ChatMessage } from "@/data/types";
@@ -36,6 +37,7 @@ const ChatBubble = ({ msg, isImageSender }: { msg: ChatMessage; isImageSender: b
 );
 
 const ContextModal = ({ image, onClose }: ContextModalProps) => {
+  const { t } = useTranslation();
   const { data: context, isLoading } = useQuery({
     queryKey: ["context", image.id],
     queryFn: () => api.getContext(image.id),
@@ -82,7 +84,7 @@ const ContextModal = ({ image, onClose }: ContextModalProps) => {
           <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Chat Context</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("context.title")}</h3>
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">{image.chat}</p>
             <p className="text-[11px] text-muted-foreground">{formatDate(image.timestamp)}</p>

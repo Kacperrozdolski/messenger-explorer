@@ -1,0 +1,80 @@
+{
+  "brand": {
+    "title": "Archive Explorer",
+    "subtitle": "Explorador de medios de Messenger"
+  },
+  "sidebar": {
+    "sources": "Fuentes",
+    "smartFilters": "Filtros",
+    "bySender": "Por remitente",
+    "byFileType": "Por tipo de archivo",
+    "timeline": "Cronología",
+    "browseAll": "Ver todos ({{count}})...",
+    "searchSources": "Buscar fuentes...",
+    "searchSenders": "Buscar remitentes...",
+    "noResults": "No se encontraron resultados.",
+    "allTypes": "Todos los tipos",
+    "images": "imágenes",
+    "videos": "videos",
+    "gifs": "gifs"
+  },
+  "topbar": {
+    "search": "Buscar por fecha, remitente o contexto...",
+    "items": "{{count}} elementos",
+    "newestFirst": "Más recientes",
+    "oldestFirst": "Más antiguos",
+    "bySender": "Por remitente"
+  },
+  "gallery": {
+    "noMatch": "Ninguna imagen coincide con tus filtros",
+    "noMatchHint": "Intenta ajustar tu búsqueda o filtros",
+    "photos": "{{count}} fotos",
+    "showContext": "Mostrar contexto"
+  },
+  "context": {
+    "title": "Contexto del chat"
+  },
+  "import": {
+    "description": "Selecciona tus carpetas de exportación de Facebook o Messenger para comenzar. Puedes agregar múltiples fuentes a la vez.",
+    "importComplete": "¡Importación completa!",
+    "stats": "{{conversations}} conversaciones, {{media}} archivos, {{senders}} remitentes",
+    "detectingFormat": "Detectando formato...",
+    "selectFolder": "Seleccionar carpeta de exportación",
+    "addAnother": "Agregar otra carpeta",
+    "importButton": "Importar {{count}} fuente",
+    "importButtonPlural": "Importar {{count}} fuentes",
+    "importing": "Importando..."
+  },
+  "settings": {
+    "title": "Configuración",
+    "back": "Volver",
+    "dataSources": "Fuentes de datos",
+    "dataSourcesDesc": "Administra las carpetas de exportación importadas de Facebook y Messenger",
+    "noSources": "No hay fuentes importadas aún.",
+    "addSource": "Agregar fuente",
+    "removeSource": "¿Eliminar fuente?",
+    "removeSourceDesc": "Esto eliminará todos los datos importados de esta fuente. Tus archivos de exportación originales no se verán afectados.",
+    "cancel": "Cancelar",
+    "remove": "Eliminar",
+    "dataStorage": "Datos y almacenamiento",
+    "dataStorageDesc": "Administra tus datos importados y libera espacio",
+    "dbSize": "Tamaño de la base de datos:",
+    "mediaAcross": "{{media}} medios en {{conversations}} conversaciones",
+    "clearDatabase": "Limpiar base de datos",
+    "clearAllData": "¿Borrar todos los datos?",
+    "clearAllDataDesc": "Esto eliminará permanentemente todas las conversaciones, archivos multimedia y mensajes de contexto importados de la base de datos. Tus archivos de exportación originales no se verán afectados. Puedes volver a importarlos más tarde.",
+    "clearEverything": "Borrar todo",
+    "language": "Idioma",
+    "languageDesc": "Elige el idioma de la aplicación",
+    "conversations": "conversaciones",
+    "media": "medios"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "¡Página no encontrada!",
+    "goHome": "Volver al inicio"
+  },
+  "common": {
+    "loading": "Cargando..."
+  }
+}

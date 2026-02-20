@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, Grid3X3, List, ArrowUpDown, Settings } from "lucide-react";
 import type { SortOption, ViewMode } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ interface TopBarProps {
 
 const TopBar = ({ search, onSearchChange, sort, onSortChange, view, onViewChange, resultCount }: TopBarProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="h-14 border-b border-border flex items-center gap-3 px-5 bg-card/50 shrink-0">
@@ -23,7 +25,7 @@ const TopBar = ({ search, onSearchChange, sort, onSortChange, view, onViewChange
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search by date, sender, or context..."
+          placeholder={t("topbar.search")}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full pl-9 pr-3 py-2 text-[13px] rounded-md bg-secondary border-none text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all"
@@ -32,7 +34,7 @@ const TopBar = ({ search, onSearchChange, sort, onSortChange, view, onViewChange
 
       {/* Result count */}
       <span className="text-[12px] text-muted-foreground whitespace-nowrap">
-        {resultCount} items
+        {t("topbar.items", { count: resultCount })}
       </span>
 
       {/* Sort */}
@@ -43,9 +45,9 @@ const TopBar = ({ search, onSearchChange, sort, onSortChange, view, onViewChange
           onChange={(e) => onSortChange(e.target.value as SortOption)}
           className="text-[13px] bg-secondary text-foreground rounded-md px-2 py-1.5 border-none focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
         >
-          <option value="date-desc">Newest First</option>
-          <option value="date-asc">Oldest First</option>
-          <option value="sender">By Sender</option>
+          <option value="date-desc">{t("topbar.newestFirst")}</option>
+          <option value="date-asc">{t("topbar.oldestFirst")}</option>
+          <option value="sender">{t("topbar.bySender")}</option>
         </select>
       </div>
 

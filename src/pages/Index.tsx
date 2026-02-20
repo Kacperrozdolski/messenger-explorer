@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ArchiveSidebar from "@/components/ArchiveSidebar";
 import TopBar from "@/components/TopBar";
@@ -14,6 +15,7 @@ import type {
 } from "@/data/types";
 
 const Index = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -89,7 +91,7 @@ const Index = () => {
   if (statusLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
   }

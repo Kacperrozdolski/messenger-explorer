@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { MessageCircle, Play } from "lucide-react";
 import type { ImageEntry } from "@/data/types";
 
@@ -13,6 +14,8 @@ const formatTime = (ts: number) => {
 };
 
 const ImageCard = ({ image, index, onClick }: ImageCardProps) => {
+  const { t } = useTranslation();
+
   return (
     <div
       className="group relative overflow-hidden rounded-md cursor-pointer opacity-0 animate-fade-in break-inside-avoid mb-3"
@@ -57,7 +60,7 @@ const ImageCard = ({ image, index, onClick }: ImageCardProps) => {
           }}
         >
           <MessageCircle className="h-3 w-3" />
-          Show Context
+          {t("gallery.showContext")}
         </button>
       </div>
     </div>

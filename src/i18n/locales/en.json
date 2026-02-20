@@ -1,0 +1,80 @@
+{
+  "brand": {
+    "title": "Archive Explorer",
+    "subtitle": "Messenger Media Browser"
+  },
+  "sidebar": {
+    "sources": "Sources",
+    "smartFilters": "Smart Filters",
+    "bySender": "By Sender",
+    "byFileType": "By File Type",
+    "timeline": "Timeline",
+    "browseAll": "Browse all ({{count}})...",
+    "searchSources": "Search sources...",
+    "searchSenders": "Search senders...",
+    "noResults": "No results found.",
+    "allTypes": "All Types",
+    "images": "images",
+    "videos": "videos",
+    "gifs": "gifs"
+  },
+  "topbar": {
+    "search": "Search by date, sender, or context...",
+    "items": "{{count}} items",
+    "newestFirst": "Newest First",
+    "oldestFirst": "Oldest First",
+    "bySender": "By Sender"
+  },
+  "gallery": {
+    "noMatch": "No images match your filters",
+    "noMatchHint": "Try adjusting your search or filters",
+    "photos": "{{count}} photos",
+    "showContext": "Show Context"
+  },
+  "context": {
+    "title": "Chat Context"
+  },
+  "import": {
+    "description": "Select your Facebook or Messenger data export folders to get started. You can add multiple sources at once.",
+    "importComplete": "Import complete!",
+    "stats": "{{conversations}} conversations, {{media}} media files, {{senders}} senders",
+    "detectingFormat": "Detecting format...",
+    "selectFolder": "Select Export Folder",
+    "addAnother": "Add Another Folder",
+    "importButton": "Import {{count}} source",
+    "importButtonPlural": "Import {{count}} sources",
+    "importing": "Importing..."
+  },
+  "settings": {
+    "title": "Settings",
+    "back": "Back",
+    "dataSources": "Data Sources",
+    "dataSourcesDesc": "Manage imported Facebook and Messenger export folders",
+    "noSources": "No sources imported yet.",
+    "addSource": "Add Source",
+    "removeSource": "Remove source?",
+    "removeSourceDesc": "This will remove all imported data from this source. Your original export files will not be affected.",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "dataStorage": "Data & Storage",
+    "dataStorageDesc": "Manage your imported data and free up space",
+    "dbSize": "Database size:",
+    "mediaAcross": "{{media}} media across {{conversations}} conversations",
+    "clearDatabase": "Clear Database",
+    "clearAllData": "Clear all data?",
+    "clearAllDataDesc": "This will permanently delete all imported conversations, media entries, and context messages from the database. Your original export files will not be affected. You can re-import them later.",
+    "clearEverything": "Clear Everything",
+    "language": "Language",
+    "languageDesc": "Choose the display language for the application",
+    "conversations": "conversations",
+    "media": "media"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Page not found",
+    "goHome": "Return to Home"
+  },
+  "common": {
+    "loading": "Loading..."
+  }
+}

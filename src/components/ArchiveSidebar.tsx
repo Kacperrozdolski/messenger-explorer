@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
   ChevronRight,
@@ -88,11 +89,15 @@ function BrowseAllCombobox<
   selectedId,
   onSelect,
   placeholder,
+  browseLabel,
+  noResultsLabel,
 }: {
   items: T[];
   selectedId: number | null;
   onSelect: (id: number | null) => void;
   placeholder: string;
+  browseLabel: string;
+  noResultsLabel: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -100,14 +105,14 @@ function BrowseAllCombobox<
       <PopoverTrigger asChild>
         <button className="flex items-center gap-1.5 w-full px-3 py-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-sidebar-accent/50">
           <Search className="h-3 w-3" />
-          Browse all ({items.length})...
+          {browseLabel}
         </button>
       </PopoverTrigger>
       <PopoverContent className="p-0 w-56" align="start">
         <Command>
           <CommandInput placeholder={placeholder} className="h-9" />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>{noResultsLabel}</CommandEmpty>
             <CommandGroup>
               {items.map((item) => (
                 <CommandItem
@@ -302,6 +307,12 @@ function YearRow({
   );
 }
 
+const FILE_TYPE_LABELS: Record<string, string> = {
+  image: "images",
+  video: "videos",
+  gif: "gifs",
+};
+
 const ArchiveSidebar = ({
   conversations,
   senders,
@@ -315,6 +326,8 @@ const ArchiveSidebar = ({
   onSelectMonth,
   timelineData,
 }: ArchiveSidebarProps) => {
+  const { t } = useTranslation();
+
   // Sort all conversations by mediaCount descending
   const allSorted = useMemo(
     () => [...conversations].sort((a, b) => b.mediaCount - a.mediaCount),
@@ -378,10 +391,10 @@ const ArchiveSidebar = ({
       {/* Brand */}
       <div className="px-4 py-4 border-b border-sidebar-border">
         <h1 className="text-sm font-bold text-foreground tracking-tight">
-          Archive Explorer
+          {t("brand.title")}
         </h1>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          Messenger Media Browser
+          {t("brand.subtitle")}
         </p>
       </div>
 
@@ -449,7 +462,7 @@ const ArchiveSidebar = ({
 
       <div className="flex-1 overflow-y-auto py-2">
         {/* Sources - Top 5 by media count */}
-        <Section title="Sources" icon={Users}>
+        <Section title={t("sidebar.sources")} icon={Users}>
           {/* Show selected source above top 5 if it's outside the top 5 */}
           {selectedSource && !selectedSourceInTop && (
             <SourceButton
@@ -473,15 +486,17 @@ const ArchiveSidebar = ({
               items={allSorted}
               selectedId={selectedChat}
               onSelect={onSelectChat}
-              placeholder="Search sources..."
+              placeholder={t("sidebar.searchSources")}
+              browseLabel={t("sidebar.browseAll", { count: allSorted.length })}
+              noResultsLabel={t("sidebar.noResults")}
             />
           )}
         </Section>
 
         {/* Smart Filters */}
-        <Section title="Smart Filters" icon={Sparkles}>
+        <Section title={t("sidebar.smartFilters")} icon={Sparkles}>
           <p className="px-3 py-1 text-[11px] text-muted-foreground font-medium">
-            By Sender
+            {t("sidebar.bySender")}
           </p>
           {/* Show selected sender above top 5 if it's outside the top 5 */}
           {selectedSenderObj && !selectedSenderInTop && (
@@ -506,12 +521,14 @@ const ArchiveSidebar = ({
               items={sortedSenders}
               selectedId={selectedSender}
               onSelect={onSelectSender}
-              placeholder="Search senders..."
+              placeholder={t("sidebar.searchSenders")}
+              browseLabel={t("sidebar.browseAll", { count: sortedSenders.length })}
+              noResultsLabel={t("sidebar.noResults")}
             />
           )}
 
           <p className="px-3 py-1 mt-2 text-[11px] text-muted-foreground font-medium">
-            By File Type
+            {t("sidebar.byFileType")}
           </p>
           {(["all", "image", "video", "gif"] as FileTypeFilter[]).map((ft) => (
             <button
@@ -533,13 +550,13 @@ const ArchiveSidebar = ({
               ) : (
                 <Image className="h-3 w-3" />
               )}
-              {ft === "all" ? "All Types" : `${ft}s`}
+              {ft === "all" ? t("sidebar.allTypes") : t(`sidebar.${FILE_TYPE_LABELS[ft]}`)}
             </button>
           ))}
         </Section>
 
         {/* Timeline - Year > Month tree */}
-        <Section title="Timeline" icon={Calendar}>
+        <Section title={t("sidebar.timeline")} icon={Calendar}>
           <div className="px-3 space-y-0.5">
             {yearGroups.map((yg) => (
               <YearRow

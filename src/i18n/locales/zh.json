@@ -1,0 +1,80 @@
+{
+  "brand": {
+    "title": "Archive Explorer",
+    "subtitle": "Messenger 媒体浏览器"
+  },
+  "sidebar": {
+    "sources": "来源",
+    "smartFilters": "筛选",
+    "bySender": "按发送者",
+    "byFileType": "按文件类型",
+    "timeline": "时间线",
+    "browseAll": "浏览全部 ({{count}})...",
+    "searchSources": "搜索来源...",
+    "searchSenders": "搜索发送者...",
+    "noResults": "未找到结果。",
+    "allTypes": "所有类型",
+    "images": "图片",
+    "videos": "视频",
+    "gifs": "动图"
+  },
+  "topbar": {
+    "search": "按日期、发送者或上下文搜索...",
+    "items": "{{count}} 项",
+    "newestFirst": "最新优先",
+    "oldestFirst": "最早优先",
+    "bySender": "按发送者"
+  },
+  "gallery": {
+    "noMatch": "没有匹配的图片",
+    "noMatchHint": "尝试调整搜索或筛选条件",
+    "photos": "{{count}} 张照片",
+    "showContext": "显示上下文"
+  },
+  "context": {
+    "title": "聊天上下文"
+  },
+  "import": {
+    "description": "选择您的 Facebook 或 Messenger 数据导出文件夹以开始。您可以一次添加多个来源。",
+    "importComplete": "导入完成！",
+    "stats": "{{conversations}} 个对话，{{media}} 个媒体文件，{{senders}} 个发送者",
+    "detectingFormat": "正在检测格式...",
+    "selectFolder": "选择导出文件夹",
+    "addAnother": "添加另一个文件夹",
+    "importButton": "导入 {{count}} 个来源",
+    "importButtonPlural": "导入 {{count}} 个来源",
+    "importing": "正在导入..."
+  },
+  "settings": {
+    "title": "设置",
+    "back": "返回",
+    "dataSources": "数据来源",
+    "dataSourcesDesc": "管理已导入的 Facebook 和 Messenger 导出文件夹",
+    "noSources": "尚未导入任何来源。",
+    "addSource": "添加来源",
+    "removeSource": "移除来源？",
+    "removeSourceDesc": "这将移除此来源的所有已导入数据。您的原始导出文件不会受到影响。",
+    "cancel": "取消",
+    "remove": "移除",
+    "dataStorage": "数据与存储",
+    "dataStorageDesc": "管理已导入的数据并释放空间",
+    "dbSize": "数据库大小：",
+    "mediaAcross": "{{conversations}} 个对话中有 {{media}} 个媒体",
+    "clearDatabase": "清空数据库",
+    "clearAllData": "清除所有数据？",
+    "clearAllDataDesc": "这将永久删除数据库中所有已导入的对话、媒体条目和上下文消息。您的原始导出文件不会受到影响。您可以稍后重新导入。",
+    "clearEverything": "清除全部",
+    "language": "语言",
+    "languageDesc": "选择应用程序的显示语言",
+    "conversations": "对话",
+    "media": "媒体"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "页面未找到",
+    "goHome": "返回首页"
+  },
+  "common": {
+    "loading": "加载中..."
+  }
+}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
@@ -11,6 +12,7 @@ import {
   FolderOpen,
   Plus,
   X,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +34,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import * as api from "@/lib/api";
+import LanguageSelector from "@/components/LanguageSelector";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -42,6 +45,7 @@ function formatBytes(bytes: number): string {
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [clearing, setClearing] = useState(false);
   const [addingSource, setAddingSource] = useState(false);
@@ -116,23 +120,39 @@ const Settings = () => {
             className="gap-1.5 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t("settings.back")}
           </Button>
-          <h1 className="text-sm font-medium">Settings</h1>
+          <h1 className="text-sm font-medium">{t("settings.title")}</h1>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-2xl mx-auto space-y-6">
+            {/* Language Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle className="text-base">{t("settings.language")}</CardTitle>
+                </div>
+                <CardDescription>
+                  {t("settings.languageDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LanguageSelector />
+              </CardContent>
+            </Card>
+
             {/* Data Sources Card */}
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-base">Data Sources</CardTitle>
+                  <CardTitle className="text-base">{t("settings.dataSources")}</CardTitle>
                 </div>
                 <CardDescription>
-                  Manage imported Facebook and Messenger export folders
+                  {t("settings.dataSourcesDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -156,7 +176,7 @@ const Settings = () => {
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {source.conversations} conversations, {source.media_count} media
+                            {source.conversations} {t("settings.conversations")}, {source.media_count} {t("settings.media")}
                           </p>
                         </div>
                         <AlertDialog>
@@ -176,19 +196,18 @@ const Settings = () => {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Remove source?</AlertDialogTitle>
+                              <AlertDialogTitle>{t("settings.removeSource")}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will remove all imported data from this source.
-                                Your original export files will not be affected.
+                                {t("settings.removeSourceDesc")}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t("settings.cancel")}</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleRemoveSource(source.source_path)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Remove
+                                {t("settings.remove")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -198,7 +217,7 @@ const Settings = () => {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    No sources imported yet.
+                    {t("settings.noSources")}
                   </p>
                 )}
 
@@ -213,7 +232,7 @@ const Settings = () => {
                   ) : (
                     <Plus className="h-4 w-4" />
                   )}
-                  Add Source
+                  {t("settings.addSource")}
                 </Button>
 
                 {addError && (
@@ -229,10 +248,10 @@ const Settings = () => {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Database className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-base">Data & Storage</CardTitle>
+                  <CardTitle className="text-base">{t("settings.dataStorage")}</CardTitle>
                 </div>
                 <CardDescription>
-                  Manage your imported data and free up space
+                  {t("settings.dataStorageDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -241,7 +260,7 @@ const Settings = () => {
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <HardDrive className="h-3.5 w-3.5" />
                     <span>
-                      Database size:{" "}
+                      {t("settings.dbSize")}{" "}
                       <span className="text-foreground font-medium">
                         {storageInfo
                           ? formatBytes(storageInfo.db_size_bytes)
@@ -251,8 +270,10 @@ const Settings = () => {
                   </div>
                   {importStatus && importStatus.has_data && (
                     <span className="text-muted-foreground">
-                      {importStatus.media_count} media across{" "}
-                      {importStatus.conversation_count} conversations
+                      {t("settings.mediaAcross", {
+                        media: importStatus.media_count,
+                        conversations: importStatus.conversation_count,
+                      })}
                     </span>
                   )}
                 </div>
@@ -270,26 +291,23 @@ const Settings = () => {
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}
-                      Clear Database
+                      {t("settings.clearDatabase")}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Clear all data?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("settings.clearAllData")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete all imported conversations,
-                        media entries, and context messages from the database.
-                        Your original export files will not be affected. You can
-                        re-import them later.
+                        {t("settings.clearAllDataDesc")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t("settings.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleClearDatabase}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Clear Everything
+                        {t("settings.clearEverything")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

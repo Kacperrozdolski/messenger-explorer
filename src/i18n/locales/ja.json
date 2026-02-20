@@ -1,0 +1,80 @@
+{
+  "brand": {
+    "title": "Archive Explorer",
+    "subtitle": "Messenger メディアブラウザ"
+  },
+  "sidebar": {
+    "sources": "ソース",
+    "smartFilters": "フィルター",
+    "bySender": "送信者別",
+    "byFileType": "ファイルタイプ別",
+    "timeline": "タイムライン",
+    "browseAll": "すべて参照 ({{count}})...",
+    "searchSources": "ソースを検索...",
+    "searchSenders": "送信者を検索...",
+    "noResults": "結果が見つかりません。",
+    "allTypes": "すべてのタイプ",
+    "images": "画像",
+    "videos": "動画",
+    "gifs": "GIF"
+  },
+  "topbar": {
+    "search": "日付、送信者、コンテキストで検索...",
+    "items": "{{count}} 件",
+    "newestFirst": "新しい順",
+    "oldestFirst": "古い順",
+    "bySender": "送信者別"
+  },
+  "gallery": {
+    "noMatch": "フィルターに一致する画像がありません",
+    "noMatchHint": "検索またはフィルターを調整してみてください",
+    "photos": "{{count}} 枚の写真",
+    "showContext": "コンテキストを表示"
+  },
+  "context": {
+    "title": "チャットコンテキスト"
+  },
+  "import": {
+    "description": "FacebookまたはMessengerのデータエクスポートフォルダを選択して開始します。複数のソースを一度に追加できます。",
+    "importComplete": "インポート完了！",
+    "stats": "{{conversations}} 会話、{{media}} メディアファイル、{{senders}} 送信者",
+    "detectingFormat": "フォーマットを検出中...",
+    "selectFolder": "エクスポートフォルダを選択",
+    "addAnother": "別のフォルダを追加",
+    "importButton": "{{count}} ソースをインポート",
+    "importButtonPlural": "{{count}} ソースをインポート",
+    "importing": "インポート中..."
+  },
+  "settings": {
+    "title": "設定",
+    "back": "戻る",
+    "dataSources": "データソース",
+    "dataSourcesDesc": "インポートされたFacebookおよびMessengerのエクスポートフォルダを管理",
+    "noSources": "まだソースがインポートされていません。",
+    "addSource": "ソースを追加",
+    "removeSource": "ソースを削除しますか？",
+    "removeSourceDesc": "このソースからインポートされたすべてのデータが削除されます。元のエクスポートファイルは影響を受けません。",
+    "cancel": "キャンセル",
+    "remove": "削除",
+    "dataStorage": "データとストレージ",
+    "dataStorageDesc": "インポートされたデータを管理し、スペースを解放",
+    "dbSize": "データベースサイズ：",
+    "mediaAcross": "{{conversations}} 会話に {{media}} メディア",
+    "clearDatabase": "データベースをクリア",
+    "clearAllData": "すべてのデータを削除しますか？",
+    "clearAllDataDesc": "これにより、データベースからインポートされたすべての会話、メディアエントリ、コンテキストメッセージが完全に削除されます。元のエクスポートファイルは影響を受けません。後で再インポートできます。",
+    "clearEverything": "すべてクリア",
+    "language": "言語",
+    "languageDesc": "アプリケーションの表示言語を選択",
+    "conversations": "会話",
+    "media": "メディア"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "ページが見つかりません",
+    "goHome": "ホームに戻る"
+  },
+  "common": {
+    "loading": "読み込み中..."
+  }
+}

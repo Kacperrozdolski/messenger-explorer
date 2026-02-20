@@ -1,0 +1,80 @@
+{
+  "brand": {
+    "title": "Archive Explorer",
+    "subtitle": "Przeglądarka mediów Messengera"
+  },
+  "sidebar": {
+    "sources": "Źródła",
+    "smartFilters": "Filtry",
+    "bySender": "Wg nadawcy",
+    "byFileType": "Wg typu pliku",
+    "timeline": "Oś czasu",
+    "browseAll": "Przeglądaj wszystkie ({{count}})...",
+    "searchSources": "Szukaj źródeł...",
+    "searchSenders": "Szukaj nadawców...",
+    "noResults": "Brak wyników.",
+    "allTypes": "Wszystkie typy",
+    "images": "zdjęcia",
+    "videos": "filmy",
+    "gifs": "gify"
+  },
+  "topbar": {
+    "search": "Szukaj wg daty, nadawcy lub kontekstu...",
+    "items": "{{count}} elementów",
+    "newestFirst": "Najnowsze",
+    "oldestFirst": "Najstarsze",
+    "bySender": "Wg nadawcy"
+  },
+  "gallery": {
+    "noMatch": "Brak wyników dla wybranych filtrów",
+    "noMatchHint": "Spróbuj zmienić wyszukiwanie lub filtry",
+    "photos": "{{count}} zdjęć",
+    "showContext": "Pokaż kontekst"
+  },
+  "context": {
+    "title": "Kontekst rozmowy"
+  },
+  "import": {
+    "description": "Wybierz foldery eksportu Facebooka lub Messengera, aby rozpocząć. Możesz dodać wiele źródeł naraz.",
+    "importComplete": "Import zakończony!",
+    "stats": "{{conversations}} rozmów, {{media}} plików, {{senders}} nadawców",
+    "detectingFormat": "Wykrywanie formatu...",
+    "selectFolder": "Wybierz folder eksportu",
+    "addAnother": "Dodaj kolejny folder",
+    "importButton": "Importuj {{count}} źródło",
+    "importButtonPlural": "Importuj {{count}} źródeł",
+    "importing": "Importowanie..."
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "back": "Wstecz",
+    "dataSources": "Źródła danych",
+    "dataSourcesDesc": "Zarządzaj zaimportowanymi folderami eksportu Facebooka i Messengera",
+    "noSources": "Brak zaimportowanych źródeł.",
+    "addSource": "Dodaj źródło",
+    "removeSource": "Usunąć źródło?",
+    "removeSourceDesc": "Spowoduje to usunięcie wszystkich zaimportowanych danych z tego źródła. Oryginalne pliki eksportu nie zostaną naruszone.",
+    "cancel": "Anuluj",
+    "remove": "Usuń",
+    "dataStorage": "Dane i pamięć",
+    "dataStorageDesc": "Zarządzaj zaimportowanymi danymi i zwolnij miejsce",
+    "dbSize": "Rozmiar bazy danych:",
+    "mediaAcross": "{{media}} mediów w {{conversations}} rozmowach",
+    "clearDatabase": "Wyczyść bazę danych",
+    "clearAllData": "Wyczyścić wszystkie dane?",
+    "clearAllDataDesc": "Spowoduje to trwałe usunięcie wszystkich zaimportowanych rozmów, mediów i wiadomości kontekstowych z bazy danych. Oryginalne pliki eksportu nie zostaną naruszone. Możesz je ponownie zaimportować później.",
+    "clearEverything": "Wyczyść wszystko",
+    "language": "Język",
+    "languageDesc": "Wybierz język wyświetlania aplikacji",
+    "conversations": "rozmów",
+    "media": "mediów"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Strona nie została znaleziona",
+    "goHome": "Wróć na stronę główną"
+  },
+  "common": {
+    "loading": "Ładowanie..."
+  }
+}
