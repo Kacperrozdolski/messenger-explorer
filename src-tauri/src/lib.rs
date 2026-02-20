@@ -8,7 +8,7 @@ use tauri::Manager;
 
 use db::queries::{
     self, ConversationInfo, ImportStatus, MediaContext, MediaFilters, MediaItem, SenderInfo,
-    TimelineEntry,
+    SourceInfo, TimelineEntry,
 };
 use db::writer::ImportStats;
 
@@ -27,6 +27,46 @@ fn cmd_get_import_status(state: tauri::State<'_, DbState>) -> Result<ImportStatu
 #[tauri::command]
 fn cmd_import_export(
     state: tauri::State<'_, DbState>,
+    export_paths: Vec<String>,
+    context_window: Option<usize>,
+) -> Result<ImportStats, String> {
+    let window_size = context_window.unwrap_or(5);
+
+    // Parse all paths
+    let mut all_conversations = Vec::new();
+    for path_str in &export_paths {
+        let export_root = PathBuf::from(path_str);
+        if !export_root.exists() {
+            return Err(format!("Export path does not exist: {}", path_str));
+        }
+
+        let parse_result = parser::parse_export(&export_root, window_size)
+            .map_err(|e| format!("Error parsing {}: {}", path_str, e))?;
+        all_conversations.extend(parse_result.conversations);
+    }
+
+    let combined = parser::ParseResult {
+        conversations: all_conversations,
+    };
+
+    // Clear existing data and insert new
+    let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db::schema::clear_all(&conn).map_err(|e| e.to_string())?;
+    let stats = db::writer::insert_all(&mut conn, &combined)?;
+
+    log::info!(
+        "Import complete: {} conversations, {} media, {} senders",
+        stats.conversations,
+        stats.media,
+        stats.senders
+    );
+
+    Ok(stats)
+}
+
+#[tauri::command]
+fn cmd_add_source(
+    state: tauri::State<'_, DbState>,
     export_path: String,
     context_window: Option<usize>,
 ) -> Result<ImportStats, String> {
@@ -37,22 +77,56 @@ fn cmd_import_export(
         return Err(format!("Export path does not exist: {}", export_path));
     }
 
-    // Parse the export
     let parse_result = parser::parse_export(&export_root, window_size)?;
 
-    // Clear existing data and insert new
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
-    db::schema::clear_all(&conn).map_err(|e| e.to_string())?;
+
+    // Clear any existing data from this source path (handles re-import of same folder)
+    db::schema::clear_source(&conn, &export_path).map_err(|e| e.to_string())?;
+
+    // Insert additively (no global clear)
     let stats = db::writer::insert_all(&mut conn, &parse_result)?;
 
     log::info!(
-        "Import complete: {} conversations, {} media, {} senders",
+        "Added source {}: {} conversations, {} media, {} senders",
+        export_path,
         stats.conversations,
         stats.media,
         stats.senders
     );
 
     Ok(stats)
+}
+
+#[tauri::command]
+fn cmd_get_sources(state: tauri::State<'_, DbState>) -> Result<Vec<SourceInfo>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_sources(&conn)
+}
+
+#[tauri::command]
+fn cmd_remove_source(
+    state: tauri::State<'_, DbState>,
+    source_path: String,
+) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db::schema::clear_source(&conn, &source_path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn cmd_detect_format(
+    export_path: String,
+) -> Result<String, String> {
+    let path = PathBuf::from(&export_path);
+    if !path.exists() {
+        return Err(format!("Path does not exist: {}", export_path));
+    }
+    let format = parser::detect_format(&path)?;
+    Ok(match format {
+        parser::DataFormat::Facebook => "facebook".to_string(),
+        parser::DataFormat::Messenger => "messenger".to_string(),
+    })
 }
 
 #[tauri::command]
@@ -141,6 +215,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             cmd_get_import_status,
             cmd_import_export,
+            cmd_add_source,
+            cmd_get_sources,
+            cmd_remove_source,
+            cmd_detect_format,
             cmd_get_conversations,
             cmd_get_senders,
             cmd_get_media,

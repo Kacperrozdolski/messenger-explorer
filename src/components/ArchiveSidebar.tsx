@@ -10,6 +10,8 @@ import {
   Calendar,
   X,
   Search,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import type { ChatSource, SenderInfo, FileTypeFilter } from "@/data/types";
 import type { TimelineEntry } from "@/lib/api";
@@ -46,6 +48,8 @@ interface ArchiveSidebarProps {
   selectedMonth: string | null;
   onSelectMonth: (month: string | null) => void;
   timelineData: TimelineEntry[];
+  onAddSource: () => void;
+  addingSource: boolean;
 }
 
 const TOP_N = 5;
@@ -314,6 +318,8 @@ const ArchiveSidebar = ({
   selectedMonth,
   onSelectMonth,
   timelineData,
+  onAddSource,
+  addingSource,
 }: ArchiveSidebarProps) => {
   // Sort all conversations by mediaCount descending
   const allSorted = useMemo(
@@ -553,6 +559,27 @@ const ArchiveSidebar = ({
             ))}
           </div>
         </Section>
+      </div>
+
+      {/* Add Source button */}
+      <div className="px-3 py-3 border-t border-sidebar-border">
+        <button
+          onClick={onAddSource}
+          disabled={addingSource}
+          className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 rounded-md transition-colors disabled:opacity-50"
+        >
+          {addingSource ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Adding source...
+            </>
+          ) : (
+            <>
+              <Plus className="h-3.5 w-3.5" />
+              Add Source
+            </>
+          )}
+        </button>
       </div>
     </aside>
   );

@@ -1,4 +1,5 @@
 pub mod facebook;
+pub mod messenger;
 pub mod mojibake;
 
 use std::path::{Path, PathBuf};
@@ -36,6 +37,8 @@ pub struct ParsedConversation {
     pub chat_type: String, // "group" or "dm"
     pub participants: Vec<String>,
     pub media: Vec<ParsedMedia>,
+    pub source_type: String,
+    pub source_path: String,
 }
 
 /// Result of parsing the entire export.
@@ -44,8 +47,53 @@ pub struct ParseResult {
     pub conversations: Vec<ParsedConversation>,
 }
 
-/// Parse the entire Facebook export starting from the export root directory.
+/// Detected data format.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DataFormat {
+    Facebook,
+    Messenger,
+}
+
+/// Detect whether a folder contains a Facebook or Messenger export.
+pub fn detect_format(path: &Path) -> Result<DataFormat, String> {
+    // Facebook: has your_facebook_activity/messages/inbox/
+    if path
+        .join("your_facebook_activity")
+        .join("messages")
+        .join("inbox")
+        .exists()
+    {
+        return Ok(DataFormat::Facebook);
+    }
+
+    // Messenger: has *.json files at root + media/ directory
+    if path.join("media").is_dir() {
+        let has_json = std::fs::read_dir(path)
+            .map(|entries| {
+                entries
+                    .filter_map(|e| e.ok())
+                    .any(|e| e.path().extension().map_or(false, |ext| ext == "json"))
+            })
+            .unwrap_or(false);
+        if has_json {
+            return Ok(DataFormat::Messenger);
+        }
+    }
+
+    Err("Unrecognized export format. Expected Facebook or Messenger data.".into())
+}
+
+/// Parse an export, auto-detecting the format.
 pub fn parse_export(export_root: &Path, context_window: usize) -> Result<ParseResult, String> {
+    let format = detect_format(export_root)?;
+    match format {
+        DataFormat::Facebook => parse_facebook_export(export_root, context_window),
+        DataFormat::Messenger => parse_messenger_export(export_root, context_window),
+    }
+}
+
+/// Parse a Facebook data export.
+fn parse_facebook_export(export_root: &Path, context_window: usize) -> Result<ParseResult, String> {
     let inbox_path = export_root
         .join("your_facebook_activity")
         .join("messages")
@@ -58,9 +106,9 @@ pub fn parse_export(export_root: &Path, context_window: usize) -> Result<ParseRe
         ));
     }
 
+    let source_path = export_root.to_string_lossy().to_string();
     let mut conversations = Vec::new();
 
-    // Read all subdirectories in inbox
     let entries = std::fs::read_dir(&inbox_path)
         .map_err(|e| format!("Failed to read inbox directory: {}", e))?;
 
@@ -71,7 +119,7 @@ pub fn parse_export(export_root: &Path, context_window: usize) -> Result<ParseRe
             continue;
         }
 
-        match parse_conversation(export_root, &path, context_window) {
+        match parse_facebook_conversation(export_root, &path, context_window, &source_path) {
             Ok(conv) => {
                 if !conv.media.is_empty() {
                     conversations.push(conv);
@@ -90,11 +138,12 @@ pub fn parse_export(export_root: &Path, context_window: usize) -> Result<ParseRe
     Ok(ParseResult { conversations })
 }
 
-/// Parse a single conversation folder.
-fn parse_conversation(
+/// Parse a single Facebook conversation folder.
+fn parse_facebook_conversation(
     export_root: &Path,
     conv_dir: &Path,
     context_window: usize,
+    source_path: &str,
 ) -> Result<ParsedConversation, String> {
     let folder_name = conv_dir
         .file_name()
@@ -175,6 +224,107 @@ fn parse_conversation(
         chat_type,
         participants,
         media,
+        source_type: "facebook".to_string(),
+        source_path: source_path.to_string(),
+    })
+}
+
+/// Parse a Messenger data export (flat JSON files + media/ folder).
+fn parse_messenger_export(export_root: &Path, context_window: usize) -> Result<ParseResult, String> {
+    let source_path = export_root.to_string_lossy().to_string();
+    let mut conversations = Vec::new();
+
+    // Read all *.json files in the root directory
+    let entries = std::fs::read_dir(export_root)
+        .map_err(|e| format!("Failed to read export directory: {}", e))?;
+
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+        let path = entry.path();
+
+        if path.extension().map_or(true, |ext| ext != "json") {
+            continue;
+        }
+
+        match parse_messenger_conversation(export_root, &path, context_window, &source_path) {
+            Ok(conv) => {
+                if !conv.media.is_empty() {
+                    conversations.push(conv);
+                }
+            }
+            Err(e) => {
+                log::warn!(
+                    "Skipping Messenger conversation {}: {}",
+                    path.display(),
+                    e
+                );
+            }
+        }
+    }
+
+    Ok(ParseResult { conversations })
+}
+
+/// Parse a single Messenger JSON file into a conversation.
+fn parse_messenger_conversation(
+    export_root: &Path,
+    json_path: &Path,
+    context_window: usize,
+    source_path: &str,
+) -> Result<ParsedConversation, String> {
+    let content = std::fs::read_to_string(json_path)
+        .map_err(|e| format!("Failed to read {}: {}", json_path.display(), e))?;
+
+    let export: messenger::MessengerExport = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse {}: {}", json_path.display(), e))?;
+
+    let folder_name = json_path
+        .file_stem()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    // Participants are already plain strings
+    let participants = export.participants.clone();
+
+    // Determine chat type
+    let chat_type = if participants.len() <= 2 {
+        "dm".to_string()
+    } else {
+        "group".to_string()
+    };
+
+    // Build a human-readable title from thread name
+    // Thread names look like "Name_id" — strip the trailing _<digits>
+    let title = export
+        .thread_name
+        .rsplit_once('_')
+        .map(|(name, _)| name.to_string())
+        .unwrap_or_else(|| export.thread_name.clone());
+
+    // Convert Messenger messages to Facebook Message format for reuse
+    let mut all_messages: Vec<Message> = export
+        .messages
+        .iter()
+        .map(messenger::to_facebook_message)
+        .collect();
+
+    // Messenger messages are already chronological (oldest first based on sample data)
+    // But let's sort by timestamp to be safe
+    all_messages.sort_by_key(|m| m.timestamp_ms);
+
+    // Extract media items with context, resolving ./media/ URIs against export root
+    let media = extract_media(export_root, &all_messages, context_window);
+
+    Ok(ParsedConversation {
+        folder_name,
+        title,
+        thread_path: export.thread_name,
+        chat_type,
+        participants,
+        media,
+        source_type: "messenger".to_string(),
+        source_path: source_path.to_string(),
     })
 }
 
@@ -320,6 +470,7 @@ fn get_display_text(msg: &Message) -> String {
 
 /// Resolve a relative URI from the JSON to an absolute filesystem path.
 fn resolve_uri(export_root: &Path, uri: &str) -> PathBuf {
-    // URIs use forward slashes; Path::join handles this on Windows
-    export_root.join(uri)
+    // Handle ./media/ prefix from Messenger exports
+    let cleaned = uri.strip_prefix("./").unwrap_or(uri);
+    export_root.join(cleaned)
 }

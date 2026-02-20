@@ -51,13 +51,16 @@ fn insert_conversation(
     conv: &ParsedConversation,
 ) -> Result<i64, String> {
     conn.execute(
-        "INSERT INTO conversations (folder_name, title, chat_type, participant_count, thread_path) VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO conversations (folder_name, title, chat_type, participant_count, thread_path, source_type, source_path)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         rusqlite::params![
             conv.folder_name,
             conv.title,
             conv.chat_type,
             conv.participants.len() as i64,
             conv.thread_path,
+            conv.source_type,
+            conv.source_path,
         ],
     ).map_err(|e| e.to_string())?;
     Ok(conn.last_insert_rowid())

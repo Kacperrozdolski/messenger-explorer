@@ -20,18 +20,49 @@ export interface TimelineEntry {
   count: number;
 }
 
+export interface SourceInfo {
+  source_type: "facebook" | "messenger";
+  source_path: string;
+  conversations: number;
+  media_count: number;
+}
+
 export async function getImportStatus(): Promise<ImportStatus> {
   return invoke("cmd_get_import_status");
 }
 
 export async function importExport(
-  exportPath: string,
+  exportPaths: string[],
   contextWindow?: number
 ): Promise<ImportResult> {
   return invoke("cmd_import_export", {
+    exportPaths,
+    contextWindow: contextWindow ?? 5,
+  });
+}
+
+export async function addSource(
+  exportPath: string,
+  contextWindow?: number
+): Promise<ImportResult> {
+  return invoke("cmd_add_source", {
     exportPath,
     contextWindow: contextWindow ?? 5,
   });
+}
+
+export async function getSources(): Promise<SourceInfo[]> {
+  return invoke("cmd_get_sources");
+}
+
+export async function removeSource(sourcePath: string): Promise<void> {
+  return invoke("cmd_remove_source", { sourcePath });
+}
+
+export async function detectFormat(
+  exportPath: string
+): Promise<"facebook" | "messenger"> {
+  return invoke("cmd_detect_format", { exportPath });
 }
 
 export async function getConversations(): Promise<ChatSource[]> {

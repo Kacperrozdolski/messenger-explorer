@@ -57,6 +57,14 @@ pub struct ImportStatus {
     pub conversation_count: i64,
 }
 
+#[derive(Debug, Serialize)]
+pub struct SourceInfo {
+    pub source_type: String,
+    pub source_path: String,
+    pub conversations: i64,
+    pub media_count: i64,
+}
+
 #[derive(Debug, serde::Deserialize)]
 pub struct MediaFilters {
     pub conversation_id: Option<i64>,
@@ -316,6 +324,37 @@ pub fn get_timeline(conn: &Connection) -> Result<Vec<TimelineEntry>, String> {
                 label,
                 month_key,
                 count: row.get(1)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(result)
+}
+
+pub fn get_sources(conn: &Connection) -> Result<Vec<SourceInfo>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT c.source_type, c.source_path,
+                    COUNT(DISTINCT c.id) as conversations,
+                    COUNT(m.id) as media_count
+             FROM conversations c
+             LEFT JOIN media m ON m.conversation_id = c.id
+             GROUP BY c.source_type, c.source_path
+             ORDER BY c.source_path",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(SourceInfo {
+                source_type: row.get(0)?,
+                source_path: row.get(1)?,
+                conversations: row.get(2)?,
+                media_count: row.get(3)?,
             })
         })
         .map_err(|e| e.to_string())?;
