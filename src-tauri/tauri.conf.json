@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "archive-explorer",
+  "productName": "messenger-explorer",
   "version": "0.1.0",
-  "identifier": "com.archive-explorer.app",
+  "identifier": "com.messenger-explorer.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:8080",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Archive Explorer",
+        "title": "Messenger Explorer",
         "width": 1280,
         "height": 800,
         "resizable": true,
