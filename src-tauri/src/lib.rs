@@ -18,6 +18,40 @@ struct DbState {
     conn: Mutex<Connection>,
 }
 
+/// Decode percent-encoded URL path back to a filesystem path.
+fn percent_decode(input: &str) -> String {
+    let mut result = Vec::new();
+    let bytes = input.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let Ok(byte) = u8::from_str_radix(&input[i + 1..i + 3], 16) {
+                result.push(byte);
+                i += 3;
+                continue;
+            }
+        }
+        result.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&result).to_string()
+}
+
+fn guess_mime(path: &PathBuf) -> &'static str {
+    match path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase()).as_deref() {
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("png") => "image/png",
+        Some("gif") => "image/gif",
+        Some("webp") => "image/webp",
+        Some("bmp") => "image/bmp",
+        Some("mp4") => "video/mp4",
+        Some("webm") => "video/webm",
+        Some("mov") => "video/quicktime",
+        Some("avi") => "video/x-msvideo",
+        _ => "application/octet-stream",
+    }
+}
+
 #[tauri::command]
 fn cmd_get_import_status(state: tauri::State<'_, DbState>) -> Result<ImportStatus, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
@@ -202,6 +236,39 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
+        .register_uri_scheme_protocol("media", |_ctx, request| {
+            // Extract the file path from the URI path component and percent-decode it.
+            // convertFileSrc produces: http://media.localhost/<encodeURIComponent(path)> on Windows
+            // The URI path() gives: /<encoded_path>
+            let uri_path = request.uri().path();
+            let raw_path = uri_path.strip_prefix('/').unwrap_or(uri_path);
+            // Also strip query string if present
+            let raw_path = raw_path.split('?').next().unwrap_or(raw_path);
+            let decoded = percent_decode(raw_path);
+            let file_path = PathBuf::from(&decoded);
+
+            if !file_path.exists() {
+                return tauri::http::Response::builder()
+                    .status(404)
+                    .body(Vec::new())
+                    .unwrap();
+            }
+
+            match std::fs::read(&file_path) {
+                Ok(bytes) => {
+                    let mime = guess_mime(&file_path);
+                    tauri::http::Response::builder()
+                        .status(200)
+                        .header("Content-Type", mime)
+                        .body(bytes)
+                        .unwrap()
+                }
+                Err(_) => tauri::http::Response::builder()
+                    .status(500)
+                    .body(Vec::new())
+                    .unwrap(),
+            }
+        })
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

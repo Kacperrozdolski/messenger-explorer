@@ -1,5 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import type { ChatSource, SenderInfo, ImageEntry, ChatMessage } from "@/data/types";
 
 export interface ImportStatus {
@@ -124,7 +123,7 @@ export async function getMedia(filters: {
   });
   return data.map((m) => ({
     id: m.id,
-    src: convertFileSrc(m.file_path),
+    src: convertFileSrc(m.file_path, "media"),
     file_path: m.file_path,
     sender: m.sender_name,
     senderId: m.sender_id,
