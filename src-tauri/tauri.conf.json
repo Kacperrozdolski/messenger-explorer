@@ -20,12 +20,12 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https://asset.localhost http://media.localhost https://media.localhost; media-src 'self' asset: http://asset.localhost https://asset.localhost http://media.localhost https://media.localhost; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; img-src 'self' asset: media: http://asset.localhost https://asset.localhost http://media.localhost https://media.localhost; media-src 'self' asset: media: http://asset.localhost https://asset.localhost http://media.localhost https://media.localhost; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["app", "dmg"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Globe } from "lucide-react";
 import { LANGUAGES } from "@/i18n";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const FLAG_EMOJI: Record<string, string> = {
   GB: "\u{1F1EC}\u{1F1E7}",
@@ -24,17 +25,18 @@ const LanguageSelector = () => {
   return (
     <div className="flex items-center gap-2">
       <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-      <select
-        value={i18n.language}
-        onChange={(e) => handleChange(e.target.value)}
-        className="text-[13px] bg-secondary text-foreground rounded-md px-2 py-1.5 border-none focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-      >
-        {LANGUAGES.map((lang) => (
-          <option key={lang.code} value={lang.code}>
-            {FLAG_EMOJI[lang.flag]} {lang.label}
-          </option>
-        ))}
-      </select>
+      <Select value={i18n.language} onValueChange={handleChange}>
+        <SelectTrigger className="h-8 w-auto gap-1.5 border-none bg-secondary text-[13px] focus:ring-1 focus:ring-ring px-2.5">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {LANGUAGES.map((lang) => (
+            <SelectItem key={lang.code} value={lang.code}>
+              {FLAG_EMOJI[lang.flag]} {lang.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };
