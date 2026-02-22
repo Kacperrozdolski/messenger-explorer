@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use crate::parser::facebook::{Message, MediaRef, GifRef, Reaction};
+use crate::parser::facebook::{Message, MediaRef, GifRef};
 
 /// Top-level structure of a Messenger export JSON file.
 #[derive(Deserialize, Debug)]
@@ -19,23 +19,11 @@ pub struct MessengerMessage {
     pub text: String,
     #[serde(default)]
     pub media: Vec<MessengerMediaRef>,
-    #[serde(default, rename = "isUnsent")]
-    pub is_unsent: bool,
-    #[serde(rename = "type", default)]
-    pub message_type: String,
-    #[serde(default)]
-    pub reactions: Vec<MessengerReaction>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct MessengerMediaRef {
     pub uri: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct MessengerReaction {
-    pub actor: String,
-    pub reaction: String,
 }
 
 /// Convert a Messenger message into the existing Facebook Message struct
@@ -77,20 +65,6 @@ pub fn to_facebook_message(msg: &MessengerMessage) -> Message {
         Some(msg.text.clone())
     };
 
-    let reactions = if msg.reactions.is_empty() {
-        None
-    } else {
-        Some(
-            msg.reactions
-                .iter()
-                .map(|r| Reaction {
-                    reaction: r.reaction.clone(),
-                    actor: r.actor.clone(),
-                })
-                .collect(),
-        )
-    };
-
     Message {
         sender_name: msg.sender_name.clone(),
         timestamp_ms: msg.timestamp,
@@ -98,8 +72,5 @@ pub fn to_facebook_message(msg: &MessengerMessage) -> Message {
         photos: if photos.is_empty() { None } else { Some(photos) },
         videos: if videos.is_empty() { None } else { Some(videos) },
         gifs: if gifs.is_empty() { None } else { Some(gifs) },
-        reactions,
-        is_geoblocked_for_viewer: false,
-        message_type: Some(msg.message_type.clone()),
     }
 }

@@ -7,11 +7,7 @@ pub struct FacebookExport {
     pub messages: Vec<Message>,
     pub title: String,
     #[serde(default)]
-    pub is_still_participant: bool,
-    #[serde(default)]
     pub thread_path: String,
-    #[serde(default)]
-    pub image: Option<MediaRef>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -31,12 +27,6 @@ pub struct Message {
     pub videos: Option<Vec<MediaRef>>,
     #[serde(default)]
     pub gifs: Option<Vec<GifRef>>,
-    #[serde(default)]
-    pub reactions: Option<Vec<Reaction>>,
-    #[serde(default)]
-    pub is_geoblocked_for_viewer: bool,
-    #[serde(rename = "type", default)]
-    pub message_type: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -49,12 +39,6 @@ pub struct MediaRef {
 #[derive(Deserialize, Debug, Clone)]
 pub struct GifRef {
     pub uri: String,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Reaction {
-    pub reaction: String,
-    pub actor: String,
 }
 
 impl Message {

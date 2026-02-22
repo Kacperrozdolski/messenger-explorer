@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd C:\\\\Users\\\\Kacper\\\\Documents\\\\explorer\\\\tauri\\\\public\\\\fonts:*)",
+      "Bash(curl:*)",
+      "Bash(cd C:\\\\Users\\\\Kacper\\\\Documents\\\\explorer\\\\tauri:*)",
+      "Bash(tail:*)",
+      "Bash(cd \"C:\\\\Users\\\\Kacper\\\\Documents\\\\explorer\\\\tauri\\\\src-tauri\" && cargo check 2>&1)"
+    ]
+  }
+}
