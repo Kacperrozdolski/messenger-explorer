@@ -7,15 +7,17 @@ use std::path::Path;
 // A4 dimensions in mm
 const PAGE_W: f32 = 210.0;
 const PAGE_H: f32 = 297.0;
-const MARGIN: f32 = 10.0;
+const MARGIN: f32 = 5.0;
 const GAP: f32 = 5.0;
 
-// Standard photo print size: 10x15 cm
-const PHOTO_SHORT: f32 = 100.0; // 10 cm
-const PHOTO_LONG: f32 = 150.0;  // 15 cm
+const USABLE_W: f32 = PAGE_W - 2.0 * MARGIN; // 200mm
+const USABLE_H: f32 = PAGE_H - 2.0 * MARGIN; // 287mm
 
-const USABLE_W: f32 = PAGE_W - 2.0 * MARGIN;
-const USABLE_H: f32 = PAGE_H - 2.0 * MARGIN;
+// Photo size: 2:3 ratio, computed to fit exactly 2×2 on a page.
+// Height-constrained: h = (287 - 5) / 2 = 141mm, w = h / 1.5 = 94mm
+const PHOTO_W: f32 = 94.0;
+const PHOTO_H: f32 = 141.0;
+const COLS: usize = 2;
 
 // 1mm = 2.834646 PDF points
 const MM_TO_PT: f32 = 2.834646;
@@ -26,15 +28,7 @@ struct PhotoInfo {
     height: u32,
 }
 
-/// Slot size for a photo based on its orientation.
-fn slot_size(photo: &PhotoInfo) -> (f32, f32) {
-    if photo.width >= photo.height {
-        (PHOTO_LONG, PHOTO_SHORT) // landscape: 150x100mm
-    } else {
-        (PHOTO_SHORT, PHOTO_LONG) // portrait: 100x150mm
-    }
-}
-
+/// Load a photo, rotate landscape to portrait, and center-crop to 2:3 ratio.
 fn load_photo(path: &str) -> Option<PhotoInfo> {
     let p = Path::new(path);
     if !p.exists() {
@@ -42,81 +36,82 @@ fn load_photo(path: &str) -> Option<PhotoInfo> {
     }
 
     let data = fs::read(p).ok()?;
-    let ext = p
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_lowercase())
-        .unwrap_or_default();
+    let mut img = ::image::load_from_memory(&data).ok()?;
+    let (ow, oh) = img.dimensions();
 
-    match ext.as_str() {
-        "jpg" | "jpeg" => {
-            let reader = ::image::ImageReader::new(Cursor::new(&data))
-                .with_guessed_format()
-                .ok()?;
-            let dims = reader.into_dimensions().ok()?;
-            Some(PhotoInfo {
-                jpeg_data: data,
-                width: dims.0,
-                height: dims.1,
-            })
-        }
-        "png" | "webp" | "bmp" => {
-            let img = ::image::load_from_memory(&data).ok()?;
-            let (w, h) = img.dimensions();
-            let rgb = img.to_rgb8();
-            let mut jpeg_buf = Vec::new();
-            let mut cursor = Cursor::new(&mut jpeg_buf);
-            rgb.write_to(&mut cursor, ::image::ImageFormat::Jpeg).ok()?;
-            Some(PhotoInfo {
-                jpeg_data: jpeg_buf,
-                width: w,
-                height: h,
-            })
-        }
-        _ => None,
-    }
-}
-
-struct SlotInRow {
-    photo_idx: usize,
-    slot_w: f32,
-    slot_h: f32,
-}
-
-/// Pack photos into rows using standard 10x15cm slot sizes.
-/// If a row's natural width exceeds the usable width, scale all slots down.
-fn pack_rows(photos: &[PhotoInfo]) -> Vec<Vec<SlotInRow>> {
-    let mut rows: Vec<Vec<SlotInRow>> = Vec::new();
-    let mut current_row: Vec<SlotInRow> = Vec::new();
-    let mut current_width: f32 = 0.0;
-
-    for (idx, photo) in photos.iter().enumerate() {
-        let (sw, sh) = slot_size(photo);
-        let needed = if current_row.is_empty() { sw } else { GAP + sw };
-
-        if current_width + needed > USABLE_W && !current_row.is_empty() {
-            rows.push(current_row);
-            current_row = Vec::new();
-            current_width = 0.0;
-        }
-
-        if !current_row.is_empty() {
-            current_width += GAP;
-        }
-        current_row.push(SlotInRow { photo_idx: idx, slot_w: sw, slot_h: sh });
-        current_width += sw;
+    // Rotate landscape photos 90° clockwise so all photos are portrait
+    if ow > oh {
+        img = img.rotate90();
     }
 
-    if !current_row.is_empty() {
-        rows.push(current_row);
+    let (ow, oh) = img.dimensions();
+
+    // Center-crop to 2:3 ratio (w:h = 2:3)
+    let target_w;
+    let target_h;
+    if ow as f32 / oh as f32 > 2.0 / 3.0 {
+        // Too wide — crop sides
+        target_h = oh;
+        target_w = (oh as f32 * 2.0 / 3.0) as u32;
+    } else {
+        // Too tall — crop top/bottom
+        target_w = ow;
+        target_h = (ow as f32 * 3.0 / 2.0) as u32;
     }
 
-    rows
+    let cx = (ow.saturating_sub(target_w)) / 2;
+    let cy = (oh.saturating_sub(target_h)) / 2;
+    let cropped = img.crop_imm(cx, cy, target_w.min(ow), target_h.min(oh));
+
+    let rgb = cropped.to_rgb8();
+    let (w, h) = rgb.dimensions();
+    let mut jpeg_buf = Vec::new();
+    let mut cursor = Cursor::new(&mut jpeg_buf);
+    rgb.write_to(&mut cursor, ::image::ImageFormat::Jpeg).ok()?;
+
+    Some(PhotoInfo {
+        jpeg_data: jpeg_buf,
+        width: w,
+        height: h,
+    })
 }
 
-/// Generate a PDF with photos at standard 10x15cm sizes on A4 pages.
+fn place_image(layer: &PdfLayerReference, photo: &PhotoInfo, x: f32, y: f32) {
+    let sx = PHOTO_W * MM_TO_PT / photo.width as f32;
+    let sy = PHOTO_H * MM_TO_PT / photo.height as f32;
+
+    let image = Image::from(ImageXObject {
+        width: Px(photo.width as usize),
+        height: Px(photo.height as usize),
+        color_space: ColorSpace::Rgb,
+        bits_per_component: ColorBits::Bit8,
+        interpolate: true,
+        image_data: photo.jpeg_data.clone(),
+        image_filter: Some(ImageFilter::DCT),
+        clipping_bbox: None,
+        smask: None,
+    });
+
+    image.add_to_layer(
+        layer.clone(),
+        ImageTransform {
+            translate_x: Some(Mm(x)),
+            translate_y: Some(Mm(y)),
+            scale_x: Some(sx),
+            scale_y: Some(sy),
+            dpi: Some(72.0),
+            ..Default::default()
+        },
+    );
+}
+
+/// Generate a PDF with all photos in a 2×2 grid on A4 pages.
+/// Landscape photos are rotated to portrait. All photos are cropped to 2:3 ratio.
 /// Returns (exported_count, skipped_count).
-pub fn generate_album_pdf(image_paths: Vec<String>, output_path: &str) -> Result<(usize, usize), String> {
+pub fn generate_album_pdf(
+    image_paths: Vec<String>,
+    output_path: &str,
+) -> Result<(usize, usize), String> {
     let mut photos: Vec<PhotoInfo> = Vec::new();
     let mut skipped = 0usize;
 
@@ -134,117 +129,41 @@ pub fn generate_album_pdf(image_paths: Vec<String>, output_path: &str) -> Result
         return Err("No valid images found to export".to_string());
     }
 
-    let rows = pack_rows(&photos);
-    let doc = PdfDocument::empty("Album Export");
-    let mut row_idx = 0;
-    let mut page_num = 0;
+    // Center the 2-column grid horizontally
+    let grid_w = PHOTO_W * COLS as f32 + GAP * (COLS as f32 - 1.0);
+    let offset_x = MARGIN + (USABLE_W - grid_w) / 2.0;
 
-    while row_idx < rows.len() {
+    let doc = PdfDocument::empty("Album Export");
+    let photos_per_page = 4;
+    let total_pages = (photos.len() + photos_per_page - 1) / photos_per_page;
+
+    for page_num in 0..total_pages {
         let (page, layer_idx) = doc.add_page(
             Mm(PAGE_W),
             Mm(PAGE_H),
             &format!("Page {}", page_num + 1),
         );
         let layer = doc.get_page(page).get_layer(layer_idx);
-        page_num += 1;
 
-        let mut cursor_y = MARGIN; // distance from top edge
+        let start = page_num * photos_per_page;
+        let end = (start + photos_per_page).min(photos.len());
 
-        while row_idx < rows.len() {
-            let row = &rows[row_idx];
+        for (i, pi) in (start..end).enumerate() {
+            let col = i % COLS;
+            let row = i / COLS;
 
-            // Calculate natural row dimensions
-            let natural_width: f32 = row.iter().map(|s| s.slot_w).sum::<f32>()
-                + GAP * (row.len() as f32 - 1.0);
-            let row_height = row.iter().map(|s| s.slot_h).fold(0.0_f32, f32::max);
+            let x = offset_x + col as f32 * (PHOTO_W + GAP);
+            let y = PAGE_H - MARGIN - (row as f32 + 1.0) * PHOTO_H - row as f32 * GAP;
 
-            // Scale factor if row overflows usable width
-            let scale = if natural_width > USABLE_W {
-                USABLE_W / natural_width
-            } else {
-                1.0
-            };
-            let scaled_height = row_height * scale;
-
-            // Check if row fits on current page
-            if cursor_y + scaled_height > MARGIN + USABLE_H {
-                if cursor_y > MARGIN + GAP {
-                    break; // start new page
-                }
-                break;
-            }
-
-            // Center the row horizontally
-            let actual_width = natural_width * scale;
-            let row_offset_x = MARGIN + (USABLE_W - actual_width) / 2.0;
-
-            let mut cursor_x = row_offset_x;
-            for slot in row.iter() {
-                let photo = &photos[slot.photo_idx];
-                let slot_w = slot.slot_w * scale;
-                let slot_h = slot.slot_h * scale;
-
-                // Fit image within slot (contain), maintaining aspect ratio
-                let img_aspect = photo.width as f32 / photo.height as f32;
-                let slot_aspect = slot_w / slot_h;
-                let (render_w, render_h) = if img_aspect >= slot_aspect {
-                    // Image wider than slot — fit to width
-                    (slot_w, slot_w / img_aspect)
-                } else {
-                    // Image taller than slot — fit to height
-                    (slot_h * img_aspect, slot_h)
-                };
-
-                // Center image within slot
-                let offset_x = (slot_w - render_w) / 2.0;
-                let offset_y = (slot_h - render_h) / 2.0;
-
-                let x = cursor_x + offset_x;
-                // printpdf origin is bottom-left
-                let y = PAGE_H - cursor_y - slot_h + offset_y;
-
-                // At dpi=72: 1px = 1pt. scale = target_pt / pixels
-                let sx = render_w * MM_TO_PT / photo.width as f32;
-                let sy = render_h * MM_TO_PT / photo.height as f32;
-
-                let image = Image::from(ImageXObject {
-                    width: Px(photo.width as usize),
-                    height: Px(photo.height as usize),
-                    color_space: ColorSpace::Rgb,
-                    bits_per_component: ColorBits::Bit8,
-                    interpolate: true,
-                    image_data: photo.jpeg_data.clone(),
-                    image_filter: Some(ImageFilter::DCT),
-                    clipping_bbox: None,
-                    smask: None,
-                });
-
-                image.add_to_layer(
-                    layer.clone(),
-                    ImageTransform {
-                        translate_x: Some(Mm(x)),
-                        translate_y: Some(Mm(y)),
-                        scale_x: Some(sx),
-                        scale_y: Some(sy),
-                        dpi: Some(72.0),
-                        ..Default::default()
-                    },
-                );
-
-                cursor_x += slot_w + GAP * scale;
-            }
-
-            row_idx += 1;
-            cursor_y += scaled_height + GAP;
+            place_image(&layer, &photos[pi], x, y);
         }
     }
 
     let exported = photos.len();
-    let file = fs::File::create(output_path)
-        .map_err(|e| format!("Failed to create PDF file: {}", e))?;
+    let file =
+        fs::File::create(output_path).map_err(|e| format!("Failed to create PDF file: {}", e))?;
     let mut writer = BufWriter::new(file);
-    doc.save(&mut writer)
-        .map_err(|e| format!("Failed to save PDF: {}", e))?;
+    doc.save(&mut writer).map_err(|e| format!("Failed to save PDF: {}", e))?;
 
     Ok((exported, skipped))
 }
