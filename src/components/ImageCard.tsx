@@ -1,11 +1,15 @@
 import { useTranslation } from "react-i18next";
 import { MessageCircle, Play } from "lucide-react";
-import type { ImageEntry } from "@/data/types";
+import type { ImageEntry, AlbumInfo } from "@/data/types";
+import AlbumContextMenu from "./AlbumContextMenu";
+import AlbumPickerButton from "./AlbumPickerButton";
 
 interface ImageCardProps {
   image: ImageEntry;
   index: number;
   onClick: () => void;
+  albums: AlbumInfo[];
+  activeAlbumId: number | null;
 }
 
 const formatTime = (ts: number) => {
@@ -13,10 +17,16 @@ const formatTime = (ts: number) => {
   return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 };
 
-const ImageCard = ({ image, index, onClick }: ImageCardProps) => {
+const ImageCard = ({ image, index, onClick, albums, activeAlbumId }: ImageCardProps) => {
   const { t } = useTranslation();
 
   return (
+    <AlbumContextMenu
+      mediaId={image.id}
+      albums={albums}
+      activeAlbumId={activeAlbumId}
+      onShowContext={onClick}
+    >
     <div
       className="group relative overflow-hidden rounded-md cursor-pointer opacity-0 animate-fade-in break-inside-avoid mb-3"
       style={{ animationDelay: `${index * 40}ms` }}
@@ -48,12 +58,21 @@ const ImageCard = ({ image, index, onClick }: ImageCardProps) => {
         </div>
       )}
 
+      {/* Album picker button */}
+      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <AlbumPickerButton
+          mediaId={image.id}
+          albums={albums}
+          className="flex items-center justify-center h-7 w-7 rounded-full bg-background/70 backdrop-blur-sm text-foreground hover:bg-background/90 transition-colors"
+        />
+      </div>
+
       {/* Hover overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none flex flex-col justify-end p-4">
         <p className="text-[13px] font-medium text-foreground">{image.sender}</p>
         <p className="text-[11px] text-muted-foreground mt-0.5">{formatTime(image.timestamp)}</p>
         <button
-          className="flex items-center gap-1.5 mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
+          className="pointer-events-auto flex items-center gap-1.5 mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             onClick();
@@ -64,6 +83,7 @@ const ImageCard = ({ image, index, onClick }: ImageCardProps) => {
         </button>
       </div>
     </div>
+    </AlbumContextMenu>
   );
 };
 

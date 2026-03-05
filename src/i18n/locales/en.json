@@ -16,7 +16,25 @@
     "allTypes": "All Types",
     "images": "images",
     "videos": "videos",
-    "gifs": "gifs"
+    "gifs": "gifs",
+    "albums": "Albums"
+  },
+  "albums": {
+    "addToAlbum": "Add to Album",
+    "removeFromAlbum": "Remove from Album",
+    "createNew": "Create New Album...",
+    "createTitle": "Create Album",
+    "namePlaceholder": "Album name",
+    "create": "Create",
+    "rename": "Rename",
+    "delete": "Delete",
+    "deleteConfirm": "Delete album?",
+    "deleteConfirmDesc": "This will remove the album. The photos inside will not be deleted.",
+    "cancel": "Cancel",
+    "color": "Color",
+    "changeColor": "Change Color",
+    "empty": "No albums yet. Right-click a photo to create one.",
+    "emptyAlbum": "This album is empty"
   },
   "topbar": {
     "search": "Search by date, sender, or context...",

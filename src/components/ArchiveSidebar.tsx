@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronRight,
@@ -11,9 +12,14 @@ import {
   Calendar,
   X,
   Search,
+  FolderHeart,
+  Pencil,
+  Trash2,
+  Palette,
 } from "lucide-react";
-import type { ChatSource, SenderInfo, FileTypeFilter } from "@/data/types";
+import type { ChatSource, SenderInfo, FileTypeFilter, AlbumInfo } from "@/data/types";
 import type { TimelineEntry } from "@/lib/api";
+import * as api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +40,24 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from "@/components/ui/context-menu";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import ColorPicker from "@/components/ColorPicker";
 
 interface ArchiveSidebarProps {
   conversations: ChatSource[];
@@ -47,6 +71,9 @@ interface ArchiveSidebarProps {
   selectedMonth: string | null;
   onSelectMonth: (month: string | null) => void;
   timelineData: TimelineEntry[];
+  albums: AlbumInfo[];
+  selectedAlbumId: number | null;
+  onSelectAlbum: (id: number | null) => void;
 }
 
 const TOP_N = 5;
@@ -325,8 +352,43 @@ const ArchiveSidebar = ({
   selectedMonth,
   onSelectMonth,
   timelineData,
+  albums,
+  selectedAlbumId,
+  onSelectAlbum,
 }: ArchiveSidebarProps) => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [renamingAlbumId, setRenamingAlbumId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteAlbumId, setDeleteAlbumId] = useState<number | null>(null);
+  const [colorPickerAlbumId, setColorPickerAlbumId] = useState<number | null>(null);
+
+  const renameAlbum = useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) =>
+      api.renameAlbum(id, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["albums"] });
+      setRenamingAlbumId(null);
+    },
+  });
+
+  const updateAlbumColor = useMutation({
+    mutationFn: ({ id, color }: { id: number; color: string }) =>
+      api.updateAlbumColor(id, color),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["albums"] });
+    },
+  });
+
+  const deleteAlbum = useMutation({
+    mutationFn: (id: number) => api.deleteAlbum(id),
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ["albums"] });
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+      if (selectedAlbumId === deletedId) onSelectAlbum(null);
+      setDeleteAlbumId(null);
+    },
+  });
 
   // Sort all conversations by mediaCount descending
   const allSorted = useMemo(
@@ -375,11 +437,16 @@ const ArchiveSidebar = ({
   const maxYearCount = Math.max(...yearGroups.map((y) => y.totalCount), 1);
 
   // Active filters
+  const selectedAlbum = selectedAlbumId !== null
+    ? albums.find((a) => a.id === selectedAlbumId) ?? null
+    : null;
+
   const hasActiveFilters =
     selectedChat !== null ||
     selectedSender !== null ||
     fileType !== "all" ||
-    selectedMonth !== null;
+    selectedMonth !== null ||
+    selectedAlbumId !== null;
 
   const selectedMonthLabel = selectedMonth
     ? (timelineData.find((t) => t.month_key === selectedMonth)?.label ??
@@ -457,6 +524,24 @@ const ArchiveSidebar = ({
               </button>
             </Badge>
           )}
+          {selectedAlbum && (
+            <Badge
+              variant="secondary"
+              className="text-[11px] px-2 py-0.5 gap-1"
+            >
+              <span
+                className="h-2 w-2 rounded-full shrink-0"
+                style={{ backgroundColor: selectedAlbum.color }}
+              />
+              {selectedAlbum.name}
+              <button
+                onClick={() => onSelectAlbum(null)}
+                className="ml-0.5 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
         </div>
       )}
 
@@ -490,6 +575,86 @@ const ArchiveSidebar = ({
               browseLabel={t("sidebar.browseAll", { count: allSorted.length })}
               noResultsLabel={t("sidebar.noResults")}
             />
+          )}
+        </Section>
+
+        {/* Albums */}
+        <Section title={t("sidebar.albums")} icon={FolderHeart}>
+          {albums.length === 0 ? (
+            <p className="px-3 py-2 text-[11px] text-muted-foreground">
+              {t("albums.empty")}
+            </p>
+          ) : (
+            albums.map((album) => (
+              <ContextMenu key={album.id}>
+                <ContextMenuTrigger asChild>
+                  {renamingAlbumId === album.id ? (
+                    <form
+                      className="px-3 py-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const trimmed = renameValue.trim();
+                        if (trimmed) renameAlbum.mutate({ id: album.id, name: trimmed });
+                      }}
+                    >
+                      <Input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onBlur={() => setRenamingAlbumId(null)}
+                        onKeyDown={(e) => { if (e.key === "Escape") setRenamingAlbumId(null); }}
+                        className="h-7 text-[13px]"
+                        autoFocus
+                      />
+                    </form>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        onSelectAlbum(selectedAlbumId === album.id ? null : album.id)
+                      }
+                      className={cn(
+                        "flex items-center gap-2 w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
+                        selectedAlbumId === album.id
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                      )}
+                    >
+                      <span
+                        className="h-3 w-3 rounded-full shrink-0"
+                        style={{ backgroundColor: album.color }}
+                      />
+                      <span className="truncate flex-1 text-left">{album.name}</span>
+                      <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
+                        {album.mediaCount}
+                      </span>
+                    </button>
+                  )}
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem
+                    onSelect={() => {
+                      setRenamingAlbumId(album.id);
+                      setRenameValue(album.name);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    {t("albums.rename")}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onSelect={() => setColorPickerAlbumId(album.id)}
+                  >
+                    <Palette className="h-4 w-4 mr-2" />
+                    {t("albums.changeColor")}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onSelect={() => setDeleteAlbumId(album.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("albums.delete")}
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            ))
           )}
         </Section>
 
@@ -571,6 +736,54 @@ const ArchiveSidebar = ({
           </div>
         </Section>
       </div>
+
+      <AlertDialog
+        open={deleteAlbumId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteAlbumId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("albums.deleteConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("albums.deleteConfirmDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("albums.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (deleteAlbumId !== null) deleteAlbum.mutate(deleteAlbumId); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("albums.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {colorPickerAlbumId !== null && (() => {
+        const album = albums.find((a) => a.id === colorPickerAlbumId);
+        if (!album) return null;
+        return (
+          <Popover
+            open={true}
+            onOpenChange={(open) => { if (!open) setColorPickerAlbumId(null); }}
+          >
+            <PopoverTrigger asChild>
+              <span className="fixed top-1/2 left-60 z-50" />
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="start" side="right">
+              <p className="text-sm font-medium mb-2">{t("albums.changeColor")}</p>
+              <ColorPicker
+                value={album.color}
+                onChange={(color) => {
+                  updateAlbumColor.mutate({ id: colorPickerAlbumId, color });
+                  setColorPickerAlbumId(null);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        );
+      })()}
     </aside>
   );
 };

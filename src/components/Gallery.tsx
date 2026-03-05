@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { ImageEntry, ViewMode } from "@/data/types";
+import type { ImageEntry, ViewMode, AlbumInfo } from "@/data/types";
 import ImageCard from "./ImageCard";
 import ImageListRow from "./ImageListRow";
 
@@ -7,6 +7,8 @@ interface GalleryProps {
   images: ImageEntry[];
   view: ViewMode;
   onImageClick: (image: ImageEntry) => void;
+  albums: AlbumInfo[];
+  activeAlbumId: number | null;
 }
 
 const formatMonthYear = (ts: number) => {
@@ -14,7 +16,7 @@ const formatMonthYear = (ts: number) => {
   return d.toLocaleString("en-US", { month: "long", year: "numeric" });
 };
 
-const Gallery = ({ images, view, onImageClick }: GalleryProps) => {
+const Gallery = ({ images, view, onImageClick, albums, activeAlbumId }: GalleryProps) => {
   const { t } = useTranslation();
 
   if (images.length === 0) {
@@ -55,6 +57,8 @@ const Gallery = ({ images, view, onImageClick }: GalleryProps) => {
                     image={img}
                     index={idx}
                     onClick={() => onImageClick(img)}
+                    albums={albums}
+                    activeAlbumId={activeAlbumId}
                   />
                 );
               })}
@@ -69,6 +73,8 @@ const Gallery = ({ images, view, onImageClick }: GalleryProps) => {
                     image={img}
                     index={idx}
                     onClick={() => onImageClick(img)}
+                    albums={albums}
+                    activeAlbumId={activeAlbumId}
                   />
                 );
               })}

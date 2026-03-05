@@ -65,6 +65,15 @@ pub struct SourceInfo {
     pub media_count: i64,
 }
 
+#[derive(Debug, Serialize)]
+pub struct AlbumInfo {
+    pub id: i64,
+    pub name: String,
+    pub media_count: i64,
+    pub color: String,
+    pub created_at: i64,
+}
+
 #[derive(Debug, serde::Deserialize)]
 pub struct MediaFilters {
     pub conversation_id: Option<i64>,
@@ -72,6 +81,7 @@ pub struct MediaFilters {
     pub file_type: Option<String>,
     pub month: Option<String>,
     pub search: Option<String>,
+    pub album_id: Option<i64>,
     pub sort: String,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -175,6 +185,10 @@ pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaI
         // month is in "YYYY-MM" format
         sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
         params.push(Box::new(month.clone()));
+    }
+    if let Some(aid) = filters.album_id {
+        sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
+        params.push(Box::new(aid));
     }
     if let Some(ref search) = filters.search {
         if !search.is_empty() {
@@ -357,6 +371,53 @@ pub fn get_sources(conn: &Connection) -> Result<Vec<SourceInfo>, String> {
                 media_count: row.get(3)?,
             })
         })
+        .map_err(|e| e.to_string())?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(result)
+}
+
+pub fn get_albums(conn: &Connection) -> Result<Vec<AlbumInfo>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT a.id, a.name, COUNT(am.media_id) as media_count,
+                    a.color, a.created_at
+             FROM albums a
+             LEFT JOIN album_media am ON am.album_id = a.id
+             GROUP BY a.id
+             ORDER BY a.created_at DESC",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(AlbumInfo {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                media_count: row.get(2)?,
+                color: row.get(3)?,
+                created_at: row.get(4)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(result)
+}
+
+pub fn get_media_albums(conn: &Connection, media_id: i64) -> Result<Vec<i64>, String> {
+    let mut stmt = conn
+        .prepare("SELECT album_id FROM album_media WHERE media_id = ?1")
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map(rusqlite::params![media_id], |row| row.get(0))
         .map_err(|e| e.to_string())?;
 
     let mut result = Vec::new();

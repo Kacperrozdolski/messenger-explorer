@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-const CURRENT_SCHEMA_VERSION: i32 = 2;
+const CURRENT_SCHEMA_VERSION: i32 = 4;
 
 /// Initialize the database schema. Creates tables if they don't exist.
 /// Handles migration from old schema versions by recreating tables.
@@ -16,7 +16,7 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         .query_row("SELECT version FROM schema_version", [], |row| row.get(0))
         .unwrap_or(0);
 
-    if version < CURRENT_SCHEMA_VERSION {
+    if version < 2 {
         // Drop old tables if they exist (data is imported, not user-generated)
         conn.execute_batch(
             "
@@ -35,10 +35,28 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
                 version INTEGER NOT NULL
             );"
         )?;
-        conn.execute(
-            "INSERT INTO schema_version (version) VALUES (?1)",
-            rusqlite::params![CURRENT_SCHEMA_VERSION],
+    }
+
+    if version >= 3 && version < 4 {
+        // v3 -> v4: add color column to albums
+        conn.execute_batch(
+            "ALTER TABLE albums ADD COLUMN color TEXT NOT NULL DEFAULT '#60a5fa';"
         )?;
+    }
+
+    if version < CURRENT_SCHEMA_VERSION {
+        // Update version
+        if version == 0 {
+            conn.execute(
+                "INSERT INTO schema_version (version) VALUES (?1)",
+                rusqlite::params![CURRENT_SCHEMA_VERSION],
+            )?;
+        } else {
+            conn.execute(
+                "UPDATE schema_version SET version = ?1",
+                rusqlite::params![CURRENT_SCHEMA_VERSION],
+            )?;
+        }
     }
 
     conn.execute_batch(
@@ -92,6 +110,22 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         CREATE INDEX IF NOT EXISTS idx_media_file_type ON media(file_type);
         CREATE INDEX IF NOT EXISTS idx_media_timestamp ON media(timestamp_ms);
         CREATE INDEX IF NOT EXISTS idx_context_media ON context_messages(media_id);
+
+        CREATE TABLE IF NOT EXISTS albums (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL,
+            color      TEXT NOT NULL DEFAULT '#60a5fa',
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
+        );
+
+        CREATE TABLE IF NOT EXISTS album_media (
+            album_id  INTEGER NOT NULL REFERENCES albums(id),
+            media_id  INTEGER NOT NULL REFERENCES media(id),
+            added_at  INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+            PRIMARY KEY (album_id, media_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_album_media_album ON album_media(album_id);
+        CREATE INDEX IF NOT EXISTS idx_album_media_media ON album_media(media_id);
         ",
     )?;
     Ok(())
@@ -101,6 +135,8 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
 pub fn clear_all(conn: &Connection) -> Result<(), rusqlite::Error> {
     conn.execute_batch(
         "
+        DELETE FROM album_media;
+        DELETE FROM albums;
         DELETE FROM context_messages;
         DELETE FROM media;
         DELETE FROM conversation_participants;
@@ -143,6 +179,13 @@ pub fn clear_source(conn: &Connection, source_path: &str) -> Result<(), rusqlite
     conn.execute(
         "DELETE FROM conversations WHERE source_path = ?1",
         rusqlite::params![source_path],
+    )?;
+
+    // Clean up orphaned album_media rows (media that no longer exists)
+    conn.execute_batch(
+        "DELETE FROM album_media WHERE media_id NOT IN (
+            SELECT id FROM media
+        )"
     )?;
 
     // Clean up orphaned senders (senders with no media, no participants, and no context messages)

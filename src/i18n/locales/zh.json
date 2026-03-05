@@ -16,7 +16,25 @@
     "allTypes": "所有类型",
     "images": "图片",
     "videos": "视频",
-    "gifs": "动图"
+    "gifs": "动图",
+    "albums": "相册"
+  },
+  "albums": {
+    "addToAlbum": "添加到相册",
+    "removeFromAlbum": "从相册移除",
+    "createNew": "创建新相册...",
+    "createTitle": "创建相册",
+    "namePlaceholder": "相册名称",
+    "create": "创建",
+    "rename": "重命名",
+    "delete": "删除",
+    "deleteConfirm": "删除相册？",
+    "deleteConfirmDesc": "这将删除相册。相册中的照片不会被删除。",
+    "cancel": "取消",
+    "color": "颜色",
+    "changeColor": "更改颜色",
+    "empty": "暂无相册。右键点击照片以创建相册。",
+    "emptyAlbum": "此相册为空"
   },
   "topbar": {
     "search": "按日期、发送者或上下文搜索...",

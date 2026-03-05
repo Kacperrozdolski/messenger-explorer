@@ -16,7 +16,25 @@
     "allTypes": "Todos os tipos",
     "images": "imagens",
     "videos": "vídeos",
-    "gifs": "gifs"
+    "gifs": "gifs",
+    "albums": "Álbuns"
+  },
+  "albums": {
+    "addToAlbum": "Adicionar ao álbum",
+    "removeFromAlbum": "Remover do álbum",
+    "createNew": "Criar novo álbum...",
+    "createTitle": "Criar álbum",
+    "namePlaceholder": "Nome do álbum",
+    "create": "Criar",
+    "rename": "Renomear",
+    "delete": "Excluir",
+    "deleteConfirm": "Excluir álbum?",
+    "deleteConfirmDesc": "O álbum será removido. As fotos dentro dele não serão excluídas.",
+    "cancel": "Cancelar",
+    "color": "Cor",
+    "changeColor": "Alterar cor",
+    "empty": "Nenhum álbum ainda. Clique com o botão direito em uma foto para criar um.",
+    "emptyAlbum": "Este álbum está vazio"
   },
   "topbar": {
     "search": "Buscar por data, remetente ou contexto...",

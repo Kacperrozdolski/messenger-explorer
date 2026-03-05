@@ -16,7 +16,25 @@
     "allTypes": "すべてのタイプ",
     "images": "画像",
     "videos": "動画",
-    "gifs": "GIF"
+    "gifs": "GIF",
+    "albums": "アルバム"
+  },
+  "albums": {
+    "addToAlbum": "アルバムに追加",
+    "removeFromAlbum": "アルバムから削除",
+    "createNew": "新しいアルバムを作成...",
+    "createTitle": "アルバムを作成",
+    "namePlaceholder": "アルバム名",
+    "create": "作成",
+    "rename": "名前を変更",
+    "delete": "削除",
+    "deleteConfirm": "アルバムを削除しますか？",
+    "deleteConfirmDesc": "アルバムが削除されます。中の写真は削除されません。",
+    "cancel": "キャンセル",
+    "color": "カラー",
+    "changeColor": "色を変更",
+    "empty": "アルバムがありません。写真を右クリックして作成してください。",
+    "emptyAlbum": "このアルバムは空です"
   },
   "topbar": {
     "search": "日付、送信者、コンテキストで検索...",

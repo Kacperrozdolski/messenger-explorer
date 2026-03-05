@@ -16,7 +16,25 @@
     "allTypes": "Alle Typen",
     "images": "Bilder",
     "videos": "Videos",
-    "gifs": "GIFs"
+    "gifs": "GIFs",
+    "albums": "Alben"
+  },
+  "albums": {
+    "addToAlbum": "Zum Album hinzufügen",
+    "removeFromAlbum": "Aus Album entfernen",
+    "createNew": "Neues Album erstellen...",
+    "createTitle": "Album erstellen",
+    "namePlaceholder": "Albumname",
+    "create": "Erstellen",
+    "rename": "Umbenennen",
+    "delete": "Löschen",
+    "deleteConfirm": "Album löschen?",
+    "deleteConfirmDesc": "Das Album wird gelöscht. Die enthaltenen Fotos werden nicht gelöscht.",
+    "cancel": "Abbrechen",
+    "color": "Farbe",
+    "changeColor": "Farbe ändern",
+    "empty": "Noch keine Alben. Rechtsklicken Sie auf ein Foto, um eines zu erstellen.",
+    "emptyAlbum": "Dieses Album ist leer"
   },
   "topbar": {
     "search": "Nach Datum, Absender oder Kontext suchen...",

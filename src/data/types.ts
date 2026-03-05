@@ -30,6 +30,21 @@ export interface SenderInfo {
   mediaCount: number;
 }
 
+export interface AlbumInfo {
+  id: number;
+  name: string;
+  mediaCount: number;
+  color: string;
+  createdAt: number;
+}
+
+export const ALBUM_COLORS = [
+  "#f87171", "#fb923c", "#fbbf24", "#a3e635",
+  "#34d399", "#22d3ee", "#60a5fa", "#a78bfa",
+  "#f472b6", "#e879f9", "#94a3b8", "#fca5a5",
+  "#fdba74", "#fde047", "#86efac", "#67e8f9",
+] as const;
+
 export type SortOption = "date-desc" | "date-asc" | "sender";
 export type ViewMode = "grid" | "list";
 export type FileTypeFilter = "all" | "image" | "video" | "gif";

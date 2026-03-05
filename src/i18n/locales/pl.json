@@ -16,7 +16,25 @@
     "allTypes": "Wszystkie typy",
     "images": "zdjęcia",
     "videos": "filmy",
-    "gifs": "gify"
+    "gifs": "gify",
+    "albums": "Albumy"
+  },
+  "albums": {
+    "addToAlbum": "Dodaj do albumu",
+    "removeFromAlbum": "Usuń z albumu",
+    "createNew": "Utwórz nowy album...",
+    "createTitle": "Utwórz album",
+    "namePlaceholder": "Nazwa albumu",
+    "create": "Utwórz",
+    "rename": "Zmień nazwę",
+    "delete": "Usuń",
+    "deleteConfirm": "Usunąć album?",
+    "deleteConfirmDesc": "Spowoduje to usunięcie albumu. Zdjęcia w nim zawarte nie zostaną usunięte.",
+    "cancel": "Anuluj",
+    "color": "Kolor",
+    "changeColor": "Zmień kolor",
+    "empty": "Brak albumów. Kliknij prawym przyciskiem myszy na zdjęcie, aby utworzyć album.",
+    "emptyAlbum": "Ten album jest pusty"
   },
   "topbar": {
     "search": "Szukaj wg daty, nadawcy lub kontekstu...",

@@ -26,6 +26,7 @@ const Index = () => {
   const [selectedSenderId, setSelectedSenderId] = useState<number | null>(null);
   const [fileType, setFileType] = useState<FileTypeFilter>("all");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<ImageEntry | null>(null);
 
   // Debounce search
@@ -61,6 +62,12 @@ const Index = () => {
     enabled: hasData,
   });
 
+  const { data: albums = [] } = useQuery({
+    queryKey: ["albums"],
+    queryFn: api.getAlbums,
+    enabled: hasData,
+  });
+
   // Main media query
   const { data: images = [] } = useQuery({
     queryKey: [
@@ -71,6 +78,7 @@ const Index = () => {
       selectedMonth,
       debouncedSearch,
       sort,
+      selectedAlbumId,
     ],
     queryFn: () =>
       api.getMedia({
@@ -79,6 +87,7 @@ const Index = () => {
         fileType: fileType === "all" ? undefined : fileType,
         month: selectedMonth ?? undefined,
         search: debouncedSearch || undefined,
+        albumId: selectedAlbumId ?? undefined,
         sort,
       }),
     enabled: hasData,
@@ -114,6 +123,9 @@ const Index = () => {
         selectedMonth={selectedMonth}
         onSelectMonth={setSelectedMonth}
         timelineData={timeline}
+        albums={albums}
+        selectedAlbumId={selectedAlbumId}
+        onSelectAlbum={setSelectedAlbumId}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -128,7 +140,7 @@ const Index = () => {
         />
 
         <div className="flex-1 overflow-y-auto">
-          <Gallery images={images} view={view} onImageClick={setModalImage} />
+          <Gallery images={images} view={view} onImageClick={setModalImage} albums={albums} activeAlbumId={selectedAlbumId} />
         </div>
       </div>
 

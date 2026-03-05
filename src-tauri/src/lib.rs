@@ -7,10 +7,10 @@ use rusqlite::Connection;
 use tauri::Manager;
 
 use db::queries::{
-    self, ConversationInfo, ImportStatus, MediaContext, MediaFilters, MediaItem, SenderInfo,
-    SourceInfo, TimelineEntry,
+    self, AlbumInfo, ConversationInfo, ImportStatus, MediaContext, MediaFilters, MediaItem,
+    SenderInfo, SourceInfo, TimelineEntry,
 };
-use db::writer::ImportStats;
+use db::writer::{self as db_writer, ImportStats};
 
 /// Managed state: holds the path to the SQLite database.
 struct DbState {
@@ -230,6 +230,54 @@ fn cmd_clear_database(state: tauri::State<'_, DbState>) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn cmd_get_albums(state: tauri::State<'_, DbState>) -> Result<Vec<AlbumInfo>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_albums(&conn)
+}
+
+#[tauri::command]
+fn cmd_create_album(state: tauri::State<'_, DbState>, name: String, color: String) -> Result<i64, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db_writer::create_album(&conn, &name, &color)
+}
+
+#[tauri::command]
+fn cmd_rename_album(state: tauri::State<'_, DbState>, album_id: i64, name: String) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db_writer::rename_album(&conn, album_id, &name)
+}
+
+#[tauri::command]
+fn cmd_delete_album(state: tauri::State<'_, DbState>, album_id: i64) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db_writer::delete_album(&conn, album_id)
+}
+
+#[tauri::command]
+fn cmd_update_album_color(state: tauri::State<'_, DbState>, album_id: i64, color: String) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db_writer::update_album_color(&conn, album_id, &color)
+}
+
+#[tauri::command]
+fn cmd_add_media_to_album(state: tauri::State<'_, DbState>, album_id: i64, media_id: i64) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db_writer::add_media_to_album(&conn, album_id, media_id)
+}
+
+#[tauri::command]
+fn cmd_remove_media_from_album(state: tauri::State<'_, DbState>, album_id: i64, media_id: i64) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db_writer::remove_media_from_album(&conn, album_id, media_id)
+}
+
+#[tauri::command]
+fn cmd_get_media_albums(state: tauri::State<'_, DbState>, media_id: i64) -> Result<Vec<i64>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_media_albums(&conn, media_id)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -312,6 +360,14 @@ pub fn run() {
             cmd_get_timeline,
             cmd_get_storage_info,
             cmd_clear_database,
+            cmd_get_albums,
+            cmd_create_album,
+            cmd_rename_album,
+            cmd_delete_album,
+            cmd_update_album_color,
+            cmd_add_media_to_album,
+            cmd_remove_media_from_album,
+            cmd_get_media_albums,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

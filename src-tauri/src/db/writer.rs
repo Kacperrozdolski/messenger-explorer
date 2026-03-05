@@ -136,3 +136,62 @@ pub struct ImportStats {
     pub media: usize,
     pub senders: usize,
 }
+
+pub fn create_album(conn: &Connection, name: &str, color: &str) -> Result<i64, String> {
+    conn.execute(
+        "INSERT INTO albums (name, color) VALUES (?1, ?2)",
+        rusqlite::params![name, color],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn rename_album(conn: &Connection, album_id: i64, name: &str) -> Result<(), String> {
+    conn.execute(
+        "UPDATE albums SET name = ?1 WHERE id = ?2",
+        rusqlite::params![name, album_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn update_album_color(conn: &Connection, album_id: i64, color: &str) -> Result<(), String> {
+    conn.execute(
+        "UPDATE albums SET color = ?1 WHERE id = ?2",
+        rusqlite::params![color, album_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn delete_album(conn: &Connection, album_id: i64) -> Result<(), String> {
+    conn.execute(
+        "DELETE FROM album_media WHERE album_id = ?1",
+        rusqlite::params![album_id],
+    )
+    .map_err(|e| e.to_string())?;
+    conn.execute(
+        "DELETE FROM albums WHERE id = ?1",
+        rusqlite::params![album_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn add_media_to_album(conn: &Connection, album_id: i64, media_id: i64) -> Result<(), String> {
+    conn.execute(
+        "INSERT OR IGNORE INTO album_media (album_id, media_id) VALUES (?1, ?2)",
+        rusqlite::params![album_id, media_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn remove_media_from_album(conn: &Connection, album_id: i64, media_id: i64) -> Result<(), String> {
+    conn.execute(
+        "DELETE FROM album_media WHERE album_id = ?1 AND media_id = ?2",
+        rusqlite::params![album_id, media_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}

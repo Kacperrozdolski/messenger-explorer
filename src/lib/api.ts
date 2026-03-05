@@ -1,5 +1,5 @@
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import type { ChatSource, SenderInfo, ImageEntry, ChatMessage } from "@/data/types";
+import type { ChatSource, SenderInfo, ImageEntry, ChatMessage, AlbumInfo } from "@/data/types";
 
 export interface ImportStatus {
   has_data: boolean;
@@ -93,6 +93,7 @@ export async function getMedia(filters: {
   fileType?: string;
   month?: string;
   search?: string;
+  albumId?: number;
   sort: string;
   limit?: number;
   offset?: number;
@@ -116,6 +117,7 @@ export async function getMedia(filters: {
       file_type: filters.fileType ?? null,
       month: filters.month ?? null,
       search: filters.search ?? null,
+      album_id: filters.albumId ?? null,
       sort: filters.sort,
       limit: filters.limit ?? null,
       offset: filters.offset ?? null,
@@ -172,4 +174,51 @@ export async function getStorageInfo(): Promise<StorageInfo> {
 
 export async function clearDatabase(): Promise<void> {
   return invoke("cmd_clear_database");
+}
+
+export async function getAlbums(): Promise<AlbumInfo[]> {
+  const data = await invoke<
+    {
+      id: number;
+      name: string;
+      media_count: number;
+      color: string;
+      created_at: number;
+    }[]
+  >("cmd_get_albums");
+  return data.map((a) => ({
+    id: a.id,
+    name: a.name,
+    mediaCount: a.media_count,
+    color: a.color,
+    createdAt: a.created_at,
+  }));
+}
+
+export async function createAlbum(name: string, color: string): Promise<number> {
+  return invoke("cmd_create_album", { name, color });
+}
+
+export async function renameAlbum(albumId: number, name: string): Promise<void> {
+  return invoke("cmd_rename_album", { albumId, name });
+}
+
+export async function updateAlbumColor(albumId: number, color: string): Promise<void> {
+  return invoke("cmd_update_album_color", { albumId, color });
+}
+
+export async function deleteAlbum(albumId: number): Promise<void> {
+  return invoke("cmd_delete_album", { albumId });
+}
+
+export async function addMediaToAlbum(albumId: number, mediaId: number): Promise<void> {
+  return invoke("cmd_add_media_to_album", { albumId, mediaId });
+}
+
+export async function removeMediaFromAlbum(albumId: number, mediaId: number): Promise<void> {
+  return invoke("cmd_remove_media_from_album", { albumId, mediaId });
+}
+
+export async function getMediaAlbums(mediaId: number): Promise<number[]> {
+  return invoke("cmd_get_media_albums", { mediaId });
 }
