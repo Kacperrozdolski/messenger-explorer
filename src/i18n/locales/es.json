@@ -103,8 +103,10 @@
     "openGuide": "¿Cómo obtengo mis datos?",
     "close": "Entendido",
     "intro": "Sigue los pasos a continuación según tu plataforma para descargar tu exportación de datos.",
-    "tabFacebook": "Desde Facebook",
-    "tabMessenger": "Desde Messenger",
+    "tabFacebook": "Facebook",
+    "tabMessenger": "Messenger",
+    "tabInstagram": "Instagram",
+    "tabSnapchat": "Snapchat",
     "fbStep1title": "Abre la configuración de Facebook",
     "fbStep1": "Ve a Facebook, haz clic en tu foto de perfil en la esquina superior derecha y selecciona \"Configuración y privacidad\" > \"Configuración\".",
     "fbStep2title": "Ve a tu información",
@@ -123,6 +125,18 @@
     "step4": "Selecciona \"Descargar en el dispositivo\". Establece el formato en JSON (importante — no HTML), elige el rango de fechas y la calidad de los medios que prefieras. Luego toca \"Crear archivos\".",
     "step5title": "Descarga y extrae",
     "step5": "Recibirás una notificación cuando tu exportación esté lista (puede tardar de minutos a horas). Descarga el archivo ZIP, extráelo y luego apunta esta aplicación a la carpeta extraída.",
-    "tip": "Consejo: Elige el formato JSON, no HTML. Esta aplicación necesita el formato JSON para leer tus mensajes y medios."
+    "tip": "Consejo: Elige el formato JSON, no HTML. Esta aplicación necesita el formato JSON para leer tus mensajes y medios.",
+    "igStep1title": "Abre la configuración de Instagram",
+    "igStep1": "Abre Instagram, toca tu foto de perfil, luego toca el menú (≡) y selecciona \"Configuración y privacidad\".",
+    "igStep2title": "Ve al Centro de cuentas",
+    "igStep2": "Toca \"Centro de cuentas\", luego \"Tu información y permisos\" y selecciona \"Descargar tu información\".",
+    "igDirectLink": "Abrir el Centro de cuentas de Instagram directamente",
+    "snapStep1title": "Ve a Mis datos",
+    "snapStep1": "Visita accounts.snapchat.com e inicia sesión, o abre Snapchat y ve a Configuración > \"Mis datos\".",
+    "snapStep2title": "Selecciona tus datos",
+    "snapStep2": "Elige qué incluir — Historial de chat, Recuerdos y cualquier otro dato que desees. Desplázate hacia abajo y haz clic en \"Enviar solicitud\".",
+    "snapStep3title": "Descarga tus datos",
+    "snapStep3": "Recibirás un correo electrónico cuando tus datos estén listos. Haz clic en el enlace del correo para descargar el archivo ZIP. Extráelo y apunta esta aplicación a la carpeta extraída.",
+    "snapDirectLink": "Abrir la página Mis datos de Snapchat directamente"
   }
 }

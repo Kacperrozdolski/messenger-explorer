@@ -103,8 +103,10 @@
     "openGuide": "How do I get my data?",
     "close": "Got it",
     "intro": "Follow the steps below for your platform to download your data export.",
-    "tabFacebook": "From Facebook",
-    "tabMessenger": "From Messenger",
+    "tabFacebook": "Facebook",
+    "tabMessenger": "Messenger",
+    "tabInstagram": "Instagram",
+    "tabSnapchat": "Snapchat",
     "fbStep1title": "Open Facebook Settings",
     "fbStep1": "Go to Facebook, click your profile picture in the top-right, then select \"Settings & privacy\" > \"Settings\".",
     "fbStep2title": "Go to Your Information",
@@ -123,6 +125,18 @@
     "step4": "Select \"Download to device\". Set the format to JSON (important — not HTML), pick your preferred date range and media quality. Then tap \"Create files\".",
     "step5title": "Download & Extract",
     "step5": "You will be notified when your export is ready (can take minutes to hours). Download the ZIP file, extract it, then point this app at the extracted folder.",
-    "tip": "Tip: Choose JSON format, not HTML. This app requires the JSON format to parse your messages and media."
+    "tip": "Tip: Choose JSON format, not HTML. This app requires the JSON format to parse your messages and media.",
+    "igStep1title": "Open Instagram Settings",
+    "igStep1": "Open Instagram, tap your profile picture, then tap the menu (≡) and select \"Settings and privacy\".",
+    "igStep2title": "Go to Accounts Center",
+    "igStep2": "Tap \"Accounts Center\", then \"Your information and permissions\", and select \"Download your information\".",
+    "igDirectLink": "Open Instagram Accounts Center directly",
+    "snapStep1title": "Go to My Data",
+    "snapStep1": "Visit accounts.snapchat.com and log in, or open Snapchat and go to Settings > \"My Data\".",
+    "snapStep2title": "Select your data",
+    "snapStep2": "Choose what to include — Chat History, Memories, and any other data you want. Scroll down and click \"Submit Request\".",
+    "snapStep3title": "Download your data",
+    "snapStep3": "You'll receive an email when your data is ready. Click the link in the email to download the ZIP file. Extract it and point this app at the extracted folder.",
+    "snapDirectLink": "Open Snapchat My Data page directly"
   }
 }

@@ -103,8 +103,10 @@
     "openGuide": "如何获取我的数据？",
     "close": "知道了",
     "intro": "请根据你使用的平台，按照以下步骤下载你的数据导出。",
-    "tabFacebook": "从 Facebook",
-    "tabMessenger": "从 Messenger",
+    "tabFacebook": "Facebook",
+    "tabMessenger": "Messenger",
+    "tabInstagram": "Instagram",
+    "tabSnapchat": "Snapchat",
     "fbStep1title": "打开 Facebook 设置",
     "fbStep1": "前往 Facebook，点击右上角的头像，然后选择\"设置与隐私\" > \"设置\"。",
     "fbStep2title": "进入你的信息页面",
@@ -123,6 +125,18 @@
     "step4": "选择\"下载到设备\"。将格式设置为 JSON（重要——不要选 HTML），选择你需要的日期范围和媒体质量，然后点击\"创建文件\"。",
     "step5title": "下载并解压",
     "step5": "当导出准备就绪时你会收到通知（可能需要几分钟到几小时）。下载 ZIP 文件并解压，然后将本应用指向解压后的文件夹。",
-    "tip": "提示：请选择 JSON 格式，而非 HTML。本应用需要 JSON 格式来解析你的消息和媒体文件。"
+    "tip": "提示：请选择 JSON 格式，而非 HTML。本应用需要 JSON 格式来解析你的消息和媒体文件。",
+    "igStep1title": "打开 Instagram 设置",
+    "igStep1": "打开 Instagram，点击你的头像，然后点击菜单 (≡) 并选择\"设置与隐私\"。",
+    "igStep2title": "进入账号中心",
+    "igStep2": "点击\"账号中心\"，然后点击\"你的信息和权限\"，并选择\"下载你的信息\"。",
+    "igDirectLink": "直接打开 Instagram 账号中心",
+    "snapStep1title": "前往我的数据",
+    "snapStep1": "访问 accounts.snapchat.com 并登录，或打开 Snapchat 并前往 设置 > \"我的数据\"。",
+    "snapStep2title": "选择你的数据",
+    "snapStep2": "选择要包含的内容 — 聊天记录、回忆以及其他你想要的数据。向下滚动并点击\"提交请求\"。",
+    "snapStep3title": "下载你的数据",
+    "snapStep3": "当数据准备就绪时，你将收到一封电子邮件。点击邮件中的链接下载 ZIP 文件。解压后将本应用指向解压后的文件夹。",
+    "snapDirectLink": "直接打开 Snapchat 我的数据页面"
   }
 }
