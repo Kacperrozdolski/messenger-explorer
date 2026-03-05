@@ -19,6 +19,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
+import { toast } from "sonner";
 import type { ChatSource, SenderInfo, FileTypeFilter, AlbumInfo } from "@/data/types";
 import type { TimelineEntry } from "@/lib/api";
 import * as api from "@/lib/api";
@@ -409,7 +410,14 @@ const ArchiveSidebar = ({
       });
       if (!path) return null;
       setExportingAlbumId(album.id);
-      return api.exportAlbumPdf(album.id, path);
+      const result = api.exportAlbumPdf(album.id, path);
+      toast.promise(result, {
+        loading: t("albums.exporting"),
+        success: (r) =>
+          t("albums.exportDone", { count: r.exported_count }),
+        error: (e) => String(e),
+      });
+      return result;
     },
     onSettled: () => setExportingAlbumId(null),
   });

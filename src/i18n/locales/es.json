@@ -36,7 +36,8 @@
     "empty": "No hay álbumes. Haz clic derecho en una foto para crear uno.",
     "emptyAlbum": "Este álbum está vacío",
     "exportPdf": "Exportar como PDF",
-    "exporting": "Exportando..."
+    "exporting": "Exportando...",
+    "exportDone": "{{count}} fotos exportadas a PDF"
   },
   "topbar": {
     "search": "Buscar por fecha, remitente o contexto...",

@@ -36,7 +36,8 @@
     "empty": "暂无相册。右键点击照片以创建相册。",
     "emptyAlbum": "此相册为空",
     "exportPdf": "导出为PDF",
-    "exporting": "正在导出..."
+    "exporting": "正在导出...",
+    "exportDone": "已导出 {{count}} 张照片为PDF"
   },
   "topbar": {
     "search": "按日期、发送者或上下文搜索...",

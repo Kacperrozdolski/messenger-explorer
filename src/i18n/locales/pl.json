@@ -36,7 +36,8 @@
     "empty": "Brak albumów. Kliknij prawym przyciskiem myszy na zdjęcie, aby utworzyć album.",
     "emptyAlbum": "Ten album jest pusty",
     "exportPdf": "Eksportuj jako PDF",
-    "exporting": "Eksportowanie..."
+    "exporting": "Eksportowanie...",
+    "exportDone": "Wyeksportowano {{count}} zdjęć do PDF"
   },
   "topbar": {
     "search": "Szukaj wg daty, nadawcy lub kontekstu...",

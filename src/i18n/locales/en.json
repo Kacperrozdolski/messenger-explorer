@@ -36,7 +36,8 @@
     "empty": "No albums yet. Right-click a photo to create one.",
     "emptyAlbum": "This album is empty",
     "exportPdf": "Export as PDF",
-    "exporting": "Exporting..."
+    "exporting": "Exporting...",
+    "exportDone": "Exported {{count}} photos to PDF"
   },
   "topbar": {
     "search": "Search by date, sender, or context...",

@@ -36,7 +36,8 @@
     "empty": "Noch keine Alben. Rechtsklicken Sie auf ein Foto, um eines zu erstellen.",
     "emptyAlbum": "Dieses Album ist leer",
     "exportPdf": "Als PDF exportieren",
-    "exporting": "Exportiere..."
+    "exporting": "Exportiere...",
+    "exportDone": "{{count}} Fotos als PDF exportiert"
   },
   "topbar": {
     "search": "Nach Datum, Absender oder Kontext suchen...",
