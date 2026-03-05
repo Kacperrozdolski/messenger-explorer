@@ -411,6 +411,58 @@ pub fn get_albums(conn: &Connection) -> Result<Vec<AlbumInfo>, String> {
     Ok(result)
 }
 
+pub fn get_media_count(conn: &Connection, filters: &MediaFilters) -> Result<i64, String> {
+    let mut sql = String::from(
+        "SELECT COUNT(*)
+         FROM media m
+         INNER JOIN senders s ON s.id = m.sender_id
+         INNER JOIN conversations c ON c.id = m.conversation_id
+         WHERE 1=1",
+    );
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+    if let Some(cid) = filters.conversation_id {
+        sql.push_str(" AND m.conversation_id = ?");
+        params.push(Box::new(cid));
+    }
+    if let Some(sid) = filters.sender_id {
+        sql.push_str(" AND m.sender_id = ?");
+        params.push(Box::new(sid));
+    }
+    if let Some(ref ft) = filters.file_type {
+        sql.push_str(" AND m.file_type = ?");
+        params.push(Box::new(ft.clone()));
+    }
+    if let Some(ref month) = filters.month {
+        sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+        params.push(Box::new(month.clone()));
+    }
+    if let Some(aid) = filters.album_id {
+        sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
+        params.push(Box::new(aid));
+    }
+    if let Some(ref search) = filters.search {
+        if !search.is_empty() {
+            let pattern = format!("%{}%", search);
+            sql.push_str(
+                " AND (s.name LIKE ? OR c.title LIKE ? OR m.message_content LIKE ?
+                  OR m.id IN (SELECT cm.media_id FROM context_messages cm
+                              INNER JOIN senders cs ON cs.id = cm.sender_id
+                              WHERE cm.content LIKE ? OR cs.name LIKE ?))",
+            );
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern.clone()));
+            params.push(Box::new(pattern));
+        }
+    }
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    conn.query_row(&sql, param_refs.as_slice(), |row| row.get(0))
+        .map_err(|e| e.to_string())
+}
+
 pub fn get_media_albums(conn: &Connection, media_id: i64) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare("SELECT album_id FROM album_media WHERE media_id = ?1")

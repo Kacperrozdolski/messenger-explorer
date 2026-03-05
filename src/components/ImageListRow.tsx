@@ -5,7 +5,6 @@ import AlbumPickerButton from "./AlbumPickerButton";
 
 interface ImageListRowProps {
   image: ImageEntry;
-  index: number;
   onClick: () => void;
   albums: AlbumInfo[];
   activeAlbumId: number | null;
@@ -16,7 +15,7 @@ const formatTime = (ts: number) => {
   return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 };
 
-const ImageListRow = ({ image, index, onClick, albums, activeAlbumId }: ImageListRowProps) => {
+const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowProps) => {
   return (
     <AlbumContextMenu
       mediaId={image.id}
@@ -26,8 +25,7 @@ const ImageListRow = ({ image, index, onClick, albums, activeAlbumId }: ImageLis
     >
       <button
         onClick={onClick}
-        className="flex items-center gap-4 w-full px-4 py-2.5 rounded-md hover:bg-accent/50 transition-colors text-left opacity-0 animate-fade-in"
-        style={{ animationDelay: `${index * 30}ms` }}
+        className="flex items-center gap-4 w-full px-4 py-2.5 rounded-md hover:bg-accent/50 transition-colors text-left animate-fade-in"
       >
         <img
           src={image.src}

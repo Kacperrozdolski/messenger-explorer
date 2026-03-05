@@ -6,7 +6,6 @@ import AlbumPickerButton from "./AlbumPickerButton";
 
 interface ImageCardProps {
   image: ImageEntry;
-  index: number;
   onClick: () => void;
   albums: AlbumInfo[];
   activeAlbumId: number | null;
@@ -17,7 +16,7 @@ const formatTime = (ts: number) => {
   return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 };
 
-const ImageCard = ({ image, index, onClick, albums, activeAlbumId }: ImageCardProps) => {
+const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) => {
   const { t } = useTranslation();
 
   return (
@@ -28,8 +27,7 @@ const ImageCard = ({ image, index, onClick, albums, activeAlbumId }: ImageCardPr
       onShowContext={onClick}
     >
     <div
-      className="group relative overflow-hidden rounded-md cursor-pointer opacity-0 animate-fade-in break-inside-avoid mb-3"
-      style={{ animationDelay: `${index * 40}ms` }}
+      className="group relative overflow-hidden rounded-md cursor-pointer animate-fade-in break-inside-avoid mb-3"
       onClick={onClick}
     >
       {image.fileType === "video" ? (

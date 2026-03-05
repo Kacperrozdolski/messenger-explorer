@@ -137,6 +137,29 @@ export async function getMedia(filters: {
   }));
 }
 
+export async function getMediaCount(filters: {
+  conversationId?: number;
+  senderId?: number;
+  fileType?: string;
+  month?: string;
+  search?: string;
+  albumId?: number;
+}): Promise<number> {
+  return invoke("cmd_get_media_count", {
+    filters: {
+      conversation_id: filters.conversationId ?? null,
+      sender_id: filters.senderId ?? null,
+      file_type: filters.fileType ?? null,
+      month: filters.month ?? null,
+      search: filters.search ?? null,
+      album_id: filters.albumId ?? null,
+      sort: "date-desc",
+      limit: null,
+      offset: null,
+    },
+  });
+}
+
 export async function getContext(
   mediaId: number
 ): Promise<{ contextBefore: ChatMessage[]; contextAfter: ChatMessage[] }> {

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import ArchiveSidebar from "@/components/ArchiveSidebar";
 import TopBar from "@/components/TopBar";
 import Gallery from "@/components/Gallery";
@@ -14,9 +14,12 @@ import type {
   ImageEntry,
 } from "@/data/types";
 
+const PAGE_SIZE = 60;
+
 const Index = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -43,6 +46,16 @@ const Index = () => {
 
   const hasData = status?.has_data ?? false;
 
+  // Shared filter params
+  const filterParams = useMemo(() => ({
+    conversationId: selectedChatId ?? undefined,
+    senderId: selectedSenderId ?? undefined,
+    fileType: fileType === "all" ? undefined : fileType,
+    month: selectedMonth ?? undefined,
+    search: debouncedSearch || undefined,
+    albumId: selectedAlbumId ?? undefined,
+  }), [selectedChatId, selectedSenderId, fileType, selectedMonth, debouncedSearch, selectedAlbumId]);
+
   // Sidebar data
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversations"],
@@ -68,8 +81,28 @@ const Index = () => {
     enabled: hasData,
   });
 
-  // Main media query
-  const { data: images = [] } = useQuery({
+  // Total count query for the top bar
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: [
+      "media-count",
+      selectedChatId,
+      selectedSenderId,
+      fileType,
+      selectedMonth,
+      debouncedSearch,
+      selectedAlbumId,
+    ],
+    queryFn: () => api.getMediaCount(filterParams),
+    enabled: hasData,
+  });
+
+  // Infinite scroll media query
+  const {
+    data: mediaData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: [
       "media",
       selectedChatId,
@@ -80,18 +113,36 @@ const Index = () => {
       sort,
       selectedAlbumId,
     ],
-    queryFn: () =>
+    queryFn: ({ pageParam = 0 }) =>
       api.getMedia({
-        conversationId: selectedChatId ?? undefined,
-        senderId: selectedSenderId ?? undefined,
-        fileType: fileType === "all" ? undefined : fileType,
-        month: selectedMonth ?? undefined,
-        search: debouncedSearch || undefined,
-        albumId: selectedAlbumId ?? undefined,
+        ...filterParams,
         sort,
+        limit: PAGE_SIZE,
+        offset: pageParam,
       }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < PAGE_SIZE) return undefined;
+      return allPages.reduce((sum, page) => sum + page.length, 0);
+    },
     enabled: hasData,
   });
+
+  const images = useMemo(
+    () => mediaData?.pages.flat() ?? [],
+    [mediaData],
+  );
+
+  // Scroll to top when filters change
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, 0);
+  }, [selectedChatId, selectedSenderId, fileType, selectedMonth, debouncedSearch, sort, selectedAlbumId]);
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleImportComplete = () => {
     queryClient.invalidateQueries();
@@ -136,11 +187,20 @@ const Index = () => {
           onSortChange={setSort}
           view={view}
           onViewChange={setView}
-          resultCount={images.length}
+          resultCount={totalCount}
         />
 
-        <div className="flex-1 overflow-y-auto">
-          <Gallery images={images} view={view} onImageClick={setModalImage} albums={albums} activeAlbumId={selectedAlbumId} />
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
+          <Gallery
+            images={images}
+            view={view}
+            onImageClick={setModalImage}
+            albums={albums}
+            activeAlbumId={selectedAlbumId}
+            onLoadMore={handleLoadMore}
+            hasMore={hasNextPage ?? false}
+            isLoadingMore={isFetchingNextPage}
+          />
         </div>
       </div>
 

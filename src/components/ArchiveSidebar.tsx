@@ -56,6 +56,13 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import ColorPicker from "@/components/ColorPicker";
 
@@ -760,19 +767,19 @@ const ArchiveSidebar = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {colorPickerAlbumId !== null && (() => {
-        const album = albums.find((a) => a.id === colorPickerAlbumId);
-        if (!album) return null;
-        return (
-          <Popover
-            open={true}
-            onOpenChange={(open) => { if (!open) setColorPickerAlbumId(null); }}
-          >
-            <PopoverTrigger asChild>
-              <span className="fixed top-1/2 left-60 z-50" />
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-3" align="start" side="right">
-              <p className="text-sm font-medium mb-2">{t("albums.changeColor")}</p>
+      <Dialog
+        open={colorPickerAlbumId !== null}
+        onOpenChange={(open) => { if (!open) setColorPickerAlbumId(null); }}
+      >
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle>{t("albums.changeColor")}</DialogTitle>
+            <DialogDescription />
+          </DialogHeader>
+          {colorPickerAlbumId !== null && (() => {
+            const album = albums.find((a) => a.id === colorPickerAlbumId);
+            if (!album) return null;
+            return (
               <ColorPicker
                 value={album.color}
                 onChange={(color) => {
@@ -780,10 +787,10 @@ const ArchiveSidebar = ({
                   setColorPickerAlbumId(null);
                 }}
               />
-            </PopoverContent>
-          </Popover>
-        );
-      })()}
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 };

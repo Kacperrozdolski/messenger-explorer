@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Loader2 } from "lucide-react";
 import type { ImageEntry, ViewMode, AlbumInfo } from "@/data/types";
 import ImageCard from "./ImageCard";
 import ImageListRow from "./ImageListRow";
@@ -9,6 +11,9 @@ interface GalleryProps {
   onImageClick: (image: ImageEntry) => void;
   albums: AlbumInfo[];
   activeAlbumId: number | null;
+  onLoadMore: () => void;
+  hasMore: boolean;
+  isLoadingMore: boolean;
 }
 
 const formatMonthYear = (ts: number) => {
@@ -16,8 +21,27 @@ const formatMonthYear = (ts: number) => {
   return d.toLocaleString("en-US", { month: "long", year: "numeric" });
 };
 
-const Gallery = ({ images, view, onImageClick, albums, activeAlbumId }: GalleryProps) => {
+const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore, hasMore, isLoadingMore }: GalleryProps) => {
   const { t } = useTranslation();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: "400px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadMore]);
 
   if (images.length === 0) {
     return (
@@ -36,8 +60,6 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId }: GalleryP
     grouped[key].push(img);
   });
 
-  let globalIndex = 0;
-
   return (
     <div className="p-5 space-y-8">
       {Object.entries(grouped).map(([monthYear, items]) => (
@@ -49,39 +71,46 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId }: GalleryP
 
           {view === "grid" ? (
             <div className="columns-1 sm:columns-2 xl:columns-3 gap-3">
-              {items.map((img) => {
-                const idx = globalIndex++;
-                return (
-                  <ImageCard
-                    key={img.id}
-                    image={img}
-                    index={idx}
-                    onClick={() => onImageClick(img)}
-                    albums={albums}
-                    activeAlbumId={activeAlbumId}
-                  />
-                );
-              })}
+              {items.map((img) => (
+                <ImageCard
+                  key={img.id}
+                  image={img}
+                  onClick={() => onImageClick(img)}
+                  albums={albums}
+                  activeAlbumId={activeAlbumId}
+                />
+              ))}
             </div>
           ) : (
             <div className="space-y-0.5">
-              {items.map((img) => {
-                const idx = globalIndex++;
-                return (
-                  <ImageListRow
-                    key={img.id}
-                    image={img}
-                    index={idx}
-                    onClick={() => onImageClick(img)}
-                    albums={albums}
-                    activeAlbumId={activeAlbumId}
-                  />
-                );
-              })}
+              {items.map((img) => (
+                <ImageListRow
+                  key={img.id}
+                  image={img}
+                  onClick={() => onImageClick(img)}
+                  albums={albums}
+                  activeAlbumId={activeAlbumId}
+                />
+              ))}
             </div>
           )}
         </section>
       ))}
+
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} className="h-1" />
+
+      {isLoadingMore && (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {!hasMore && images.length > 0 && (
+        <p className="text-center text-[12px] text-muted-foreground/50 pb-4">
+          {t("gallery.endOfResults", { defaultValue: "All items loaded" })}
+        </p>
+      )}
     </div>
   );
 };

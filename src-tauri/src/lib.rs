@@ -197,6 +197,12 @@ fn cmd_get_media(state: tauri::State<'_, DbState>, filters: MediaFilters) -> Res
 }
 
 #[tauri::command]
+fn cmd_get_media_count(state: tauri::State<'_, DbState>, filters: MediaFilters) -> Result<i64, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_media_count(&conn, &filters)
+}
+
+#[tauri::command]
 fn cmd_get_context(state: tauri::State<'_, DbState>, media_id: i64) -> Result<MediaContext, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     queries::get_context(&conn, media_id)
@@ -356,6 +362,7 @@ pub fn run() {
             cmd_get_conversations,
             cmd_get_senders,
             cmd_get_media,
+            cmd_get_media_count,
             cmd_get_context,
             cmd_get_timeline,
             cmd_get_storage_info,
