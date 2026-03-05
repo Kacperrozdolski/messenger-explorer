@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Search, Grid3X3, List, ArrowUpDown, Settings } from "lucide-react";
 import type { SortOption, ViewMode } from "@/data/types";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TopBarProps {
   search: string;
@@ -40,15 +41,16 @@ const TopBar = ({ search, onSearchChange, sort, onSortChange, view, onViewChange
       {/* Sort */}
       <div className="flex items-center gap-1.5">
         <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-        <select
-          value={sort}
-          onChange={(e) => onSortChange(e.target.value as SortOption)}
-          className="text-[13px] bg-secondary text-foreground rounded-md px-2 py-1.5 border-none focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-        >
-          <option value="date-desc">{t("topbar.newestFirst")}</option>
-          <option value="date-asc">{t("topbar.oldestFirst")}</option>
-          <option value="sender">{t("topbar.bySender")}</option>
-        </select>
+        <Select value={sort} onValueChange={(v) => onSortChange(v as SortOption)}>
+          <SelectTrigger className="h-8 w-auto gap-1.5 border-none bg-secondary text-[13px] focus:ring-1 focus:ring-ring px-2.5">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date-desc">{t("topbar.newestFirst")}</SelectItem>
+            <SelectItem value="date-asc">{t("topbar.oldestFirst")}</SelectItem>
+            <SelectItem value="sender">{t("topbar.bySender")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* View toggle */}
