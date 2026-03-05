@@ -34,7 +34,9 @@
     "color": "Cor",
     "changeColor": "Alterar cor",
     "empty": "Nenhum álbum ainda. Clique com o botão direito em uma foto para criar um.",
-    "emptyAlbum": "Este álbum está vazio"
+    "emptyAlbum": "Este álbum está vazio",
+    "exportPdf": "Exportar como PDF",
+    "exporting": "Exportando..."
   },
   "topbar": {
     "search": "Buscar por data, remetente ou contexto...",

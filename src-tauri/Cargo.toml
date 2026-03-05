@@ -26,3 +26,5 @@ tauri-plugin-fs = "2"
 rusqlite = { version = "0.31", features = ["bundled"] }
 glob = "0.3"
 tauri-plugin-shell = "2.3.5"
+printpdf = "0.7"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp"] }

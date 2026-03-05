@@ -34,7 +34,9 @@
     "color": "Colore",
     "changeColor": "Cambia colore",
     "empty": "Nessun album. Fai clic destro su una foto per crearne uno.",
-    "emptyAlbum": "Questo album è vuoto"
+    "emptyAlbum": "Questo album è vuoto",
+    "exportPdf": "Esporta come PDF",
+    "exporting": "Esportazione..."
   },
   "topbar": {
     "search": "Cerca per data, mittente o contesto...",

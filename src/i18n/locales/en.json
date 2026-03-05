@@ -34,7 +34,9 @@
     "color": "Color",
     "changeColor": "Change Color",
     "empty": "No albums yet. Right-click a photo to create one.",
-    "emptyAlbum": "This album is empty"
+    "emptyAlbum": "This album is empty",
+    "exportPdf": "Export as PDF",
+    "exporting": "Exporting..."
   },
   "topbar": {
     "search": "Search by date, sender, or context...",

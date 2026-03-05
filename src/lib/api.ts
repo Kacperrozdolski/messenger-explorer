@@ -245,3 +245,12 @@ export async function removeMediaFromAlbum(albumId: number, mediaId: number): Pr
 export async function getMediaAlbums(mediaId: number): Promise<number[]> {
   return invoke("cmd_get_media_albums", { mediaId });
 }
+
+export interface ExportPdfResult {
+  exported_count: number;
+  skipped_count: number;
+}
+
+export async function exportAlbumPdf(albumId: number, outputPath: string): Promise<ExportPdfResult> {
+  return invoke("cmd_export_album_pdf", { albumId, outputPath });
+}

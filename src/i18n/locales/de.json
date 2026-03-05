@@ -34,7 +34,9 @@
     "color": "Farbe",
     "changeColor": "Farbe ändern",
     "empty": "Noch keine Alben. Rechtsklicken Sie auf ein Foto, um eines zu erstellen.",
-    "emptyAlbum": "Dieses Album ist leer"
+    "emptyAlbum": "Dieses Album ist leer",
+    "exportPdf": "Als PDF exportieren",
+    "exporting": "Exportiere..."
   },
   "topbar": {
     "search": "Nach Datum, Absender oder Kontext suchen...",

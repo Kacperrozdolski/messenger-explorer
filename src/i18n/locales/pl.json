@@ -34,7 +34,9 @@
     "color": "Kolor",
     "changeColor": "Zmień kolor",
     "empty": "Brak albumów. Kliknij prawym przyciskiem myszy na zdjęcie, aby utworzyć album.",
-    "emptyAlbum": "Ten album jest pusty"
+    "emptyAlbum": "Ten album jest pusty",
+    "exportPdf": "Eksportuj jako PDF",
+    "exporting": "Eksportowanie..."
   },
   "topbar": {
     "search": "Szukaj wg daty, nadawcy lub kontekstu...",

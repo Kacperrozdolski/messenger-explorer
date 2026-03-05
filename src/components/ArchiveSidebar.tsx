@@ -16,7 +16,9 @@ import {
   Pencil,
   Trash2,
   Palette,
+  FileDown,
 } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
 import type { ChatSource, SenderInfo, FileTypeFilter, AlbumInfo } from "@/data/types";
 import type { TimelineEntry } from "@/lib/api";
 import * as api from "@/lib/api";
@@ -397,6 +399,21 @@ const ArchiveSidebar = ({
     },
   });
 
+  const [exportingAlbumId, setExportingAlbumId] = useState<number | null>(null);
+
+  const exportAlbumPdf = useMutation({
+    mutationFn: async (album: AlbumInfo) => {
+      const path = await save({
+        defaultPath: `${album.name}.pdf`,
+        filters: [{ name: "PDF", extensions: ["pdf"] }],
+      });
+      if (!path) return null;
+      setExportingAlbumId(album.id);
+      return api.exportAlbumPdf(album.id, path);
+    },
+    onSettled: () => setExportingAlbumId(null),
+  });
+
   // Sort all conversations by mediaCount descending
   const allSorted = useMemo(
     () => [...conversations].sort((a, b) => b.mediaCount - a.mediaCount),
@@ -651,6 +668,15 @@ const ArchiveSidebar = ({
                   >
                     <Palette className="h-4 w-4 mr-2" />
                     {t("albums.changeColor")}
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onSelect={() => exportAlbumPdf.mutate(album)}
+                    disabled={exportingAlbumId !== null}
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {exportingAlbumId === album.id
+                      ? t("albums.exporting")
+                      : t("albums.exportPdf")}
                   </ContextMenuItem>
                   <ContextMenuItem
                     onSelect={() => setDeleteAlbumId(album.id)}

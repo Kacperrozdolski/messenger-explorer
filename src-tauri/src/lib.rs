@@ -1,5 +1,6 @@
 mod db;
 mod parser;
+mod pdf_export;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -284,6 +285,46 @@ fn cmd_get_media_albums(state: tauri::State<'_, DbState>, media_id: i64) -> Resu
     queries::get_media_albums(&conn, media_id)
 }
 
+#[derive(serde::Serialize)]
+struct ExportPdfResult {
+    exported_count: usize,
+    skipped_count: usize,
+}
+
+#[tauri::command]
+fn cmd_export_album_pdf(
+    state: tauri::State<'_, DbState>,
+    album_id: i64,
+    output_path: String,
+) -> Result<ExportPdfResult, String> {
+    // Query all images in album
+    let image_paths: Vec<String> = {
+        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        let filters = MediaFilters {
+            conversation_id: None,
+            sender_id: None,
+            file_type: Some("image".to_string()),
+            month: None,
+            search: None,
+            album_id: Some(album_id),
+            sort: "date-asc".to_string(),
+            limit: Some(1_000_000),
+            offset: None,
+        };
+        let items = queries::get_media(&conn, &filters)?;
+        items.into_iter().map(|m| m.file_path).collect()
+    };
+    // DB mutex released here
+
+    let (exported_count, skipped_count) =
+        pdf_export::generate_album_pdf(image_paths, &output_path)?;
+
+    Ok(ExportPdfResult {
+        exported_count,
+        skipped_count,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -375,6 +416,7 @@ pub fn run() {
             cmd_add_media_to_album,
             cmd_remove_media_from_album,
             cmd_get_media_albums,
+            cmd_export_album_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
