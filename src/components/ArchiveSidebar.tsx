@@ -758,6 +758,7 @@ const ArchiveSidebar = ({
               variant="secondary"
               className="text-[11px] px-2 py-0.5 gap-1"
             >
+              <Users className="h-3 w-3 shrink-0" />
               {selectedSource.name}
               <button
                 onClick={() => onSelectChat(null)}
@@ -772,6 +773,7 @@ const ArchiveSidebar = ({
               variant="secondary"
               className="text-[11px] px-2 py-0.5 gap-1"
             >
+              <User className="h-3 w-3 shrink-0" />
               {selectedSenderObj.name}
               <button
                 onClick={() => onSelectSender(null)}
@@ -786,6 +788,13 @@ const ArchiveSidebar = ({
               variant="secondary"
               className="text-[11px] px-2 py-0.5 gap-1 capitalize"
             >
+              {fileType === "image" ? (
+                <Image className="h-3 w-3 shrink-0" />
+              ) : fileType === "video" ? (
+                <Video className="h-3 w-3 shrink-0" />
+              ) : (
+                <Sparkles className="h-3 w-3 shrink-0" />
+              )}
               {fileType}s
               <button
                 onClick={() => onFileTypeChange("all")}
@@ -800,6 +809,7 @@ const ArchiveSidebar = ({
               variant="secondary"
               className="text-[11px] px-2 py-0.5 gap-1"
             >
+              <Calendar className="h-3 w-3 shrink-0" />
               {selectedMonthLabel}
               <button
                 onClick={() => onSelectMonth(null)}
