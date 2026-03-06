@@ -86,6 +86,8 @@ interface ArchiveSidebarProps {
   albums: AlbumInfo[];
   selectedAlbumId: number | null;
   onSelectAlbum: (id: number | null) => void;
+  searchQuery: string;
+  onClearSearch: () => void;
 }
 
 const TOP_N = 5;
@@ -368,6 +370,8 @@ const ArchiveSidebar = ({
   albums,
   selectedAlbumId,
   onSelectAlbum,
+  searchQuery,
+  onClearSearch,
 }: ArchiveSidebarProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -481,7 +485,8 @@ const ArchiveSidebar = ({
     selectedSender !== null ||
     fileType !== "all" ||
     selectedMonth !== null ||
-    selectedAlbumId !== null;
+    selectedAlbumId !== null ||
+    searchQuery !== "";
 
   const selectedMonthLabel = selectedMonth
     ? formatMonthKeyFull(selectedMonth)
@@ -570,6 +575,21 @@ const ArchiveSidebar = ({
               {selectedAlbum.name}
               <button
                 onClick={() => onSelectAlbum(null)}
+                className="ml-0.5 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {searchQuery && (
+            <Badge
+              variant="secondary"
+              className="text-[11px] px-2 py-0.5 gap-1"
+            >
+              <Search className="h-3 w-3 shrink-0" />
+              {searchQuery}
+              <button
+                onClick={onClearSearch}
                 className="ml-0.5 hover:text-destructive"
               >
                 <X className="h-3 w-3" />

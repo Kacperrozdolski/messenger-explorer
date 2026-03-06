@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface TopBarProps {
   search: string;
   onSearchChange: (v: string) => void;
+  onSearchCommit: (query: string) => void;
   sort: SortOption;
   onSortChange: (v: SortOption) => void;
   view: ViewMode;
@@ -31,6 +32,7 @@ const MAX_SUGGESTIONS = 5;
 const TopBar = ({
   search,
   onSearchChange,
+  onSearchCommit,
   sort,
   onSortChange,
   view,
@@ -104,8 +106,9 @@ const TopBar = ({
     } else if (suggestion.type === "sender") {
       onSelectSender(suggestion.id!);
       onSearchChange("");
+    } else if (suggestion.type === "search") {
+      onSearchCommit(suggestion.label);
     }
-    // "search" type: just keep the text and let it search
     setOpen(false);
     inputRef.current?.blur();
   };
@@ -115,6 +118,11 @@ const TopBar = ({
       if (e.key === "ArrowDown" && query) {
         setOpen(true);
         e.preventDefault();
+      } else if (e.key === "Enter" && query) {
+        e.preventDefault();
+        onSearchCommit(search.trim());
+        setOpen(false);
+        inputRef.current?.blur();
       }
       return;
     }

@@ -23,7 +23,7 @@ const Index = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [committedSearch, setCommittedSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("date-desc");
   const [view, setView] = useState<ViewMode>("grid");
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
@@ -33,11 +33,14 @@ const Index = () => {
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<ImageEntry | null>(null);
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const handleSearchCommit = useCallback((query: string) => {
+    setCommittedSearch(query);
+    setSearch("");
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setCommittedSearch("");
+  }, []);
 
   // Check if we have data
   const { data: status, isLoading: statusLoading } = useQuery({
@@ -53,9 +56,9 @@ const Index = () => {
     senderId: selectedSenderId ?? undefined,
     fileType: fileType === "all" ? undefined : fileType,
     month: selectedMonth ?? undefined,
-    search: debouncedSearch || undefined,
+    search: committedSearch || undefined,
     albumId: selectedAlbumId ?? undefined,
-  }), [selectedChatId, selectedSenderId, fileType, selectedMonth, debouncedSearch, selectedAlbumId]);
+  }), [selectedChatId, selectedSenderId, fileType, selectedMonth, committedSearch, selectedAlbumId]);
 
   // Faceted sidebar data - updates when filters change
   const { data: facets } = useQuery({
@@ -65,7 +68,7 @@ const Index = () => {
       selectedSenderId,
       fileType,
       selectedMonth,
-      debouncedSearch,
+      committedSearch,
       selectedAlbumId,
     ],
     queryFn: () => api.getFilterFacets(filterParams),
@@ -113,7 +116,7 @@ const Index = () => {
       selectedSenderId,
       fileType,
       selectedMonth,
-      debouncedSearch,
+      committedSearch,
       selectedAlbumId,
     ],
     queryFn: () => api.getMediaCount(filterParams),
@@ -134,7 +137,7 @@ const Index = () => {
       selectedSenderId,
       fileType,
       selectedMonth,
-      debouncedSearch,
+      committedSearch,
       sort,
       selectedAlbumId,
     ],
@@ -162,7 +165,7 @@ const Index = () => {
   // Scroll to top when filters change
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
-  }, [selectedChatId, selectedSenderId, fileType, selectedMonth, debouncedSearch, sort, selectedAlbumId]);
+  }, [selectedChatId, selectedSenderId, fileType, selectedMonth, committedSearch, sort, selectedAlbumId]);
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -204,12 +207,15 @@ const Index = () => {
         albums={albums}
         selectedAlbumId={selectedAlbumId}
         onSelectAlbum={setSelectedAlbumId}
+        searchQuery={committedSearch}
+        onClearSearch={handleClearSearch}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar
           search={search}
           onSearchChange={setSearch}
+          onSearchCommit={handleSearchCommit}
           sort={sort}
           onSortChange={setSort}
           view={view}
