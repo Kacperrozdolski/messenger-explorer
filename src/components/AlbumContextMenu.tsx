@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, MessageCircle, Trash2 } from "lucide-react";
+import { Plus, MessageCircle, Trash2, FolderOpen } from "lucide-react";
 import type { AlbumInfo } from "@/data/types";
 import { ALBUM_COLORS } from "@/data/types";
 import * as api from "@/lib/api";
@@ -31,6 +31,7 @@ import ColorPicker from "./ColorPicker";
 interface AlbumContextMenuProps {
   children: React.ReactNode;
   mediaId: number;
+  filePath?: string;
   albums: AlbumInfo[];
   activeAlbumId: number | null;
   onShowContext?: () => void;
@@ -39,6 +40,7 @@ interface AlbumContextMenuProps {
 const AlbumContextMenu = ({
   children,
   mediaId,
+  filePath,
   albums,
   activeAlbumId,
   onShowContext,
@@ -166,6 +168,13 @@ const AlbumContextMenu = ({
             <ContextMenuItem onSelect={onShowContext}>
               <MessageCircle className="h-4 w-4 mr-2" />
               {t("gallery.showContext")}
+            </ContextMenuItem>
+          )}
+
+          {filePath && (
+            <ContextMenuItem onSelect={() => api.showInFolder(filePath)}>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              {t("gallery.openInExplorer")}
             </ContextMenuItem>
           )}
         </ContextMenuContent>

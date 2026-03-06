@@ -50,7 +50,8 @@
     "noMatch": "Brak wyników dla wybranych filtrów",
     "noMatchHint": "Spróbuj zmienić wyszukiwanie lub filtry",
     "photos": "{{count}} zdjęć",
-    "showContext": "Pokaż kontekst"
+    "showContext": "Pokaż kontekst",
+    "openInExplorer": "Otwórz w eksploratorze plików"
   },
   "context": {
     "title": "Kontekst rozmowy"

@@ -19,6 +19,7 @@ const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowPro
   return (
     <AlbumContextMenu
       mediaId={image.id}
+      filePath={image.file_path}
       albums={albums}
       activeAlbumId={activeAlbumId}
       onShowContext={onClick}

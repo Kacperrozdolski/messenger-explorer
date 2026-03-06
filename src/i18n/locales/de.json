@@ -50,7 +50,8 @@
     "noMatch": "Keine Bilder entsprechen Ihren Filtern",
     "noMatchHint": "Versuchen Sie, Ihre Suche oder Filter anzupassen",
     "photos": "{{count}} Fotos",
-    "showContext": "Kontext anzeigen"
+    "showContext": "Kontext anzeigen",
+    "openInExplorer": "Im Datei-Explorer öffnen"
   },
   "context": {
     "title": "Chat-Kontext"

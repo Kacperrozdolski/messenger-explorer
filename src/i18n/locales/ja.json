@@ -50,7 +50,8 @@
     "noMatch": "フィルターに一致する画像がありません",
     "noMatchHint": "検索またはフィルターを調整してみてください",
     "photos": "{{count}} 枚の写真",
-    "showContext": "コンテキストを表示"
+    "showContext": "コンテキストを表示",
+    "openInExplorer": "エクスプローラーで開く"
   },
   "context": {
     "title": "チャットコンテキスト"

@@ -254,3 +254,7 @@ export interface ExportPdfResult {
 export async function exportAlbumPdf(albumId: number, outputPath: string): Promise<ExportPdfResult> {
   return invoke("cmd_export_album_pdf", { albumId, outputPath });
 }
+
+export async function showInFolder(path: string): Promise<void> {
+  return invoke("cmd_show_in_folder", { path });
+}

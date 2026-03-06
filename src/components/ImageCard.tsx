@@ -22,6 +22,7 @@ const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) =>
   return (
     <AlbumContextMenu
       mediaId={image.id}
+      filePath={image.file_path}
       albums={albums}
       activeAlbumId={activeAlbumId}
       onShowContext={onClick}

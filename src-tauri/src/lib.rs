@@ -4,6 +4,8 @@ mod pdf_export;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use rusqlite::Connection;
 use tauri::Manager;
 
@@ -292,6 +294,44 @@ struct ExportPdfResult {
 }
 
 #[tauri::command]
+fn cmd_show_in_folder(path: String) -> Result<(), String> {
+    let file_path = PathBuf::from(&path);
+    if !file_path.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let path_str = file_path.to_string_lossy().replace('/', "\\");
+        std::process::Command::new("explorer")
+            .raw_arg(format!("/select,\"{}\"", path_str))
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("-R")
+            .arg(&file_path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(parent) = file_path.parent() {
+            std::process::Command::new("xdg-open")
+                .arg(parent)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 fn cmd_export_album_pdf(
     state: tauri::State<'_, DbState>,
     album_id: i64,
@@ -417,6 +457,7 @@ pub fn run() {
             cmd_remove_media_from_album,
             cmd_get_media_albums,
             cmd_export_album_pdf,
+            cmd_show_in_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

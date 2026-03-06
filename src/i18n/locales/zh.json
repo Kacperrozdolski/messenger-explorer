@@ -50,7 +50,8 @@
     "noMatch": "没有匹配的图片",
     "noMatchHint": "尝试调整搜索或筛选条件",
     "photos": "{{count}} 张照片",
-    "showContext": "显示上下文"
+    "showContext": "显示上下文",
+    "openInExplorer": "在文件管理器中打开"
   },
   "context": {
     "title": "聊天上下文"
