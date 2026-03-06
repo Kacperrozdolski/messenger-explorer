@@ -191,17 +191,14 @@ pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaI
         params.push(Box::new(aid));
     }
     if let Some(ref search) = filters.search {
-        if !search.is_empty() {
-            let pattern = format!("%{}%", search);
+        let trimmed = search.trim();
+        if trimmed.len() >= 2 {
+            let pattern = format!("%{}%", trimmed.to_lowercase());
             sql.push_str(
-                " AND (s.name LIKE ? OR c.title LIKE ? OR m.message_content LIKE ?
-                  OR m.id IN (SELECT cm.media_id FROM context_messages cm
-                              INNER JOIN senders cs ON cs.id = cm.sender_id
-                              WHERE cm.content LIKE ? OR cs.name LIKE ?))",
+                " AND (LOWER(COALESCE(m.message_content, '')) LIKE ?
+                   OR m.id IN (SELECT cm.media_id FROM context_messages cm
+                               WHERE LOWER(cm.content) LIKE ?))",
             );
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
             params.push(Box::new(pattern.clone()));
             params.push(Box::new(pattern));
         }
@@ -442,17 +439,14 @@ pub fn get_media_count(conn: &Connection, filters: &MediaFilters) -> Result<i64,
         params.push(Box::new(aid));
     }
     if let Some(ref search) = filters.search {
-        if !search.is_empty() {
-            let pattern = format!("%{}%", search);
+        let trimmed = search.trim();
+        if trimmed.len() >= 2 {
+            let pattern = format!("%{}%", trimmed.to_lowercase());
             sql.push_str(
-                " AND (s.name LIKE ? OR c.title LIKE ? OR m.message_content LIKE ?
-                  OR m.id IN (SELECT cm.media_id FROM context_messages cm
-                              INNER JOIN senders cs ON cs.id = cm.sender_id
-                              WHERE cm.content LIKE ? OR cs.name LIKE ?))",
+                " AND (LOWER(COALESCE(m.message_content, '')) LIKE ?
+                   OR m.id IN (SELECT cm.media_id FROM context_messages cm
+                               WHERE LOWER(cm.content) LIKE ?))",
             );
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
             params.push(Box::new(pattern.clone()));
             params.push(Box::new(pattern));
         }
