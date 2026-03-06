@@ -10,8 +10,8 @@ use rusqlite::Connection;
 use tauri::Manager;
 
 use db::queries::{
-    self, AlbumInfo, ConversationInfo, ImportStatus, MediaContext, MediaFilters, MediaItem,
-    SenderInfo, SourceInfo, TimelineEntry,
+    self, AlbumInfo, ConversationInfo, FilterFacets, ImportStatus, MediaContext, MediaFilters,
+    MediaItem, SenderInfo, SourceInfo, TimelineEntry,
 };
 use db::writer::{self as db_writer, ImportStats};
 
@@ -215,6 +215,12 @@ fn cmd_get_context(state: tauri::State<'_, DbState>, media_id: i64) -> Result<Me
 fn cmd_get_timeline(state: tauri::State<'_, DbState>) -> Result<Vec<TimelineEntry>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     queries::get_timeline(&conn)
+}
+
+#[tauri::command]
+fn cmd_get_filter_facets(state: tauri::State<'_, DbState>, filters: MediaFilters) -> Result<FilterFacets, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_filter_facets(&conn, &filters)
 }
 
 #[derive(serde::Serialize)]
@@ -446,6 +452,7 @@ pub fn run() {
             cmd_get_media_count,
             cmd_get_context,
             cmd_get_timeline,
+            cmd_get_filter_facets,
             cmd_get_storage_info,
             cmd_clear_database,
             cmd_get_albums,

@@ -21,7 +21,7 @@ import {
 import { save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import type { ChatSource, SenderInfo, FileTypeFilter, AlbumInfo } from "@/data/types";
-import type { TimelineEntry } from "@/lib/api";
+import type { TimelineEntry, FileTypeCounts } from "@/lib/api";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { formatMonthKeyLabel, formatMonthKeyFull } from "@/lib/locale";
@@ -82,6 +82,7 @@ interface ArchiveSidebarProps {
   selectedMonth: string | null;
   onSelectMonth: (month: string | null) => void;
   timelineData: TimelineEntry[];
+  fileTypeCounts: FileTypeCounts | null;
   albums: AlbumInfo[];
   selectedAlbumId: number | null;
   onSelectAlbum: (id: number | null) => void;
@@ -363,6 +364,7 @@ const ArchiveSidebar = ({
   selectedMonth,
   onSelectMonth,
   timelineData,
+  fileTypeCounts,
   albums,
   selectedAlbumId,
   onSelectAlbum,
@@ -736,29 +738,41 @@ const ArchiveSidebar = ({
           <p className="px-3 py-1 mt-2 text-[11px] text-muted-foreground font-medium">
             {t("sidebar.byFileType")}
           </p>
-          {(["all", "image", "video", "gif"] as FileTypeFilter[]).map((ft) => (
-            <button
-              key={ft}
-              onClick={() => onFileTypeChange(ft)}
-              className={cn(
-                "flex items-center gap-2 w-full px-3 py-1.5 text-[13px] rounded-md transition-colors capitalize",
-                fileType === ft
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-              )}
-            >
-              {ft === "image" ? (
-                <Image className="h-3 w-3" />
-              ) : ft === "video" ? (
-                <Video className="h-3 w-3" />
-              ) : ft === "gif" ? (
-                <Sparkles className="h-3 w-3" />
-              ) : (
-                <Image className="h-3 w-3" />
-              )}
-              {ft === "all" ? t("sidebar.allTypes") : t(`sidebar.${FILE_TYPE_LABELS[ft]}`)}
-            </button>
-          ))}
+          {(["all", "image", "video", "gif"] as FileTypeFilter[]).map((ft) => {
+            const count = ft === "all"
+              ? fileTypeCounts ? fileTypeCounts.image + fileTypeCounts.video + fileTypeCounts.gif : null
+              : fileTypeCounts ? fileTypeCounts[ft] : null;
+            return (
+              <button
+                key={ft}
+                onClick={() => onFileTypeChange(ft)}
+                className={cn(
+                  "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors capitalize",
+                  fileType === ft
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  {ft === "image" ? (
+                    <Image className="h-3 w-3" />
+                  ) : ft === "video" ? (
+                    <Video className="h-3 w-3" />
+                  ) : ft === "gif" ? (
+                    <Sparkles className="h-3 w-3" />
+                  ) : (
+                    <Image className="h-3 w-3" />
+                  )}
+                  {ft === "all" ? t("sidebar.allTypes") : t(`sidebar.${FILE_TYPE_LABELS[ft]}`)}
+                </span>
+                {count !== null && (
+                  <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </Section>
 
         {/* Timeline - Year > Month tree */}

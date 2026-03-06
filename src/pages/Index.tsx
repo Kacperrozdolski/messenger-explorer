@@ -13,6 +13,7 @@ import type {
   FileTypeFilter,
   ImageEntry,
 } from "@/data/types";
+import type { FileTypeCounts } from "@/lib/api";
 
 const PAGE_SIZE = 60;
 
@@ -56,24 +57,46 @@ const Index = () => {
     albumId: selectedAlbumId ?? undefined,
   }), [selectedChatId, selectedSenderId, fileType, selectedMonth, debouncedSearch, selectedAlbumId]);
 
-  // Sidebar data
-  const { data: conversations = [] } = useQuery({
-    queryKey: ["conversations"],
-    queryFn: api.getConversations,
+  // Faceted sidebar data - updates when filters change
+  const { data: facets } = useQuery({
+    queryKey: [
+      "filter-facets",
+      selectedChatId,
+      selectedSenderId,
+      fileType,
+      selectedMonth,
+      debouncedSearch,
+      selectedAlbumId,
+    ],
+    queryFn: () => api.getFilterFacets(filterParams),
     enabled: hasData,
   });
 
-  const { data: senders = [] } = useQuery({
-    queryKey: ["senders"],
-    queryFn: api.getSenders,
-    enabled: hasData,
-  });
+  const conversations = useMemo(() =>
+    (facets?.conversations ?? []).map((c) => ({
+      id: c.id,
+      name: c.title,
+      type: c.chat_type as "group" | "dm",
+      mediaCount: c.media_count,
+    })),
+    [facets?.conversations],
+  );
 
-  const { data: timeline = [] } = useQuery({
-    queryKey: ["timeline"],
-    queryFn: api.getTimeline,
-    enabled: hasData,
-  });
+  const senders = useMemo(() =>
+    (facets?.senders ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      mediaCount: s.media_count,
+    })),
+    [facets?.senders],
+  );
+
+  const timeline = useMemo(() =>
+    facets?.timeline ?? [],
+    [facets?.timeline],
+  );
+
+  const fileTypeCounts = facets?.file_type_counts ?? null;
 
   const { data: albums = [] } = useQuery({
     queryKey: ["albums"],
@@ -174,6 +197,7 @@ const Index = () => {
         selectedMonth={selectedMonth}
         onSelectMonth={setSelectedMonth}
         timelineData={timeline}
+        fileTypeCounts={fileTypeCounts}
         albums={albums}
         selectedAlbumId={selectedAlbumId}
         onSelectAlbum={setSelectedAlbumId}

@@ -187,6 +187,42 @@ export async function getTimeline(): Promise<TimelineEntry[]> {
   return invoke("cmd_get_timeline");
 }
 
+export interface FileTypeCounts {
+  image: number;
+  video: number;
+  gif: number;
+}
+
+export interface FilterFacets {
+  conversations: { id: number; title: string; chat_type: string; media_count: number }[];
+  senders: { id: number; name: string; media_count: number }[];
+  timeline: TimelineEntry[];
+  file_type_counts: FileTypeCounts;
+}
+
+export async function getFilterFacets(filters: {
+  conversationId?: number;
+  senderId?: number;
+  fileType?: string;
+  month?: string;
+  search?: string;
+  albumId?: number;
+}): Promise<FilterFacets> {
+  return invoke("cmd_get_filter_facets", {
+    filters: {
+      conversation_id: filters.conversationId ?? null,
+      sender_id: filters.senderId ?? null,
+      file_type: filters.fileType ?? null,
+      month: filters.month ?? null,
+      search: filters.search ?? null,
+      album_id: filters.albumId ?? null,
+      sort: "date-desc",
+      limit: null,
+      offset: null,
+    },
+  });
+}
+
 export interface StorageInfo {
   db_size_bytes: number;
 }
