@@ -752,7 +752,26 @@ const ArchiveSidebar = ({
 
       {/* Active Filters - sticky */}
       {hasActiveFilters && (
-        <div className="px-3 py-2 border-b border-sidebar-border bg-sidebar flex flex-wrap gap-1.5">
+        <div className="px-3 py-2 border-b border-sidebar-border bg-sidebar">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              {t("sidebar.activeFilters")}
+            </span>
+            <button
+              onClick={() => {
+                onSelectChat(null);
+                onSelectSender(null);
+                onFileTypeChange("all");
+                onSelectMonth(null);
+                onSelectAlbum(null);
+                onClearSearch();
+              }}
+              className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+            >
+              {t("sidebar.clearAll")}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
           {selectedSource && (
             <Badge
               variant="secondary"
@@ -852,6 +871,7 @@ const ArchiveSidebar = ({
               </button>
             </Badge>
           )}
+          </div>
         </div>
       )}
 

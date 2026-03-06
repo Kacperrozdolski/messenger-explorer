@@ -16,7 +16,9 @@
     "images": "immagini",
     "videos": "video",
     "gifs": "gif",
-    "albums": "Album"
+    "albums": "Album",
+    "activeFilters": "Filtri",
+    "clearAll": "Cancella tutto"
   },
   "albums": {
     "addToAlbum": "Aggiungi all'album",

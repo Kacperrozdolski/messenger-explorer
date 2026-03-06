@@ -16,7 +16,9 @@
     "images": "图片",
     "videos": "视频",
     "gifs": "动图",
-    "albums": "相册"
+    "albums": "相册",
+    "activeFilters": "筛选条件",
+    "clearAll": "全部清除"
   },
   "albums": {
     "addToAlbum": "添加到相册",

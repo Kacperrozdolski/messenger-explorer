@@ -16,7 +16,9 @@
     "images": "画像",
     "videos": "動画",
     "gifs": "GIF",
-    "albums": "アルバム"
+    "albums": "アルバム",
+    "activeFilters": "フィルター",
+    "clearAll": "すべてクリア"
   },
   "albums": {
     "addToAlbum": "アルバムに追加",

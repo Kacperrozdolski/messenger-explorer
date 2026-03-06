@@ -16,7 +16,9 @@
     "images": "zdjęcia",
     "videos": "filmy",
     "gifs": "gify",
-    "albums": "Albumy"
+    "albums": "Albumy",
+    "activeFilters": "Filtry",
+    "clearAll": "Wyczyść"
   },
   "albums": {
     "addToAlbum": "Dodaj do albumu",
