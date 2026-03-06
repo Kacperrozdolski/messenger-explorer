@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import ArchiveSidebar from "@/components/ArchiveSidebar";
 import TopBar from "@/components/TopBar";
 import Gallery from "@/components/Gallery";
@@ -70,6 +70,7 @@ const Index = () => {
     ],
     queryFn: () => api.getFilterFacets(filterParams),
     enabled: hasData,
+    placeholderData: keepPreviousData,
   });
 
   const conversations = useMemo(() =>
@@ -117,6 +118,7 @@ const Index = () => {
     ],
     queryFn: () => api.getMediaCount(filterParams),
     enabled: hasData,
+    placeholderData: keepPreviousData,
   });
 
   // Infinite scroll media query
@@ -149,6 +151,7 @@ const Index = () => {
       return allPages.reduce((sum, page) => sum + page.length, 0);
     },
     enabled: hasData,
+    placeholderData: keepPreviousData,
   });
 
   const images = useMemo(
