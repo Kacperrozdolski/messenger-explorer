@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -91,6 +91,24 @@ interface ArchiveSidebarProps {
 }
 
 const TOP_N = 5;
+
+type SectionId = "groups" | "senders" | "mediaType" | "timeline" | "albums";
+
+const SECTION_ORDER: SectionId[] = [
+  "groups",
+  "senders",
+  "mediaType",
+  "timeline",
+  "albums",
+];
+
+const SECTION_ICONS: Record<SectionId, React.ElementType> = {
+  groups: Users,
+  senders: User,
+  mediaType: Image,
+  timeline: Calendar,
+  albums: FolderHeart,
+};
 
 const Section = ({
   title,
@@ -492,6 +510,234 @@ const ArchiveSidebar = ({
     ? formatMonthKeyFull(selectedMonth)
     : null;
 
+  const SECTION_TITLES: Record<SectionId, string> = {
+    groups: t("sidebar.groups"),
+    senders: t("sidebar.senders"),
+    mediaType: t("sidebar.mediaType"),
+    timeline: t("sidebar.timeline"),
+    albums: t("sidebar.albums"),
+  };
+
+  const renderSection = (id: SectionId) => {
+    switch (id) {
+      case "groups":
+        return (
+          <Section key={id} title={SECTION_TITLES[id]} icon={SECTION_ICONS[id]}>
+            {selectedSource && !selectedSourceInTop && (
+              <SourceButton
+                item={selectedSource}
+                isSelected={true}
+                onSelect={() => onSelectChat(null)}
+              />
+            )}
+            {topSources.map((item) => (
+              <SourceButton
+                key={item.id}
+                item={item}
+                isSelected={selectedChat === item.id}
+                onSelect={() =>
+                  onSelectChat(selectedChat === item.id ? null : item.id)
+                }
+              />
+            ))}
+            {allSorted.length > TOP_N && (
+              <BrowseAllCombobox
+                items={allSorted}
+                selectedId={selectedChat}
+                onSelect={onSelectChat}
+                placeholder={t("sidebar.searchGroups")}
+                browseLabel={t("sidebar.browseAll", { count: allSorted.length })}
+                noResultsLabel={t("sidebar.noResults")}
+              />
+            )}
+          </Section>
+        );
+
+      case "senders":
+        return (
+          <Section key={id} title={SECTION_TITLES[id]} icon={SECTION_ICONS[id]}>
+            {selectedSenderObj && !selectedSenderInTop && (
+              <SenderButton
+                sender={selectedSenderObj}
+                isSelected={true}
+                onSelect={() => onSelectSender(null)}
+              />
+            )}
+            {topSenders.map((s) => (
+              <SenderButton
+                key={s.id}
+                sender={s}
+                isSelected={selectedSender === s.id}
+                onSelect={() =>
+                  onSelectSender(selectedSender === s.id ? null : s.id)
+                }
+              />
+            ))}
+            {sortedSenders.length > TOP_N && (
+              <BrowseAllCombobox
+                items={sortedSenders}
+                selectedId={selectedSender}
+                onSelect={onSelectSender}
+                placeholder={t("sidebar.searchSenders")}
+                browseLabel={t("sidebar.browseAll", { count: sortedSenders.length })}
+                noResultsLabel={t("sidebar.noResults")}
+              />
+            )}
+          </Section>
+        );
+
+      case "mediaType":
+        return (
+          <Section key={id} title={SECTION_TITLES[id]} icon={SECTION_ICONS[id]}>
+            {(["all", "image", "video", "gif"] as FileTypeFilter[]).map((ft) => {
+              const count = ft === "all"
+                ? fileTypeCounts ? fileTypeCounts.image + fileTypeCounts.video + fileTypeCounts.gif : null
+                : fileTypeCounts ? fileTypeCounts[ft] : null;
+              return (
+                <button
+                  key={ft}
+                  onClick={() => onFileTypeChange(ft)}
+                  className={cn(
+                    "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors capitalize",
+                    fileType === ft
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    {ft === "image" ? (
+                      <Image className="h-3 w-3" />
+                    ) : ft === "video" ? (
+                      <Video className="h-3 w-3" />
+                    ) : ft === "gif" ? (
+                      <Sparkles className="h-3 w-3" />
+                    ) : (
+                      <Image className="h-3 w-3" />
+                    )}
+                    {ft === "all" ? t("sidebar.allTypes") : t(`sidebar.${FILE_TYPE_LABELS[ft]}`)}
+                  </span>
+                  {count !== null && (
+                    <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </Section>
+        );
+
+      case "timeline":
+        return (
+          <Section key={id} title={SECTION_TITLES[id]} icon={SECTION_ICONS[id]}>
+            <div className="px-3 space-y-0.5">
+              {yearGroups.map((yg) => (
+                <YearRow
+                  key={yg.year}
+                  yearGroup={yg}
+                  maxCount={maxCount}
+                  maxYearCount={maxYearCount}
+                  selectedMonth={selectedMonth}
+                  onSelectMonth={onSelectMonth}
+                />
+              ))}
+            </div>
+          </Section>
+        );
+
+      case "albums":
+        return (
+          <Section key={id} title={SECTION_TITLES[id]} icon={SECTION_ICONS[id]}>
+            {albums.length === 0 ? (
+              <p className="px-3 py-2 text-[11px] text-muted-foreground">
+                {t("albums.empty")}
+              </p>
+            ) : (
+              albums.map((album) => (
+                <ContextMenu key={album.id}>
+                  <ContextMenuTrigger asChild>
+                    {renamingAlbumId === album.id ? (
+                      <form
+                        className="px-3 py-1"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const trimmed = renameValue.trim();
+                          if (trimmed) renameAlbum.mutate({ id: album.id, name: trimmed });
+                        }}
+                      >
+                        <Input
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={() => setRenamingAlbumId(null)}
+                          onKeyDown={(e) => { if (e.key === "Escape") setRenamingAlbumId(null); }}
+                          className="h-7 text-[13px]"
+                          autoFocus
+                        />
+                      </form>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          onSelectAlbum(selectedAlbumId === album.id ? null : album.id)
+                        }
+                        className={cn(
+                          "flex items-center gap-2 w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
+                          selectedAlbumId === album.id
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                        )}
+                      >
+                        <span
+                          className="h-3 w-3 rounded-full shrink-0"
+                          style={{ backgroundColor: album.color }}
+                        />
+                        <span className="truncate flex-1 text-left">{album.name}</span>
+                        <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
+                          {album.mediaCount}
+                        </span>
+                      </button>
+                    )}
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem
+                      onSelect={() => {
+                        setRenamingAlbumId(album.id);
+                        setRenameValue(album.name);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      {t("albums.rename")}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onSelect={() => setColorPickerAlbumId(album.id)}
+                    >
+                      <Palette className="h-4 w-4 mr-2" />
+                      {t("albums.changeColor")}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onSelect={() => exportAlbumPdf.mutate(album)}
+                      disabled={exportingAlbumId !== null}
+                    >
+                      <FileDown className="h-4 w-4 mr-2" />
+                      {exportingAlbumId === album.id
+                        ? t("albums.exporting")
+                        : t("albums.exportPdf")}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onSelect={() => setDeleteAlbumId(album.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t("albums.delete")}
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              ))
+            )}
+          </Section>
+        );
+    }
+  };
+
   return (
     <aside className="w-60 min-w-[240px] h-screen bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden">
       {/* Brand */}
@@ -600,216 +846,7 @@ const ArchiveSidebar = ({
       )}
 
       <div className="flex-1 overflow-y-auto py-2">
-        {/* Sources - Top 5 by media count */}
-        <Section title={t("sidebar.groups")} icon={Users}>
-          {/* Show selected source above top 5 if it's outside the top 5 */}
-          {selectedSource && !selectedSourceInTop && (
-            <SourceButton
-              item={selectedSource}
-              isSelected={true}
-              onSelect={() => onSelectChat(null)}
-            />
-          )}
-          {topSources.map((item) => (
-            <SourceButton
-              key={item.id}
-              item={item}
-              isSelected={selectedChat === item.id}
-              onSelect={() =>
-                onSelectChat(selectedChat === item.id ? null : item.id)
-              }
-            />
-          ))}
-          {allSorted.length > TOP_N && (
-            <BrowseAllCombobox
-              items={allSorted}
-              selectedId={selectedChat}
-              onSelect={onSelectChat}
-              placeholder={t("sidebar.searchGroups")}
-              browseLabel={t("sidebar.browseAll", { count: allSorted.length })}
-              noResultsLabel={t("sidebar.noResults")}
-            />
-          )}
-        </Section>
-
-        {/* Albums */}
-        <Section title={t("sidebar.albums")} icon={FolderHeart}>
-          {albums.length === 0 ? (
-            <p className="px-3 py-2 text-[11px] text-muted-foreground">
-              {t("albums.empty")}
-            </p>
-          ) : (
-            albums.map((album) => (
-              <ContextMenu key={album.id}>
-                <ContextMenuTrigger asChild>
-                  {renamingAlbumId === album.id ? (
-                    <form
-                      className="px-3 py-1"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const trimmed = renameValue.trim();
-                        if (trimmed) renameAlbum.mutate({ id: album.id, name: trimmed });
-                      }}
-                    >
-                      <Input
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onBlur={() => setRenamingAlbumId(null)}
-                        onKeyDown={(e) => { if (e.key === "Escape") setRenamingAlbumId(null); }}
-                        className="h-7 text-[13px]"
-                        autoFocus
-                      />
-                    </form>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        onSelectAlbum(selectedAlbumId === album.id ? null : album.id)
-                      }
-                      className={cn(
-                        "flex items-center gap-2 w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
-                        selectedAlbumId === album.id
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-                      )}
-                    >
-                      <span
-                        className="h-3 w-3 rounded-full shrink-0"
-                        style={{ backgroundColor: album.color }}
-                      />
-                      <span className="truncate flex-1 text-left">{album.name}</span>
-                      <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
-                        {album.mediaCount}
-                      </span>
-                    </button>
-                  )}
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem
-                    onSelect={() => {
-                      setRenamingAlbumId(album.id);
-                      setRenameValue(album.name);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    {t("albums.rename")}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onSelect={() => setColorPickerAlbumId(album.id)}
-                  >
-                    <Palette className="h-4 w-4 mr-2" />
-                    {t("albums.changeColor")}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onSelect={() => exportAlbumPdf.mutate(album)}
-                    disabled={exportingAlbumId !== null}
-                  >
-                    <FileDown className="h-4 w-4 mr-2" />
-                    {exportingAlbumId === album.id
-                      ? t("albums.exporting")
-                      : t("albums.exportPdf")}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onSelect={() => setDeleteAlbumId(album.id)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t("albums.delete")}
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            ))
-          )}
-        </Section>
-
-        {/* Smart Filters */}
-        <Section title={t("sidebar.smartFilters")} icon={Sparkles}>
-          <p className="px-3 py-1 text-[11px] text-muted-foreground font-medium">
-            {t("sidebar.bySender")}
-          </p>
-          {/* Show selected sender above top 5 if it's outside the top 5 */}
-          {selectedSenderObj && !selectedSenderInTop && (
-            <SenderButton
-              sender={selectedSenderObj}
-              isSelected={true}
-              onSelect={() => onSelectSender(null)}
-            />
-          )}
-          {topSenders.map((s) => (
-            <SenderButton
-              key={s.id}
-              sender={s}
-              isSelected={selectedSender === s.id}
-              onSelect={() =>
-                onSelectSender(selectedSender === s.id ? null : s.id)
-              }
-            />
-          ))}
-          {sortedSenders.length > TOP_N && (
-            <BrowseAllCombobox
-              items={sortedSenders}
-              selectedId={selectedSender}
-              onSelect={onSelectSender}
-              placeholder={t("sidebar.searchSenders")}
-              browseLabel={t("sidebar.browseAll", { count: sortedSenders.length })}
-              noResultsLabel={t("sidebar.noResults")}
-            />
-          )}
-
-          <p className="px-3 py-1 mt-2 text-[11px] text-muted-foreground font-medium">
-            {t("sidebar.byFileType")}
-          </p>
-          {(["all", "image", "video", "gif"] as FileTypeFilter[]).map((ft) => {
-            const count = ft === "all"
-              ? fileTypeCounts ? fileTypeCounts.image + fileTypeCounts.video + fileTypeCounts.gif : null
-              : fileTypeCounts ? fileTypeCounts[ft] : null;
-            return (
-              <button
-                key={ft}
-                onClick={() => onFileTypeChange(ft)}
-                className={cn(
-                  "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors capitalize",
-                  fileType === ft
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {ft === "image" ? (
-                    <Image className="h-3 w-3" />
-                  ) : ft === "video" ? (
-                    <Video className="h-3 w-3" />
-                  ) : ft === "gif" ? (
-                    <Sparkles className="h-3 w-3" />
-                  ) : (
-                    <Image className="h-3 w-3" />
-                  )}
-                  {ft === "all" ? t("sidebar.allTypes") : t(`sidebar.${FILE_TYPE_LABELS[ft]}`)}
-                </span>
-                {count !== null && (
-                  <span className="text-[11px] bg-secondary px-1.5 py-0.5 rounded-full text-secondary-foreground">
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </Section>
-
-        {/* Timeline - Year > Month tree */}
-        <Section title={t("sidebar.timeline")} icon={Calendar}>
-          <div className="px-3 space-y-0.5">
-            {yearGroups.map((yg) => (
-              <YearRow
-                key={yg.year}
-                yearGroup={yg}
-                maxCount={maxCount}
-                maxYearCount={maxYearCount}
-                selectedMonth={selectedMonth}
-                onSelectMonth={onSelectMonth}
-              />
-            ))}
-          </div>
-        </Section>
+        {SECTION_ORDER.map(renderSection)}
       </div>
 
       <AlertDialog

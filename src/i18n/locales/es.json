@@ -4,10 +4,9 @@
     "subtitle": "Explorador de medios de Messenger"
   },
   "sidebar": {
-    "groups": "Grupos",
-    "smartFilters": "Filtros",
-    "bySender": "Por remitente",
-    "byFileType": "Por tipo de archivo",
+    "groups": "Fuentes",
+    "senders": "Remitentes",
+    "mediaType": "Tipo de medio",
     "timeline": "Cronología",
     "browseAll": "Ver todos ({{count}})...",
     "searchGroups": "Buscar grupos...",

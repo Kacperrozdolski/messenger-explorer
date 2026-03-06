@@ -4,10 +4,9 @@
     "subtitle": "Messenger 媒体浏览器"
   },
   "sidebar": {
-    "groups": "群组",
-    "smartFilters": "筛选",
-    "bySender": "按发送者",
-    "byFileType": "按文件类型",
+    "groups": "来源",
+    "senders": "发送者",
+    "mediaType": "媒体类型",
     "timeline": "时间线",
     "browseAll": "浏览全部 ({{count}})...",
     "searchGroups": "搜索群组...",

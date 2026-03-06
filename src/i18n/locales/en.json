@@ -4,10 +4,9 @@
     "subtitle": "Messenger Media Browser"
   },
   "sidebar": {
-    "groups": "Groups",
-    "smartFilters": "Smart Filters",
-    "bySender": "By Sender",
-    "byFileType": "By File Type",
+    "groups": "Sources",
+    "senders": "Senders",
+    "mediaType": "Media Type",
     "timeline": "Timeline",
     "browseAll": "Browse all ({{count}})...",
     "searchGroups": "Search groups...",

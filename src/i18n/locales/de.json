@@ -4,10 +4,9 @@
     "subtitle": "Messenger-Medienbrowser"
   },
   "sidebar": {
-    "groups": "Gruppen",
-    "smartFilters": "Filter",
-    "bySender": "Nach Absender",
-    "byFileType": "Nach Dateityp",
+    "groups": "Quellen",
+    "senders": "Absender",
+    "mediaType": "Medientyp",
     "timeline": "Zeitachse",
     "browseAll": "Alle durchsuchen ({{count}})...",
     "searchGroups": "Gruppen suchen...",

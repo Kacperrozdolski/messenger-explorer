@@ -4,10 +4,9 @@
     "subtitle": "Messenger メディアブラウザ"
   },
   "sidebar": {
-    "groups": "グループ",
-    "smartFilters": "フィルター",
-    "bySender": "送信者別",
-    "byFileType": "ファイルタイプ別",
+    "groups": "ソース",
+    "senders": "送信者",
+    "mediaType": "メディアタイプ",
     "timeline": "タイムライン",
     "browseAll": "すべて参照 ({{count}})...",
     "searchGroups": "グループを検索...",

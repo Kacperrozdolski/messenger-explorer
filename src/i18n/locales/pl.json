@@ -4,10 +4,9 @@
     "subtitle": "Przeglądarka mediów Messengera"
   },
   "sidebar": {
-    "groups": "Grupy",
-    "smartFilters": "Filtry",
-    "bySender": "Wg nadawcy",
-    "byFileType": "Wg typu pliku",
+    "groups": "Źródła",
+    "senders": "Nadawcy",
+    "mediaType": "Typ mediów",
     "timeline": "Oś czasu",
     "browseAll": "Przeglądaj wszystkie ({{count}})...",
     "searchGroups": "Szukaj grup...",
