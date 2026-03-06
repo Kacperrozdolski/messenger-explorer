@@ -579,7 +579,7 @@ const ArchiveSidebar = ({
 
       <div className="flex-1 overflow-y-auto py-2">
         {/* Sources - Top 5 by media count */}
-        <Section title={t("sidebar.sources")} icon={Users}>
+        <Section title={t("sidebar.groups")} icon={Users}>
           {/* Show selected source above top 5 if it's outside the top 5 */}
           {selectedSource && !selectedSourceInTop && (
             <SourceButton
@@ -603,7 +603,7 @@ const ArchiveSidebar = ({
               items={allSorted}
               selectedId={selectedChat}
               onSelect={onSelectChat}
-              placeholder={t("sidebar.searchSources")}
+              placeholder={t("sidebar.searchGroups")}
               browseLabel={t("sidebar.browseAll", { count: allSorted.length })}
               noResultsLabel={t("sidebar.noResults")}
             />

@@ -4,13 +4,13 @@
     "subtitle": "Przeglądarka mediów Messengera"
   },
   "sidebar": {
-    "sources": "Źródła",
+    "groups": "Grupy",
     "smartFilters": "Filtry",
     "bySender": "Wg nadawcy",
     "byFileType": "Wg typu pliku",
     "timeline": "Oś czasu",
     "browseAll": "Przeglądaj wszystkie ({{count}})...",
-    "searchSources": "Szukaj źródeł...",
+    "searchGroups": "Szukaj grup...",
     "searchSenders": "Szukaj nadawców...",
     "noResults": "Brak wyników.",
     "allTypes": "Wszystkie typy",
@@ -40,7 +40,10 @@
     "exportDone": "Wyeksportowano {{count}} zdjęć do PDF"
   },
   "topbar": {
-    "search": "Szukaj wg daty, nadawcy lub kontekstu...",
+    "search": "Szukaj w wiadomościach...",
+    "searchInMessages": "Szukaj \"{{query}}\" w wiadomościach",
+    "filterByGroup": "Filtruj wg grupy",
+    "filterBySender": "Filtruj wg nadawcy",
     "items": "{{count}} elementów",
     "newestFirst": "Najnowsze",
     "oldestFirst": "Najstarsze",

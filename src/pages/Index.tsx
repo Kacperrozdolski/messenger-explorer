@@ -188,6 +188,10 @@ const Index = () => {
           view={view}
           onViewChange={setView}
           resultCount={totalCount}
+          conversations={conversations}
+          senders={senders}
+          onSelectChat={setSelectedChatId}
+          onSelectSender={setSelectedSenderId}
         />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">

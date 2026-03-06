@@ -4,13 +4,13 @@
     "subtitle": "Messenger 媒体浏览器"
   },
   "sidebar": {
-    "sources": "来源",
+    "groups": "群组",
     "smartFilters": "筛选",
     "bySender": "按发送者",
     "byFileType": "按文件类型",
     "timeline": "时间线",
     "browseAll": "浏览全部 ({{count}})...",
-    "searchSources": "搜索来源...",
+    "searchGroups": "搜索群组...",
     "searchSenders": "搜索发送者...",
     "noResults": "未找到结果。",
     "allTypes": "所有类型",
@@ -40,7 +40,10 @@
     "exportDone": "已导出 {{count}} 张照片为PDF"
   },
   "topbar": {
-    "search": "按日期、发送者或上下文搜索...",
+    "search": "搜索消息...",
+    "searchInMessages": "在消息中搜索\"{{query}}\"",
+    "filterByGroup": "按群组筛选",
+    "filterBySender": "按发送者筛选",
     "items": "{{count}} 项",
     "newestFirst": "最新优先",
     "oldestFirst": "最早优先",

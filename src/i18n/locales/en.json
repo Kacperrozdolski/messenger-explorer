@@ -4,13 +4,13 @@
     "subtitle": "Messenger Media Browser"
   },
   "sidebar": {
-    "sources": "Sources",
+    "groups": "Groups",
     "smartFilters": "Smart Filters",
     "bySender": "By Sender",
     "byFileType": "By File Type",
     "timeline": "Timeline",
     "browseAll": "Browse all ({{count}})...",
-    "searchSources": "Search sources...",
+    "searchGroups": "Search groups...",
     "searchSenders": "Search senders...",
     "noResults": "No results found.",
     "allTypes": "All Types",
@@ -40,7 +40,10 @@
     "exportDone": "Exported {{count}} photos to PDF"
   },
   "topbar": {
-    "search": "Search by date, sender, or context...",
+    "search": "Search messages...",
+    "searchInMessages": "Search \"{{query}}\" in messages",
+    "filterByGroup": "Filter by group",
+    "filterBySender": "Filter by sender",
     "items": "{{count}} items",
     "newestFirst": "Newest First",
     "oldestFirst": "Oldest First",

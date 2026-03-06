@@ -4,13 +4,13 @@
     "subtitle": "Messenger メディアブラウザ"
   },
   "sidebar": {
-    "sources": "ソース",
+    "groups": "グループ",
     "smartFilters": "フィルター",
     "bySender": "送信者別",
     "byFileType": "ファイルタイプ別",
     "timeline": "タイムライン",
     "browseAll": "すべて参照 ({{count}})...",
-    "searchSources": "ソースを検索...",
+    "searchGroups": "グループを検索...",
     "searchSenders": "送信者を検索...",
     "noResults": "結果が見つかりません。",
     "allTypes": "すべてのタイプ",
@@ -40,7 +40,10 @@
     "exportDone": "{{count}}枚の写真をPDFにエクスポートしました"
   },
   "topbar": {
-    "search": "日付、送信者、コンテキストで検索...",
+    "search": "メッセージを検索...",
+    "searchInMessages": "メッセージで「{{query}}」を検索",
+    "filterByGroup": "グループで絞り込む",
+    "filterBySender": "送信者で絞り込む",
     "items": "{{count}} 件",
     "newestFirst": "新しい順",
     "oldestFirst": "古い順",

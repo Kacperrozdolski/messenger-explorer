@@ -4,13 +4,13 @@
     "subtitle": "Browser multimediale di Messenger"
   },
   "sidebar": {
-    "sources": "Fonti",
+    "groups": "Gruppi",
     "smartFilters": "Filtri",
     "bySender": "Per mittente",
     "byFileType": "Per tipo di file",
     "timeline": "Cronologia",
     "browseAll": "Sfoglia tutti ({{count}})...",
-    "searchSources": "Cerca fonti...",
+    "searchGroups": "Cerca gruppi...",
     "searchSenders": "Cerca mittenti...",
     "noResults": "Nessun risultato trovato.",
     "allTypes": "Tutti i tipi",
@@ -40,7 +40,10 @@
     "exportDone": "{{count}} foto esportate in PDF"
   },
   "topbar": {
-    "search": "Cerca per data, mittente o contesto...",
+    "search": "Cerca nei messaggi...",
+    "searchInMessages": "Cerca \"{{query}}\" nei messaggi",
+    "filterByGroup": "Filtra per gruppo",
+    "filterBySender": "Filtra per mittente",
     "items": "{{count}} elementi",
     "newestFirst": "Più recenti",
     "oldestFirst": "Più vecchi",
