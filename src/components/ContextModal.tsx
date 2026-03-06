@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ImageEntry, ChatMessage } from "@/data/types";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { getLocale } from "@/lib/locale";
 
 interface ContextModalProps {
   image: ImageEntry;
@@ -12,12 +13,12 @@ interface ContextModalProps {
 
 const formatTime = (ts: number) => {
   const d = new Date(ts);
-  return d.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleString(getLocale(), { hour: "numeric", minute: "2-digit" });
 };
 
 const formatDate = (ts: number) => {
   const d = new Date(ts);
-  return d.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  return d.toLocaleString(getLocale(), { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 };
 
 const ChatBubble = ({ msg, isImageSender }: { msg: ChatMessage; isImageSender: boolean }) => (

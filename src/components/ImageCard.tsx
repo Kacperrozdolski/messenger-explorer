@@ -3,6 +3,7 @@ import { MessageCircle, Play } from "lucide-react";
 import type { ImageEntry, AlbumInfo } from "@/data/types";
 import AlbumContextMenu from "./AlbumContextMenu";
 import AlbumPickerButton from "./AlbumPickerButton";
+import { getLocale } from "@/lib/locale";
 
 interface ImageCardProps {
   image: ImageEntry;
@@ -13,7 +14,7 @@ interface ImageCardProps {
 
 const formatTime = (ts: number) => {
   const d = new Date(ts);
-  return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return d.toLocaleString(getLocale(), { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 };
 
 const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) => {

@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import type { ImageEntry, ViewMode, AlbumInfo } from "@/data/types";
 import ImageCard from "./ImageCard";
 import ImageListRow from "./ImageListRow";
+import { getLocale } from "@/lib/locale";
 
 interface GalleryProps {
   images: ImageEntry[];
@@ -18,7 +19,7 @@ interface GalleryProps {
 
 const formatMonthYear = (ts: number) => {
   const d = new Date(ts);
-  return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  return d.toLocaleString(getLocale(), { month: "long", year: "numeric" });
 };
 
 const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore, hasMore, isLoadingMore }: GalleryProps) => {

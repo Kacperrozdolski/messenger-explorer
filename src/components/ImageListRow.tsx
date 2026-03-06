@@ -2,6 +2,7 @@ import { MessageCircle } from "lucide-react";
 import type { ImageEntry, AlbumInfo } from "@/data/types";
 import AlbumContextMenu from "./AlbumContextMenu";
 import AlbumPickerButton from "./AlbumPickerButton";
+import { getLocale } from "@/lib/locale";
 
 interface ImageListRowProps {
   image: ImageEntry;
@@ -12,7 +13,7 @@ interface ImageListRowProps {
 
 const formatTime = (ts: number) => {
   const d = new Date(ts);
-  return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return d.toLocaleString(getLocale(), { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 };
 
 const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowProps) => {

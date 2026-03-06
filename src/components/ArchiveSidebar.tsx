@@ -24,6 +24,7 @@ import type { ChatSource, SenderInfo, FileTypeFilter, AlbumInfo } from "@/data/t
 import type { TimelineEntry } from "@/lib/api";
 import * as api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatMonthKeyLabel, formatMonthKeyFull } from "@/lib/locale";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
@@ -322,7 +323,7 @@ function YearRow({
               )}
             >
               <span className="w-10 text-left shrink-0">
-                {d.label.replace(/\s*\d{4}$/, "")}
+                {formatMonthKeyLabel(d.month_key)}
               </span>
               <div className="flex-1 h-3 bg-secondary rounded-sm overflow-hidden">
                 <div
@@ -481,8 +482,7 @@ const ArchiveSidebar = ({
     selectedAlbumId !== null;
 
   const selectedMonthLabel = selectedMonth
-    ? (timelineData.find((t) => t.month_key === selectedMonth)?.label ??
-      selectedMonth)
+    ? formatMonthKeyFull(selectedMonth)
     : null;
 
   return (
