@@ -24,6 +24,9 @@
     }
   },
   "bundle": {
+    "resources": [
+      "models/*"
+    ],
     "active": true,
     "targets": ["app", "dmg"],
     "icon": [

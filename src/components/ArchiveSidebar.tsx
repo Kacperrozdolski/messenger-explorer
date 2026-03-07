@@ -17,6 +17,7 @@ import {
   Trash2,
   Palette,
   FileDown,
+  Brain,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
@@ -88,6 +89,8 @@ interface ArchiveSidebarProps {
   onSelectAlbum: (id: number | null) => void;
   searchQuery: string;
   onClearSearch: () => void;
+  aiSearchQuery?: string | null;
+  onClearAiSearch?: () => void;
 }
 
 const TOP_N = 5;
@@ -390,6 +393,8 @@ const ArchiveSidebar = ({
   onSelectAlbum,
   searchQuery,
   onClearSearch,
+  aiSearchQuery,
+  onClearAiSearch,
 }: ArchiveSidebarProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -504,7 +509,8 @@ const ArchiveSidebar = ({
     fileType !== "all" ||
     selectedMonth !== null ||
     selectedAlbumId !== null ||
-    searchQuery !== "";
+    searchQuery !== "" ||
+    !!aiSearchQuery;
 
   const selectedMonthLabel = selectedMonth
     ? formatMonthKeyFull(selectedMonth)
@@ -765,6 +771,7 @@ const ArchiveSidebar = ({
                 onSelectMonth(null);
                 onSelectAlbum(null);
                 onClearSearch();
+                onClearAiSearch?.();
               }}
               className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
             >
@@ -865,6 +872,21 @@ const ArchiveSidebar = ({
               {searchQuery}
               <button
                 onClick={onClearSearch}
+                className="ml-0.5 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {aiSearchQuery && (
+            <Badge
+              variant="secondary"
+              className="text-[11px] px-2 py-0.5 gap-1"
+            >
+              <Brain className="h-3 w-3 shrink-0" />
+              AI: {aiSearchQuery}
+              <button
+                onClick={onClearAiSearch}
                 className="ml-0.5 hover:text-destructive"
               >
                 <X className="h-3 w-3" />

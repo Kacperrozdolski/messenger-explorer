@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, Grid3X3, List, ArrowUpDown, Settings, Users, User, MessageSquare } from "lucide-react";
+import { Search, Grid3X3, List, ArrowUpDown, Settings, Users, User, MessageSquare, Brain, X } from "lucide-react";
 import type { SortOption, ViewMode, ChatSource, SenderInfo } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +10,10 @@ interface TopBarProps {
   search: string;
   onSearchChange: (v: string) => void;
   onSearchCommit: (query: string) => void;
+  onAiSearch?: (query: string) => void;
+  onClearAiSearch?: () => void;
+  aiSearchAvailable?: boolean;
+  aiSearchQuery?: string | null;
   sort: SortOption;
   onSortChange: (v: SortOption) => void;
   view: ViewMode;
@@ -22,7 +26,7 @@ interface TopBarProps {
 }
 
 interface Suggestion {
-  type: "search" | "group" | "sender";
+  type: "search" | "group" | "sender" | "ai-search";
   label: string;
   id?: number;
 }
@@ -33,6 +37,10 @@ const TopBar = ({
   search,
   onSearchChange,
   onSearchCommit,
+  onAiSearch,
+  onClearAiSearch,
+  aiSearchAvailable,
+  aiSearchQuery,
   sort,
   onSortChange,
   view,
@@ -72,11 +80,16 @@ const TopBar = ({
       results.push({ type: "sender", label: s.name, id: s.id });
     }
 
-    // Always add "search in messages" as the last option
+    // Always add "search in messages" option
     results.push({ type: "search", label: search.trim() });
 
+    // Add AI search option
+    if (aiSearchAvailable) {
+      results.push({ type: "ai-search", label: search.trim() });
+    }
+
     return results;
-  }, [query, conversations, senders, search]);
+  }, [query, conversations, senders, search, aiSearchAvailable]);
 
   // Reset highlight when suggestions change
   useEffect(() => {
@@ -106,6 +119,8 @@ const TopBar = ({
     } else if (suggestion.type === "sender") {
       onSelectSender(suggestion.id!);
       onSearchChange("");
+    } else if (suggestion.type === "ai-search") {
+      onAiSearch?.(suggestion.label);
     } else if (suggestion.type === "search") {
       onSearchCommit(suggestion.label);
     }
@@ -190,14 +205,18 @@ const TopBar = ({
                 {s.type === "group" && <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                 {s.type === "sender" && <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                 {s.type === "search" && <MessageSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                {s.type === "ai-search" && <Brain className="h-3.5 w-3.5 text-primary shrink-0" />}
                 <span className="truncate flex-1">
                   {s.type === "search"
                     ? t("topbar.searchInMessages", { query: s.label })
+                    : s.type === "ai-search"
+                    ? t("topbar.aiSearch", { query: s.label, defaultValue: "AI Search \"{{query}}\"" })
                     : s.label}
                 </span>
                 <span className="text-[11px] text-muted-foreground shrink-0">
                   {s.type === "group" && t("topbar.filterByGroup")}
                   {s.type === "sender" && t("topbar.filterBySender")}
+                  {s.type === "ai-search" && t("topbar.aiSearchHint", "Visual content")}
                 </span>
               </button>
             ))}

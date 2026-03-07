@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
+import { listen } from "@tauri-apps/api/event";
 import {
   ArrowLeft,
   Database,
@@ -13,6 +14,10 @@ import {
   Plus,
   X,
   Globe,
+  Brain,
+  Play,
+  Square,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +56,55 @@ const Settings = () => {
   const [addingSource, setAddingSource] = useState(false);
   const [removingPath, setRemovingPath] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
+  const [indexingProgress, setIndexingProgress] = useState<api.IndexingProgress | null>(null);
+
+  const { data: hasModels } = useQuery({
+    queryKey: ["has-clip-models"],
+    queryFn: api.hasClipModels,
+  });
+
+  const { data: indexingStatus, refetch: refetchIndexing } = useQuery({
+    queryKey: ["indexing-status"],
+    queryFn: api.getIndexingStatus,
+  });
+
+  // Listen for indexing progress events
+  useEffect(() => {
+    const unlisten = listen<api.IndexingProgress>("indexing-progress", (event) => {
+      setIndexingProgress(event.payload);
+      if (!event.payload.is_running) {
+        refetchIndexing();
+      }
+    });
+    return () => { unlisten.then((f) => f()); };
+  }, [refetchIndexing]);
+
+  const handleStartIndexing = async () => {
+    try {
+      await api.startIndexing();
+      refetchIndexing();
+    } catch (e) {
+      console.error("Failed to start indexing:", e);
+    }
+  };
+
+  const handleCancelIndexing = async () => {
+    try {
+      await api.cancelIndexing();
+    } catch (e) {
+      console.error("Failed to cancel indexing:", e);
+    }
+  };
+
+  const handleClearEmbeddings = async () => {
+    try {
+      await api.clearEmbeddings();
+      setIndexingProgress(null);
+      refetchIndexing();
+    } catch (e) {
+      console.error("Failed to clear embeddings:", e);
+    }
+  };
 
   const { data: storageInfo } = useQuery({
     queryKey: ["storage-info"],
@@ -141,6 +195,133 @@ const Settings = () => {
               </CardHeader>
               <CardContent>
                 <LanguageSelector />
+              </CardContent>
+            </Card>
+
+            {/* AI Search Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle className="text-base">{t("settings.aiSearch", "AI Search")}</CardTitle>
+                </div>
+                <CardDescription>
+                  {t("settings.aiSearchDesc", "Index your images with AI to search by visual content (e.g. \"mountains\", \"memes\", \"sunset\").")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!hasModels ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("settings.aiModelsNotFound", "CLIP model files not found. Place clip-visual.onnx, clip-textual.onnx, and tokenizer.json in the models directory.")}
+                  </p>
+                ) : (
+                  <>
+                    {/* Status */}
+                    <div className="text-sm text-muted-foreground">
+                      {(() => {
+                        const status = indexingProgress || indexingStatus;
+                        if (!status) return t("settings.aiNotIndexed", "No images indexed yet.");
+                        if (status.is_running) {
+                          const pct = status.total > 0 ? Math.round((status.indexed / status.total) * 100) : 0;
+                          return t("settings.aiIndexing", {
+                            defaultValue: "Indexing... {{indexed}} / {{total}} ({{pct}}%)",
+                            indexed: status.indexed,
+                            total: status.total,
+                            pct,
+                          });
+                        }
+                        if (status.indexed > 0) {
+                          return t("settings.aiIndexed", {
+                            defaultValue: "{{indexed}} / {{total}} images indexed.",
+                            indexed: status.indexed,
+                            total: status.total,
+                          });
+                        }
+                        return t("settings.aiNotIndexed", "No images indexed yet.");
+                      })()}
+                    </div>
+
+                    {/* Progress bar */}
+                    {(() => {
+                      const status = indexingProgress || indexingStatus;
+                      if (status && status.total > 0) {
+                        const pct = Math.round((status.indexed / status.total) * 100);
+                        return (
+                          <div className="w-full bg-secondary rounded-full h-2">
+                            <div
+                              className="bg-primary h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const status = indexingProgress || indexingStatus;
+                        const isRunning = status?.is_running ?? false;
+
+                        if (isRunning) {
+                          return (
+                            <Button
+                              variant="outline"
+                              className="gap-2"
+                              onClick={handleCancelIndexing}
+                            >
+                              <Square className="h-4 w-4" />
+                              {t("settings.aiCancel", "Cancel")}
+                            </Button>
+                          );
+                        }
+
+                        return (
+                          <>
+                            <Button
+                              variant="outline"
+                              className="gap-2"
+                              onClick={handleStartIndexing}
+                            >
+                              <Play className="h-4 w-4" />
+                              {status && status.indexed > 0 && status.indexed < status.total
+                                ? t("settings.aiResume", "Resume Indexing")
+                                : t("settings.aiBuildIndex", "Build Index")}
+                            </Button>
+                            {status && status.indexed > 0 && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                    {t("settings.aiReset", "Reset")}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t("settings.aiResetTitle", "Reset AI Index")}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {t("settings.aiResetDesc", "This will delete all image embeddings. You'll need to re-index to use AI search.")}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t("settings.cancel")}</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={handleClearEmbeddings}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      {t("settings.aiResetConfirm", "Reset Index")}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 

@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# CLIP model files and runtime (large binaries)
+src-tauri/models/*.onnx
+src-tauri/models/*.dll
+src-tauri/models/tokenizer.json

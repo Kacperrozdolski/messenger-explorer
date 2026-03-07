@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-const CURRENT_SCHEMA_VERSION: i32 = 4;
+const CURRENT_SCHEMA_VERSION: i32 = 5;
 
 /// Initialize the database schema. Creates tables if they don't exist.
 /// Handles migration from old schema versions by recreating tables.
@@ -41,6 +41,16 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         // v3 -> v4: add color column to albums
         conn.execute_batch(
             "ALTER TABLE albums ADD COLUMN color TEXT NOT NULL DEFAULT '#60a5fa';"
+        )?;
+    }
+
+    if version >= 4 && version < 5 {
+        // v4 -> v5: add media_embeddings table for AI search
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS media_embeddings (
+                media_id  INTEGER PRIMARY KEY REFERENCES media(id),
+                embedding BLOB NOT NULL
+            );"
         )?;
     }
 
@@ -126,6 +136,11 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         );
         CREATE INDEX IF NOT EXISTS idx_album_media_album ON album_media(album_id);
         CREATE INDEX IF NOT EXISTS idx_album_media_media ON album_media(media_id);
+
+        CREATE TABLE IF NOT EXISTS media_embeddings (
+            media_id  INTEGER PRIMARY KEY REFERENCES media(id),
+            embedding BLOB NOT NULL
+        );
         ",
     )?;
     Ok(())
@@ -135,6 +150,7 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
 pub fn clear_all(conn: &Connection) -> Result<(), rusqlite::Error> {
     conn.execute_batch(
         "
+        DELETE FROM media_embeddings;
         DELETE FROM album_media;
         DELETE FROM albums;
         DELETE FROM context_messages;
@@ -179,6 +195,13 @@ pub fn clear_source(conn: &Connection, source_path: &str) -> Result<(), rusqlite
     conn.execute(
         "DELETE FROM conversations WHERE source_path = ?1",
         rusqlite::params![source_path],
+    )?;
+
+    // Clean up orphaned embeddings (media that no longer exists)
+    conn.execute_batch(
+        "DELETE FROM media_embeddings WHERE media_id NOT IN (
+            SELECT id FROM media
+        )"
     )?;
 
     // Clean up orphaned album_media rows (media that no longer exists)

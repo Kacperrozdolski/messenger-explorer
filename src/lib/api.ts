@@ -294,3 +294,43 @@ export async function exportAlbumPdf(albumId: number, outputPath: string): Promi
 export async function showInFolder(path: string): Promise<void> {
   return invoke("cmd_show_in_folder", { path });
 }
+
+// --- AI Search ---
+
+export interface IndexingProgress {
+  indexed: number;
+  total: number;
+  is_running: boolean;
+}
+
+export async function getIndexingStatus(): Promise<IndexingProgress> {
+  return invoke("cmd_get_indexing_status");
+}
+
+export async function hasClipModels(): Promise<boolean> {
+  return invoke("cmd_has_clip_models");
+}
+
+export async function startIndexing(): Promise<void> {
+  return invoke("cmd_start_indexing");
+}
+
+export async function cancelIndexing(): Promise<void> {
+  return invoke("cmd_cancel_indexing");
+}
+
+export interface AiSearchResult {
+  media_id: number;
+  score: number;
+}
+
+export async function aiSearch(
+  query: string,
+  limit?: number
+): Promise<AiSearchResult[]> {
+  return invoke("cmd_ai_search", { query, limit: limit ?? 100 });
+}
+
+export async function clearEmbeddings(): Promise<void> {
+  return invoke("cmd_clear_embeddings");
+}

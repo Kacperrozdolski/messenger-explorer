@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useInfiniteQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import ArchiveSidebar from "@/components/ArchiveSidebar";
 import TopBar from "@/components/TopBar";
 import Gallery from "@/components/Gallery";
@@ -32,11 +33,43 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<ImageEntry | null>(null);
+  const [aiSearchQuery, setAiSearchQuery] = useState<string | null>(null);
+  const [aiSearchResults, setAiSearchResults] = useState<ImageEntry[] | null>(null);
+
+  const handleAiSearch = useCallback(async (query: string) => {
+    setAiSearchQuery(query);
+    setSearch("");
+    try {
+      const results = await api.aiSearch(query, 200);
+      // Fetch full media items for the result IDs
+      const mediaIds = results.map((r) => r.media_id);
+      if (mediaIds.length === 0) {
+        setAiSearchResults([]);
+        return;
+      }
+      // Fetch all media and filter by AI result IDs, preserving AI ranking order
+      const allMedia = await api.getMedia({ sort: "date-desc", limit: 100000 });
+      const mediaMap = new Map(allMedia.map((m) => [m.id, m]));
+      const ranked = mediaIds
+        .map((id) => mediaMap.get(id))
+        .filter((m): m is ImageEntry => m !== undefined);
+      setAiSearchResults(ranked);
+    } catch (e) {
+      console.error("AI search failed:", e);
+      setAiSearchResults([]);
+    }
+  }, []);
+
+  const handleClearAiSearch = useCallback(() => {
+    setAiSearchQuery(null);
+    setAiSearchResults(null);
+  }, []);
 
   const handleSearchCommit = useCallback((query: string) => {
     setCommittedSearch(query);
     setSearch("");
-  }, []);
+    handleClearAiSearch();
+  }, [handleClearAiSearch]);
 
   const handleClearSearch = useCallback(() => {
     setCommittedSearch("");
@@ -49,6 +82,16 @@ const Index = () => {
   });
 
   const hasData = status?.has_data ?? false;
+
+  // Check if AI search is available (has indexed images)
+  const { data: indexingStatus } = useQuery({
+    queryKey: ["indexing-status"],
+    queryFn: api.getIndexingStatus,
+    enabled: hasData,
+    staleTime: 0,
+  });
+
+  const aiSearchAvailable = (indexingStatus?.indexed ?? 0) > 0;
 
   // Shared filter params
   const filterParams = useMemo(() => ({
@@ -209,6 +252,8 @@ const Index = () => {
         onSelectAlbum={setSelectedAlbumId}
         searchQuery={committedSearch}
         onClearSearch={handleClearSearch}
+        aiSearchQuery={aiSearchQuery}
+        onClearAiSearch={handleClearAiSearch}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -216,11 +261,15 @@ const Index = () => {
           search={search}
           onSearchChange={setSearch}
           onSearchCommit={handleSearchCommit}
+          onAiSearch={handleAiSearch}
+          onClearAiSearch={handleClearAiSearch}
+          aiSearchAvailable={aiSearchAvailable}
+          aiSearchQuery={aiSearchQuery}
           sort={sort}
           onSortChange={setSort}
           view={view}
           onViewChange={setView}
-          resultCount={totalCount}
+          resultCount={aiSearchQuery ? (aiSearchResults?.length ?? 0) : totalCount}
           conversations={conversations}
           senders={senders}
           onSelectChat={setSelectedChatId}
@@ -229,7 +278,7 @@ const Index = () => {
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           <Gallery
-            images={images}
+            images={aiSearchQuery ? (aiSearchResults ?? []) : images}
             view={view}
             onImageClick={setModalImage}
             albums={albums}
