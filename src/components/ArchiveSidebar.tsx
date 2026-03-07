@@ -396,7 +396,7 @@ const ArchiveSidebar = ({
   const [renamingAlbumId, setRenamingAlbumId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteAlbumId, setDeleteAlbumId] = useState<number | null>(null);
-  const [colorPickerAlbumId, setColorPickerAlbumId] = useState<number | null>(null);
+  const [colorPickerAlbumId, setColorPickerAlbumId] = useState<number | null>(null); 
 
   const renameAlbum = useMutation({
     mutationFn: ({ id, name }: { id: number; name: string }) =>
