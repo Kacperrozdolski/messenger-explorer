@@ -182,8 +182,13 @@ pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaI
         params.push(Box::new(ft.clone()));
     }
     if let Some(ref month) = filters.month {
-        // month is in "YYYY-MM" format
-        sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+        if month.len() == 4 {
+            // Year-only filter: "YYYY"
+            sql.push_str(" AND strftime('%Y', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+        } else {
+            // Month filter: "YYYY-MM"
+            sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+        }
         params.push(Box::new(month.clone()));
     }
     if let Some(aid) = filters.album_id {
@@ -431,7 +436,11 @@ pub fn get_media_count(conn: &Connection, filters: &MediaFilters) -> Result<i64,
         params.push(Box::new(ft.clone()));
     }
     if let Some(ref month) = filters.month {
-        sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+        if month.len() == 4 {
+            sql.push_str(" AND strftime('%Y', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+        } else {
+            sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+        }
         params.push(Box::new(month.clone()));
     }
     if let Some(aid) = filters.album_id {
@@ -519,7 +528,11 @@ fn build_media_where(filters: &MediaFilters, exclude: &str) -> WhereClause {
     }
     if exclude != "month" {
         if let Some(ref month) = filters.month {
-            sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+            if month.len() == 4 {
+                sql.push_str(" AND strftime('%Y', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+            } else {
+                sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+            }
             params.push(Box::new(month.clone()));
         }
     }

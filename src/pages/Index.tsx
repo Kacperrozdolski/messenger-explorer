@@ -119,31 +119,106 @@ const Index = () => {
     placeholderData: keepPreviousData,
   });
 
-  const conversations = useMemo(() =>
-    (facets?.conversations ?? []).map((c) => ({
+  // Client-side filtering & facets for AI search results
+  const aiFilteredResults = useMemo(() => {
+    if (!aiSearchResults) return null;
+    return aiSearchResults.filter((m) => {
+      if (selectedChatId != null && m.chatId !== selectedChatId) return false;
+      if (selectedSenderId != null && m.senderId !== selectedSenderId) return false;
+      if (fileType !== "all" && m.fileType !== fileType) return false;
+      if (selectedMonth != null) {
+        const d = new Date(m.timestamp);
+        const y = d.getUTCFullYear().toString();
+        const ym = `${y}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        if (selectedMonth.length === 4 ? y !== selectedMonth : ym !== selectedMonth) return false;
+      }
+      return true;
+    });
+  }, [aiSearchResults, selectedChatId, selectedSenderId, fileType, selectedMonth]);
+
+  const aiFacets = useMemo(() => {
+    if (!aiSearchResults) return null;
+    // Compute facets from the full AI results (not filtered by the dimension being faceted)
+    const convMap = new Map<number, { name: string; type: string; count: number }>();
+    const senderMap = new Map<number, { name: string; count: number }>();
+    const monthMap = new Map<string, number>();
+    const ftMap: Record<string, number> = { image: 0, video: 0, gif: 0 };
+
+    // For facets, apply all filters EXCEPT the one being faceted (like the backend does)
+    const applyFilters = (item: ImageEntry, exclude: string) => {
+      if (exclude !== "conversation" && selectedChatId != null && item.chatId !== selectedChatId) return false;
+      if (exclude !== "sender" && selectedSenderId != null && item.senderId !== selectedSenderId) return false;
+      if (exclude !== "fileType" && fileType !== "all" && item.fileType !== fileType) return false;
+      if (exclude !== "month" && selectedMonth != null) {
+        const d = new Date(item.timestamp);
+        const y = d.getUTCFullYear().toString();
+        const ym = `${y}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        if (selectedMonth.length === 4 ? y !== selectedMonth : ym !== selectedMonth) return false;
+      }
+      return true;
+    };
+
+    for (const m of aiSearchResults) {
+      if (applyFilters(m, "conversation")) {
+        const prev = convMap.get(m.chatId);
+        convMap.set(m.chatId, { name: m.chat, type: m.chatType, count: (prev?.count ?? 0) + 1 });
+      }
+      if (applyFilters(m, "sender")) {
+        const prev = senderMap.get(m.senderId);
+        senderMap.set(m.senderId, { name: m.sender, count: (prev?.count ?? 0) + 1 });
+      }
+      if (applyFilters(m, "month")) {
+        const d = new Date(m.timestamp);
+        const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        monthMap.set(ym, (monthMap.get(ym) ?? 0) + 1);
+      }
+      if (applyFilters(m, "fileType")) {
+        ftMap[m.fileType] = (ftMap[m.fileType] ?? 0) + 1;
+      }
+    }
+
+    return { convMap, senderMap, monthMap, ftMap };
+  }, [aiSearchResults, selectedChatId, selectedSenderId, fileType, selectedMonth]);
+
+  const conversations = useMemo(() => {
+    if (aiFacets) {
+      return Array.from(aiFacets.convMap.entries())
+        .map(([id, { name, type, count }]) => ({ id, name, type: type as "group" | "dm", mediaCount: count }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return (facets?.conversations ?? []).map((c) => ({
       id: c.id,
       name: c.title,
       type: c.chat_type as "group" | "dm",
       mediaCount: c.media_count,
-    })),
-    [facets?.conversations],
-  );
+    }));
+  }, [facets?.conversations, aiFacets]);
 
-  const senders = useMemo(() =>
-    (facets?.senders ?? []).map((s) => ({
+  const senders = useMemo(() => {
+    if (aiFacets) {
+      return Array.from(aiFacets.senderMap.entries())
+        .map(([id, { name, count }]) => ({ id, name, mediaCount: count }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return (facets?.senders ?? []).map((s) => ({
       id: s.id,
       name: s.name,
       mediaCount: s.media_count,
-    })),
-    [facets?.senders],
-  );
+    }));
+  }, [facets?.senders, aiFacets]);
 
-  const timeline = useMemo(() =>
-    facets?.timeline ?? [],
-    [facets?.timeline],
-  );
+  const timeline = useMemo(() => {
+    if (aiFacets) {
+      return Array.from(aiFacets.monthMap.entries())
+        .map(([month_key, count]) => ({ label: month_key, month_key, count }))
+        .sort((a, b) => b.month_key.localeCompare(a.month_key));
+    }
+    return facets?.timeline ?? [];
+  }, [facets?.timeline, aiFacets]);
 
-  const fileTypeCounts = facets?.file_type_counts ?? null;
+  const fileTypeCounts: FileTypeCounts | null = aiFacets
+    ? { image: aiFacets.ftMap.image ?? 0, video: aiFacets.ftMap.video ?? 0, gif: aiFacets.ftMap.gif ?? 0 }
+    : facets?.file_type_counts ?? null;
 
   const { data: albums = [] } = useQuery({
     queryKey: ["albums"],
@@ -269,16 +344,19 @@ const Index = () => {
           onSortChange={setSort}
           view={view}
           onViewChange={setView}
-          resultCount={aiSearchQuery ? (aiSearchResults?.length ?? 0) : totalCount}
+          resultCount={aiSearchQuery ? (aiFilteredResults?.length ?? 0) : totalCount}
           conversations={conversations}
           senders={senders}
           onSelectChat={setSelectedChatId}
           onSelectSender={setSelectedSenderId}
+          onFileTypeChange={setFileType}
+          onSelectMonth={setSelectedMonth}
+          timelineData={timeline}
         />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           <Gallery
-            images={aiSearchQuery ? (aiSearchResults ?? []) : images}
+            images={aiSearchQuery ? (aiFilteredResults ?? []) : images}
             view={view}
             onImageClick={setModalImage}
             albums={albums}

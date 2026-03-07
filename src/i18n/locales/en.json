@@ -45,6 +45,8 @@
     "searchInMessages": "Search \"{{query}}\" in messages",
     "filterByGroup": "Filter by group",
     "filterBySender": "Filter by sender",
+    "filterByMediaType": "Media type",
+    "filterByDate": "Date filter",
     "items": "{{count}} items",
     "newestFirst": "Newest First",
     "oldestFirst": "Oldest First",

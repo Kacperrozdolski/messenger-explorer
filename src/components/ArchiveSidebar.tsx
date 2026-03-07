@@ -40,11 +40,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
+// Collapsible no longer used — YearRow handles expand/collapse manually
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -287,49 +283,61 @@ function YearRow({
   selectedMonth: string | null;
   onSelectMonth: (month: string | null) => void;
 }) {
-  const hasSelectedMonth = yearGroup.months.some(
+  const isYearSelected = selectedMonth === yearGroup.year;
+  const hasSelectedMonth = isYearSelected || yearGroup.months.some(
     (m) => m.month_key === selectedMonth,
   );
-  const [open, setOpen] = useState(hasSelectedMonth);
+  const [open, setOpen] = useState(hasSelectedMonth && !isYearSelected);
+
+  const handleYearClick = (e: React.MouseEvent) => {
+    // If clicking the chevron area, toggle expand. Otherwise select year filter.
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-chevron]")) {
+      setOpen(!open);
+    } else {
+      onSelectMonth(isYearSelected ? null : yearGroup.year);
+    }
+  };
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <button
-          className={cn(
-            "flex items-center gap-2 w-full py-1 text-[12px] rounded transition-colors group",
-            hasSelectedMonth
-              ? "text-primary"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
+    <div>
+      <button
+        onClick={handleYearClick}
+        className={cn(
+          "flex items-center gap-2 w-full py-1 text-[12px] rounded transition-colors group",
+          hasSelectedMonth
+            ? "text-primary"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <span data-chevron onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="shrink-0 cursor-pointer">
           {open ? (
-            <ChevronDown className="h-3 w-3 shrink-0" />
+            <ChevronDown className="h-3 w-3" />
           ) : (
-            <ChevronRight className="h-3 w-3 shrink-0" />
+            <ChevronRight className="h-3 w-3" />
           )}
-          <span className="w-10 text-left shrink-0 font-medium">
-            {yearGroup.year}
-          </span>
-          <div className="flex-1 h-3 bg-secondary rounded-sm overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-sm transition-all",
-                hasSelectedMonth
-                  ? "bg-primary"
-                  : "bg-muted-foreground/30 group-hover:bg-muted-foreground/50",
-              )}
-              style={{
-                width: `${(yearGroup.totalCount / maxYearCount) * 100}%`,
-              }}
-            />
-          </div>
-          <span className="w-6 text-right text-[11px]">
-            {yearGroup.totalCount}
-          </span>
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
+        </span>
+        <span className="w-10 text-left shrink-0 font-medium">
+          {yearGroup.year}
+        </span>
+        <div className="flex-1 h-3 bg-secondary rounded-sm overflow-hidden">
+          <div
+            className={cn(
+              "h-full rounded-sm transition-all",
+              hasSelectedMonth
+                ? "bg-primary"
+                : "bg-muted-foreground/30 group-hover:bg-muted-foreground/50",
+            )}
+            style={{
+              width: `${(yearGroup.totalCount / maxYearCount) * 100}%`,
+            }}
+          />
+        </div>
+        <span className="w-6 text-right text-[11px]">
+          {yearGroup.totalCount}
+        </span>
+      </button>
+      {open && (
         <div className="pl-5 space-y-0.5">
           {yearGroup.months.map((d) => (
             <button
@@ -364,8 +372,8 @@ function YearRow({
             </button>
           ))}
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      )}
+    </div>
   );
 }
 
@@ -513,7 +521,7 @@ const ArchiveSidebar = ({
     !!aiSearchQuery;
 
   const selectedMonthLabel = selectedMonth
-    ? formatMonthKeyFull(selectedMonth)
+    ? (selectedMonth.includes("-") ? formatMonthKeyFull(selectedMonth) : selectedMonth)
     : null;
 
   const SECTION_TITLES: Record<SectionId, string> = {

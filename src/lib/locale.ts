@@ -23,6 +23,7 @@ export function formatMonthKeyLabel(monthKey: string): string {
 }
 
 export function formatMonthKeyFull(monthKey: string): string {
+  if (!monthKey.includes("-")) return monthKey; // year-only
   const [year, month] = monthKey.split("-");
   if (!year || !month) return monthKey;
   const date = new Date(Number(year), Number(month) - 1);

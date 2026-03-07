@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, Grid3X3, List, ArrowUpDown, Settings, Users, User, MessageSquare, Brain, X } from "lucide-react";
-import type { SortOption, ViewMode, ChatSource, SenderInfo } from "@/data/types";
+import { Search, Grid3X3, List, ArrowUpDown, Settings, Users, User, MessageSquare, Brain, X, Image, Video, Sparkles, Calendar } from "lucide-react";
+import type { SortOption, ViewMode, ChatSource, SenderInfo, FileTypeFilter } from "@/data/types";
+import type { TimelineEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatMonthKeyFull, getLocale } from "@/lib/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TopBarProps {
@@ -23,12 +25,16 @@ interface TopBarProps {
   senders: SenderInfo[];
   onSelectChat: (id: number | null) => void;
   onSelectSender: (id: number | null) => void;
+  onFileTypeChange: (ft: FileTypeFilter) => void;
+  onSelectMonth: (month: string | null) => void;
+  timelineData: TimelineEntry[];
 }
 
 interface Suggestion {
-  type: "search" | "group" | "sender" | "ai-search";
+  type: "search" | "group" | "sender" | "ai-search" | "media-type" | "date";
   label: string;
   id?: number;
+  value?: string; // for media-type (file type value) or date (month_key/year)
 }
 
 const MAX_SUGGESTIONS = 5;
@@ -50,6 +56,9 @@ const TopBar = ({
   senders,
   onSelectChat,
   onSelectSender,
+  onFileTypeChange,
+  onSelectMonth,
+  timelineData,
 }: TopBarProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -59,6 +68,55 @@ const TopBar = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const query = search.trim().toLowerCase();
+
+  // Build available years from timeline data
+  const availableYears = useMemo(() => {
+    const yearMap = new Map<string, number>();
+    for (const entry of timelineData) {
+      const year = entry.month_key.split("-")[0];
+      yearMap.set(year, (yearMap.get(year) ?? 0) + entry.count);
+    }
+    return Array.from(yearMap.entries()).map(([year, count]) => ({ year, count }));
+  }, [timelineData]);
+
+  // Build media type aliases including translated labels
+  const mediaTypeAliases = useMemo(() => {
+    const base: { value: FileTypeFilter; labels: string[] }[] = [
+      { value: "image", labels: ["image", "images", "photo", "photos", "picture", "pictures", "img"] },
+      { value: "video", labels: ["video", "videos", "vid", "vids", "movie", "movies", "clip", "clips"] },
+      { value: "gif", labels: ["gif", "gifs", "animated"] },
+    ];
+    // Add translated labels from i18n
+    for (const mt of base) {
+      const translated = mt.value === "image" ? t("sidebar.images") : mt.value === "video" ? t("sidebar.videos") : t("sidebar.gifs");
+      const translatedType = t(`sidebar.${mt.value === "gif" ? "gifs" : mt.value === "image" ? "images" : "videos"}`);
+      for (const s of [translated, translatedType]) {
+        const lower = s.toLowerCase();
+        if (!mt.labels.includes(lower)) mt.labels.push(lower);
+      }
+      // Also add the sidebar.mediaType section label values (singular forms)
+      const singular = translated.replace(/s$/i, "").toLowerCase();
+      if (singular && !mt.labels.includes(singular)) mt.labels.push(singular);
+    }
+    return base;
+  }, [t]);
+
+  // Build month names including localized forms
+  const monthNames = useMemo(() => {
+    const locale = getLocale();
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthNum = String(i + 1).padStart(2, "0");
+      const date = new Date(2000, i);
+      const long = date.toLocaleString(locale, { month: "long" }).toLowerCase();
+      const short = date.toLocaleString(locale, { month: "short" }).toLowerCase().replace(".", "");
+      // English fallback names
+      const enDate = new Date(2000, i);
+      const enLong = enDate.toLocaleString("en-US", { month: "long" }).toLowerCase();
+      const enShort = enDate.toLocaleString("en-US", { month: "short" }).toLowerCase();
+      const names = new Set([long, short, enLong, enShort]);
+      return { month: monthNum, names: Array.from(names) };
+    });
+  }, []);
 
   const suggestions = useMemo<Suggestion[]>(() => {
     if (!query) return [];
@@ -80,6 +138,35 @@ const TopBar = ({
       results.push({ type: "sender", label: s.name, id: s.id });
     }
 
+    // Matching media types
+    for (const mt of mediaTypeAliases) {
+      if (mt.labels.some((l) => l.startsWith(query) || query.startsWith(l))) {
+        const label = mt.value === "image" ? t("sidebar.images") : mt.value === "video" ? t("sidebar.videos") : t("sidebar.gifs");
+        results.push({ type: "media-type", label, value: mt.value });
+      }
+    }
+
+    // Matching years
+    for (const { year } of availableYears) {
+      if (year.includes(query)) {
+        results.push({ type: "date", label: year, value: year });
+      }
+    }
+
+    // Matching months (e.g. "january", "jan 2024", "grudzień")
+    const addedMonthKeys = new Set<string>();
+    for (const mn of monthNames) {
+      if (mn.names.some((n) => n.startsWith(query) || query.startsWith(n))) {
+        const matchingEntries = timelineData.filter((e) => e.month_key.endsWith(`-${mn.month}`));
+        for (const entry of matchingEntries.slice(0, 3)) {
+          if (!addedMonthKeys.has(entry.month_key)) {
+            addedMonthKeys.add(entry.month_key);
+            results.push({ type: "date", label: formatMonthKeyFull(entry.month_key), value: entry.month_key });
+          }
+        }
+      }
+    }
+
     // Always add "search in messages" option
     results.push({ type: "search", label: search.trim() });
 
@@ -89,7 +176,7 @@ const TopBar = ({
     }
 
     return results;
-  }, [query, conversations, senders, search, aiSearchAvailable]);
+  }, [query, conversations, senders, search, aiSearchAvailable, availableYears, timelineData, t, mediaTypeAliases, monthNames]);
 
   // Reset highlight when suggestions change
   useEffect(() => {
@@ -118,6 +205,12 @@ const TopBar = ({
       onSearchChange("");
     } else if (suggestion.type === "sender") {
       onSelectSender(suggestion.id!);
+      onSearchChange("");
+    } else if (suggestion.type === "media-type") {
+      onFileTypeChange(suggestion.value as FileTypeFilter);
+      onSearchChange("");
+    } else if (suggestion.type === "date") {
+      onSelectMonth(suggestion.value!);
       onSearchChange("");
     } else if (suggestion.type === "ai-search") {
       onAiSearch?.(suggestion.label);
@@ -206,6 +299,12 @@ const TopBar = ({
                 {s.type === "sender" && <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                 {s.type === "search" && <MessageSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                 {s.type === "ai-search" && <Brain className="h-3.5 w-3.5 text-primary shrink-0" />}
+                {s.type === "media-type" && (
+                  s.value === "image" ? <Image className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> :
+                  s.value === "video" ? <Video className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> :
+                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                )}
+                {s.type === "date" && <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                 <span className="truncate flex-1">
                   {s.type === "search"
                     ? t("topbar.searchInMessages", { query: s.label })
@@ -216,6 +315,8 @@ const TopBar = ({
                 <span className="text-[11px] text-muted-foreground shrink-0">
                   {s.type === "group" && t("topbar.filterByGroup")}
                   {s.type === "sender" && t("topbar.filterBySender")}
+                  {s.type === "media-type" && t("topbar.filterByMediaType")}
+                  {s.type === "date" && t("topbar.filterByDate")}
                   {s.type === "ai-search" && t("topbar.aiSearchHint", "Visual content")}
                 </span>
               </button>
