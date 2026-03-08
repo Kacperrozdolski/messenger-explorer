@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use rusqlite::Connection;
 use crate::parser::{ParseResult, ParsedConversation, ParsedMedia, ContextMsg};
 
@@ -5,6 +6,7 @@ use crate::parser::{ParseResult, ParsedConversation, ParsedMedia, ContextMsg};
 /// Caller is responsible for transaction management.
 pub fn insert_all(conn: &Connection, result: &ParseResult) -> Result<ImportStats, String> {
     let mut stats = ImportStats::default();
+    let mut sender_cache: HashMap<String, i64> = HashMap::new();
 
     for conv in &result.conversations {
         let conv_id = insert_conversation(conn, conv)?;
@@ -12,7 +14,7 @@ pub fn insert_all(conn: &Connection, result: &ParseResult) -> Result<ImportStats
 
         // Insert participants
         for participant_name in &conv.participants {
-            let sender_id = get_or_create_sender(conn, participant_name)?;
+            let sender_id = get_or_create_sender_cached(conn, participant_name, &mut sender_cache)?;
             conn.execute(
                 "INSERT OR IGNORE INTO conversation_participants (conversation_id, sender_id) VALUES (?1, ?2)",
                 rusqlite::params![conv_id, sender_id],
@@ -21,18 +23,18 @@ pub fn insert_all(conn: &Connection, result: &ParseResult) -> Result<ImportStats
 
         // Insert media
         for media in &conv.media {
-            let sender_id = get_or_create_sender(conn, &media.sender_name)?;
+            let sender_id = get_or_create_sender_cached(conn, &media.sender_name, &mut sender_cache)?;
             let media_id = insert_media(conn, conv_id, sender_id, media)?;
             stats.media += 1;
 
             // Insert context messages
             for (i, ctx) in media.context_before.iter().enumerate() {
                 let position = -(media.context_before.len() as i32) + i as i32;
-                insert_context_message(conn, media_id, ctx, position)?;
+                insert_context_message_cached(conn, media_id, ctx, position, &mut sender_cache)?;
             }
             for (i, ctx) in media.context_after.iter().enumerate() {
                 let position = (i + 1) as i32;
-                insert_context_message(conn, media_id, ctx, position)?;
+                insert_context_message_cached(conn, media_id, ctx, position, &mut sender_cache)?;
             }
         }
     }
@@ -65,26 +67,33 @@ fn insert_conversation(
     Ok(conn.last_insert_rowid())
 }
 
-fn get_or_create_sender(conn: &Connection, name: &str) -> Result<i64, String> {
-    // Try to find existing sender
+fn get_or_create_sender_cached(conn: &Connection, name: &str, cache: &mut HashMap<String, i64>) -> Result<i64, String> {
+    if let Some(&id) = cache.get(name) {
+        return Ok(id);
+    }
+
     let result: Result<i64, _> = conn.query_row(
         "SELECT id FROM senders WHERE name = ?1",
         rusqlite::params![name],
         |row| row.get(0),
     );
 
-    match result {
-        Ok(id) => Ok(id),
+    let id = match result {
+        Ok(id) => id,
         Err(rusqlite::Error::QueryReturnedNoRows) => {
             conn.execute(
                 "INSERT INTO senders (name) VALUES (?1)",
                 rusqlite::params![name],
             ).map_err(|e| e.to_string())?;
-            Ok(conn.last_insert_rowid())
+            conn.last_insert_rowid()
         }
-        Err(e) => Err(e.to_string()),
-    }
+        Err(e) => return Err(e.to_string()),
+    };
+
+    cache.insert(name.to_string(), id);
+    Ok(id)
 }
+
 
 fn insert_media(
     conn: &Connection,
@@ -109,13 +118,14 @@ fn insert_media(
     Ok(conn.last_insert_rowid())
 }
 
-fn insert_context_message(
+fn insert_context_message_cached(
     conn: &Connection,
     media_id: i64,
     ctx: &ContextMsg,
     position: i32,
+    cache: &mut HashMap<String, i64>,
 ) -> Result<(), String> {
-    let sender_id = get_or_create_sender(conn, &ctx.sender_name)?;
+    let sender_id = get_or_create_sender_cached(conn, &ctx.sender_name, cache)?;
     conn.execute(
         "INSERT INTO context_messages (media_id, sender_id, content, timestamp_ms, position)
          VALUES (?1, ?2, ?3, ?4, ?5)",

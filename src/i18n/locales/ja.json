@@ -43,8 +43,11 @@
   "topbar": {
     "search": "メッセージを検索...",
     "searchInMessages": "メッセージで「{{query}}」を検索",
+    "aiSearch": "AI検索「{{query}}」",
     "filterByGroup": "グループで絞り込む",
     "filterBySender": "送信者で絞り込む",
+    "filterByMediaType": "メディアタイプ",
+    "filterByDate": "日付フィルター",
     "items": "{{count}} 件",
     "newestFirst": "新しい順",
     "oldestFirst": "古い順",
@@ -55,7 +58,8 @@
     "noMatchHint": "検索またはフィルターを調整してみてください",
     "photos": "{{count}} 枚の写真",
     "showContext": "コンテキストを表示",
-    "openInExplorer": "エクスプローラーで開く"
+    "openInExplorer": "エクスプローラーで開く",
+    "endOfResults": "すべて読み込み完了"
   },
   "context": {
     "title": "チャットコンテキスト"
@@ -93,7 +97,20 @@
     "language": "言語",
     "languageDesc": "アプリケーションの表示言語を選択",
     "conversations": "会話",
-    "media": "メディア"
+    "media": "メディア",
+    "aiSearch": "AI検索",
+    "aiSearchDesc": "AIで画像をインデックス化し、視覚的な内容で検索できます（例：「山」「ミーム」「夕日」）。",
+    "aiModelsNotFound": "CLIPモデルファイルが見つかりません。clip-visual.onnx、clip-textual.onnx、tokenizer.jsonをmodelsディレクトリに配置してください。",
+    "aiNotIndexed": "まだインデックス化された画像がありません。",
+    "aiIndexing": "インデックス中... {{indexed}} / {{total}} ({{pct}}%)",
+    "aiIndexed": "{{indexed}} / {{total}} 画像がインデックス化済み。",
+    "aiCancel": "キャンセル",
+    "aiResume": "インデックスを再開",
+    "aiBuildIndex": "インデックスを作成",
+    "aiReset": "リセット",
+    "aiResetTitle": "AIインデックスをリセット",
+    "aiResetDesc": "すべての画像埋め込みが削除されます。AI検索を使用するには再インデックスが必要です。",
+    "aiResetConfirm": "インデックスをリセット"
   },
   "notFound": {
     "title": "404",

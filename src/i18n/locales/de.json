@@ -43,8 +43,11 @@
   "topbar": {
     "search": "Nachrichten durchsuchen...",
     "searchInMessages": "\"{{query}}\" in Nachrichten suchen",
+    "aiSearch": "KI-Suche \"{{query}}\"",
     "filterByGroup": "Nach Gruppe filtern",
     "filterBySender": "Nach Absender filtern",
+    "filterByMediaType": "Medientyp",
+    "filterByDate": "Datumsfilter",
     "items": "{{count}} Elemente",
     "newestFirst": "Neueste zuerst",
     "oldestFirst": "Älteste zuerst",
@@ -55,7 +58,8 @@
     "noMatchHint": "Versuchen Sie, Ihre Suche oder Filter anzupassen",
     "photos": "{{count}} Fotos",
     "showContext": "Kontext anzeigen",
-    "openInExplorer": "Im Datei-Explorer öffnen"
+    "openInExplorer": "Im Datei-Explorer öffnen",
+    "endOfResults": "Alle Elemente geladen"
   },
   "context": {
     "title": "Chat-Kontext"
@@ -93,7 +97,20 @@
     "language": "Sprache",
     "languageDesc": "Wählen Sie die Anzeigesprache der Anwendung",
     "conversations": "Unterhaltungen",
-    "media": "Medien"
+    "media": "Medien",
+    "aiSearch": "KI-Suche",
+    "aiSearchDesc": "Indexieren Sie Ihre Bilder mit KI, um nach visuellen Inhalten zu suchen (z.B. \"Berge\", \"Memes\", \"Sonnenuntergang\").",
+    "aiModelsNotFound": "CLIP-Modelldateien nicht gefunden. Legen Sie clip-visual.onnx, clip-textual.onnx und tokenizer.json im Modellverzeichnis ab.",
+    "aiNotIndexed": "Noch keine Bilder indexiert.",
+    "aiIndexing": "Indexierung... {{indexed}} / {{total}} ({{pct}}%)",
+    "aiIndexed": "{{indexed}} / {{total}} Bilder indexiert.",
+    "aiCancel": "Abbrechen",
+    "aiResume": "Indexierung fortsetzen",
+    "aiBuildIndex": "Index erstellen",
+    "aiReset": "Zurücksetzen",
+    "aiResetTitle": "KI-Index zurücksetzen",
+    "aiResetDesc": "Alle Bild-Embeddings werden gelöscht. Sie müssen erneut indexieren, um die KI-Suche zu nutzen.",
+    "aiResetConfirm": "Index zurücksetzen"
   },
   "notFound": {
     "title": "404",

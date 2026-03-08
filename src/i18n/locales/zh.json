@@ -43,8 +43,11 @@
   "topbar": {
     "search": "搜索消息...",
     "searchInMessages": "在消息中搜索\"{{query}}\"",
+    "aiSearch": "AI搜索\"{{query}}\"",
     "filterByGroup": "按群组筛选",
     "filterBySender": "按发送者筛选",
+    "filterByMediaType": "媒体类型",
+    "filterByDate": "日期筛选",
     "items": "{{count}} 项",
     "newestFirst": "最新优先",
     "oldestFirst": "最早优先",
@@ -55,7 +58,8 @@
     "noMatchHint": "尝试调整搜索或筛选条件",
     "photos": "{{count}} 张照片",
     "showContext": "显示上下文",
-    "openInExplorer": "在文件管理器中打开"
+    "openInExplorer": "在文件管理器中打开",
+    "endOfResults": "所有项目已加载"
   },
   "context": {
     "title": "聊天上下文"
@@ -93,7 +97,20 @@
     "language": "语言",
     "languageDesc": "选择应用程序的显示语言",
     "conversations": "对话",
-    "media": "媒体"
+    "media": "媒体",
+    "aiSearch": "AI搜索",
+    "aiSearchDesc": "使用AI索引您的图像，按视觉内容搜索（如「山脉」、「表情包」、「日落」）。",
+    "aiModelsNotFound": "未找到CLIP模型文件。请将clip-visual.onnx、clip-textual.onnx和tokenizer.json放入models目录。",
+    "aiNotIndexed": "尚未索引任何图像。",
+    "aiIndexing": "索引中... {{indexed}} / {{total}} ({{pct}}%)",
+    "aiIndexed": "{{indexed}} / {{total}} 张图像已索引。",
+    "aiCancel": "取消",
+    "aiResume": "继续索引",
+    "aiBuildIndex": "创建索引",
+    "aiReset": "重置",
+    "aiResetTitle": "重置AI索引",
+    "aiResetDesc": "这将删除所有图像嵌入。您需要重新索引才能使用AI搜索。",
+    "aiResetConfirm": "重置索引"
   },
   "notFound": {
     "title": "404",

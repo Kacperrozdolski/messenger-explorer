@@ -1,3 +1,4 @@
+import { memo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { MessageCircle, Play } from "lucide-react";
 import type { ImageEntry, AlbumInfo } from "@/data/types";
@@ -7,7 +8,7 @@ import { getLocale } from "@/lib/locale";
 
 interface ImageCardProps {
   image: ImageEntry;
-  onClick: () => void;
+  onClick: (image: ImageEntry) => void;
   albums: AlbumInfo[];
   activeAlbumId: number | null;
 }
@@ -20,17 +21,23 @@ const formatTime = (ts: number) => {
 const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) => {
   const { t } = useTranslation();
 
+  const handleClick = useCallback(() => onClick(image), [onClick, image]);
+  const handleContextClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick(image);
+  }, [onClick, image]);
+
   return (
     <AlbumContextMenu
       mediaId={image.id}
       filePath={image.file_path}
       albums={albums}
       activeAlbumId={activeAlbumId}
-      onShowContext={onClick}
+      onShowContext={handleClick}
     >
     <div
       className="group relative overflow-hidden rounded-md cursor-pointer animate-fade-in break-inside-avoid mb-3"
-      onClick={onClick}
+      onClick={handleClick}
     >
       {image.fileType === "video" ? (
         <video
@@ -73,10 +80,7 @@ const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) =>
         <p className="text-[11px] text-muted-foreground mt-0.5">{formatTime(image.timestamp)}</p>
         <button
           className="pointer-events-auto flex items-center gap-1.5 mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
+          onClick={handleContextClick}
         >
           <MessageCircle className="h-3 w-3" />
           {t("gallery.showContext")}
@@ -87,4 +91,4 @@ const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) =>
   );
 };
 
-export default ImageCard;
+export default memo(ImageCard);

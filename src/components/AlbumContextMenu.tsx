@@ -54,7 +54,6 @@ const AlbumContextMenu = ({
 
   const invalidateAlbums = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["albums"] });
-    queryClient.invalidateQueries({ queryKey: ["media"] });
   }, [queryClient]);
 
   const addToAlbum = useMutation({

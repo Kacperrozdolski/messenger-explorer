@@ -137,6 +137,34 @@ export async function getMedia(filters: {
   }));
 }
 
+export async function getMediaByIds(ids: number[]): Promise<ImageEntry[]> {
+  const data = await invoke<
+    {
+      id: number;
+      file_path: string;
+      sender_name: string;
+      timestamp_ms: number;
+      conversation_title: string;
+      chat_type: string;
+      file_type: string;
+      conversation_id: number;
+      sender_id: number;
+    }[]
+  >("cmd_get_media_by_ids", { ids });
+  return data.map((m) => ({
+    id: m.id,
+    src: convertFileSrc(m.file_path, "media"),
+    file_path: m.file_path,
+    sender: m.sender_name,
+    senderId: m.sender_id,
+    timestamp: m.timestamp_ms,
+    chat: m.conversation_title,
+    chatId: m.conversation_id,
+    chatType: m.chat_type as "group" | "dm",
+    fileType: m.file_type as "image" | "video" | "gif",
+  }));
+}
+
 export async function getMediaCount(filters: {
   conversationId?: number;
   senderId?: number;

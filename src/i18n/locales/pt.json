@@ -43,8 +43,11 @@
   "topbar": {
     "search": "Pesquisar mensagens...",
     "searchInMessages": "Pesquisar \"{{query}}\" nas mensagens",
+    "aiSearch": "Pesquisa IA \"{{query}}\"",
     "filterByGroup": "Filtrar por grupo",
     "filterBySender": "Filtrar por remetente",
+    "filterByMediaType": "Tipo de mídia",
+    "filterByDate": "Filtro de data",
     "items": "{{count}} itens",
     "newestFirst": "Mais recentes",
     "oldestFirst": "Mais antigos",
@@ -55,7 +58,8 @@
     "noMatchHint": "Tente ajustar sua busca ou filtros",
     "photos": "{{count}} fotos",
     "showContext": "Mostrar contexto",
-    "openInExplorer": "Abrir no explorador de ficheiros"
+    "openInExplorer": "Abrir no explorador de ficheiros",
+    "endOfResults": "Todos os itens carregados"
   },
   "context": {
     "title": "Contexto do chat"
@@ -93,7 +97,20 @@
     "language": "Idioma",
     "languageDesc": "Escolha o idioma de exibição do aplicativo",
     "conversations": "conversas",
-    "media": "mídias"
+    "media": "mídias",
+    "aiSearch": "Pesquisa IA",
+    "aiSearchDesc": "Indexe suas imagens com IA para pesquisar por conteúdo visual (ex. \"montanhas\", \"memes\", \"pôr do sol\").",
+    "aiModelsNotFound": "Arquivos do modelo CLIP não encontrados. Coloque clip-visual.onnx, clip-textual.onnx e tokenizer.json no diretório de modelos.",
+    "aiNotIndexed": "Nenhuma imagem indexada ainda.",
+    "aiIndexing": "Indexando... {{indexed}} / {{total}} ({{pct}}%)",
+    "aiIndexed": "{{indexed}} / {{total}} imagens indexadas.",
+    "aiCancel": "Cancelar",
+    "aiResume": "Retomar indexação",
+    "aiBuildIndex": "Criar índice",
+    "aiReset": "Redefinir",
+    "aiResetTitle": "Redefinir índice IA",
+    "aiResetDesc": "Isso excluirá todos os embeddings de imagens. Você precisará re-indexar para usar a pesquisa IA.",
+    "aiResetConfirm": "Redefinir índice"
   },
   "notFound": {
     "title": "404",

@@ -43,6 +43,7 @@
   "topbar": {
     "search": "Search messages...",
     "searchInMessages": "Search \"{{query}}\" in messages",
+    "aiSearch": "AI Search \"{{query}}\"",
     "filterByGroup": "Filter by group",
     "filterBySender": "Filter by sender",
     "filterByMediaType": "Media type",
@@ -57,7 +58,8 @@
     "noMatchHint": "Try adjusting your search or filters",
     "photos": "{{count}} photos",
     "showContext": "Show Context",
-    "openInExplorer": "Open in File Explorer"
+    "openInExplorer": "Open in File Explorer",
+    "endOfResults": "All items loaded"
   },
   "context": {
     "title": "Chat Context"
@@ -95,7 +97,20 @@
     "language": "Language",
     "languageDesc": "Choose the display language for the application",
     "conversations": "conversations",
-    "media": "media"
+    "media": "media",
+    "aiSearch": "AI Search",
+    "aiSearchDesc": "Index your images with AI to search by visual content (e.g. \"mountains\", \"memes\", \"sunset\").",
+    "aiModelsNotFound": "CLIP model files not found. Place clip-visual.onnx, clip-textual.onnx, and tokenizer.json in the models directory.",
+    "aiNotIndexed": "No images indexed yet.",
+    "aiIndexing": "Indexing... {{indexed}} / {{total}} ({{pct}}%)",
+    "aiIndexed": "{{indexed}} / {{total}} images indexed.",
+    "aiCancel": "Cancel",
+    "aiResume": "Resume Indexing",
+    "aiBuildIndex": "Build Index",
+    "aiReset": "Reset",
+    "aiResetTitle": "Reset AI Index",
+    "aiResetDesc": "This will delete all image embeddings. You'll need to re-index to use AI search.",
+    "aiResetConfirm": "Reset Index"
   },
   "notFound": {
     "title": "404",

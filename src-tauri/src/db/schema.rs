@@ -120,6 +120,7 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         CREATE INDEX IF NOT EXISTS idx_media_file_type ON media(file_type);
         CREATE INDEX IF NOT EXISTS idx_media_timestamp ON media(timestamp_ms);
         CREATE INDEX IF NOT EXISTS idx_context_media ON context_messages(media_id);
+        CREATE INDEX IF NOT EXISTS idx_context_content ON context_messages(media_id, content);
 
         CREATE TABLE IF NOT EXISTS albums (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,

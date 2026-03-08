@@ -166,18 +166,22 @@ fn preprocess_image(img: &image::DynamicImage) -> Array4<f32> {
     let cropped = resized.crop_imm(x_offset, y_offset, IMAGE_SIZE as u32, IMAGE_SIZE as u32);
 
     let rgb = cropped.to_rgb8();
+    let raw = rgb.as_raw();
+    let px_count = IMAGE_SIZE * IMAGE_SIZE;
 
-    // Convert to NCHW float tensor and normalize
-    let mut tensor = Array4::<f32>::zeros((1, 3, IMAGE_SIZE, IMAGE_SIZE));
-    for y in 0..IMAGE_SIZE {
-        for x in 0..IMAGE_SIZE {
-            let pixel = rgb.get_pixel(x as u32, y as u32);
-            for c in 0..3 {
-                tensor[[0, c, y, x]] = (pixel[c] as f32 / 255.0 - MEAN[c]) / STD[c];
-            }
-        }
+    // Vectorized: build flat Vec then reshape — avoids per-pixel indexing overhead
+    let mut data = vec![0.0f32; 3 * px_count];
+    for i in 0..px_count {
+        let r = raw[i * 3] as f32 / 255.0;
+        let g = raw[i * 3 + 1] as f32 / 255.0;
+        let b = raw[i * 3 + 2] as f32 / 255.0;
+        data[i] = (r - MEAN[0]) / STD[0];
+        data[px_count + i] = (g - MEAN[1]) / STD[1];
+        data[2 * px_count + i] = (b - MEAN[2]) / STD[2];
     }
-    tensor
+
+    Array4::from_shape_vec((1, 3, IMAGE_SIZE, IMAGE_SIZE), data)
+        .expect("shape mismatch in preprocess_image")
 }
 
 fn normalize_vec(v: &[f32]) -> Vec<f32> {
@@ -237,6 +241,9 @@ pub fn run_indexing(
     let mut indexed: u64 = 0;
     on_progress(indexed, total);
 
+    const BATCH_SIZE: usize = 100;
+    let mut batch: Vec<(i64, Vec<u8>)> = Vec::with_capacity(BATCH_SIZE);
+
     for (media_id, file_path) in &items {
         if cancel_flag.load(Ordering::Relaxed) {
             log::info!("Indexing cancelled at {}/{}", indexed, total);
@@ -246,22 +253,23 @@ pub fn run_indexing(
         let path = PathBuf::from(file_path);
         if !path.exists() {
             indexed += 1;
-            on_progress(indexed, total);
+            if indexed % 10 == 0 { on_progress(indexed, total); }
             continue;
         }
 
         match model.encode_image(&path) {
             Ok(embedding) => {
-                let bytes = embedding_to_bytes(&embedding);
-                conn.execute(
-                    "INSERT OR REPLACE INTO media_embeddings (media_id, embedding) VALUES (?1, ?2)",
-                    rusqlite::params![media_id, bytes],
-                )
-                .map_err(|e| e.to_string())?;
+                batch.push((*media_id, embedding_to_bytes(&embedding)));
             }
             Err(e) => {
                 log::warn!("Failed to encode image {}: {}", file_path, e);
             }
+        }
+
+        // Flush batch
+        if batch.len() >= BATCH_SIZE {
+            flush_embedding_batch(conn, &batch)?;
+            batch.clear();
         }
 
         indexed += 1;
@@ -270,7 +278,25 @@ pub fn run_indexing(
         }
     }
 
+    // Flush remaining
+    if !batch.is_empty() {
+        flush_embedding_batch(conn, &batch)?;
+    }
+
     Ok(indexed)
+}
+
+fn flush_embedding_batch(conn: &rusqlite::Connection, batch: &[(i64, Vec<u8>)]) -> Result<(), String> {
+    conn.execute_batch("BEGIN").map_err(|e| e.to_string())?;
+    for (media_id, bytes) in batch {
+        conn.execute(
+            "INSERT OR REPLACE INTO media_embeddings (media_id, embedding) VALUES (?1, ?2)",
+            rusqlite::params![media_id, bytes],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    conn.execute_batch("COMMIT").map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// Search for images similar to a text query.

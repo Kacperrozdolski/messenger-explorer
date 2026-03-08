@@ -298,6 +298,12 @@ fn cmd_remove_media_from_album(state: tauri::State<'_, DbState>, album_id: i64, 
 }
 
 #[tauri::command]
+fn cmd_get_media_by_ids(state: tauri::State<'_, DbState>, ids: Vec<i64>) -> Result<Vec<MediaItem>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_media_by_ids(&conn, &ids)
+}
+
+#[tauri::command]
 fn cmd_get_media_albums(state: tauri::State<'_, DbState>, media_id: i64) -> Result<Vec<i64>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     queries::get_media_albums(&conn, media_id)
@@ -613,9 +619,15 @@ pub fn run() {
 
             let conn = Connection::open(&db_path)
                 .expect("Failed to open database");
-            // Disable FK enforcement — we manage cascading deletes manually in clear_source
-            conn.execute_batch("PRAGMA foreign_keys = OFF;")
-                .expect("Failed to set pragmas");
+            // Performance pragmas
+            conn.execute_batch("
+                PRAGMA foreign_keys = OFF;
+                PRAGMA journal_mode = WAL;
+                PRAGMA synchronous = NORMAL;
+                PRAGMA cache_size = -16000;
+                PRAGMA mmap_size = 268435456;
+                PRAGMA temp_store = MEMORY;
+            ").expect("Failed to set pragmas");
             db::schema::initialize(&conn)
                 .expect("Failed to initialize database schema");
 
@@ -682,6 +694,7 @@ pub fn run() {
             cmd_update_album_color,
             cmd_add_media_to_album,
             cmd_remove_media_from_album,
+            cmd_get_media_by_ids,
             cmd_get_media_albums,
             cmd_export_album_pdf,
             cmd_show_in_folder,

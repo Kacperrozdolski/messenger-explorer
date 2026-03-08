@@ -39,7 +39,6 @@ const AlbumPickerButton = ({ mediaId, albums, className }: AlbumPickerButtonProp
 
   const invalidateAlbums = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["albums"] });
-    queryClient.invalidateQueries({ queryKey: ["media"] });
   }, [queryClient]);
 
   const addToAlbum = useMutation({

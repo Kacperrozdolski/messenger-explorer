@@ -1,3 +1,4 @@
+import { memo, useCallback } from "react";
 import { MessageCircle } from "lucide-react";
 import type { ImageEntry, AlbumInfo } from "@/data/types";
 import AlbumContextMenu from "./AlbumContextMenu";
@@ -6,7 +7,7 @@ import { getLocale } from "@/lib/locale";
 
 interface ImageListRowProps {
   image: ImageEntry;
-  onClick: () => void;
+  onClick: (image: ImageEntry) => void;
   albums: AlbumInfo[];
   activeAlbumId: number | null;
 }
@@ -17,16 +18,17 @@ const formatTime = (ts: number) => {
 };
 
 const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowProps) => {
+  const handleClick = useCallback(() => onClick(image), [onClick, image]);
   return (
     <AlbumContextMenu
       mediaId={image.id}
       filePath={image.file_path}
       albums={albums}
       activeAlbumId={activeAlbumId}
-      onShowContext={onClick}
+      onShowContext={handleClick}
     >
       <button
-        onClick={onClick}
+        onClick={handleClick}
         className="flex items-center gap-4 w-full px-4 py-2.5 rounded-md hover:bg-accent/50 transition-colors text-left animate-fade-in"
       >
         <img
@@ -50,4 +52,4 @@ const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowPro
   );
 };
 
-export default ImageListRow;
+export default memo(ImageListRow);

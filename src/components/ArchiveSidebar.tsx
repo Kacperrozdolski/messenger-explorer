@@ -432,7 +432,6 @@ const ArchiveSidebar = ({
     mutationFn: (id: number) => api.deleteAlbum(id),
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["albums"] });
-      queryClient.invalidateQueries({ queryKey: ["media"] });
       if (selectedAlbumId === deletedId) onSelectAlbum(null);
       setDeleteAlbumId(null);
     },

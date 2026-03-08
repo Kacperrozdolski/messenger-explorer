@@ -41,15 +41,14 @@ const Index = () => {
     setSearch("");
     try {
       const results = await api.aiSearch(query, 200);
-      // Fetch full media items for the result IDs
       const mediaIds = results.map((r) => r.media_id);
       if (mediaIds.length === 0) {
         setAiSearchResults([]);
         return;
       }
-      // Fetch all media and filter by AI result IDs, preserving AI ranking order
-      const allMedia = await api.getMedia({ sort: "date-desc", limit: 100000 });
-      const mediaMap = new Map(allMedia.map((m) => [m.id, m]));
+      // Fetch only the specific media items by ID, preserving AI ranking order
+      const mediaItems = await api.getMediaByIds(mediaIds);
+      const mediaMap = new Map(mediaItems.map((m) => [m.id, m]));
       const ranked = mediaIds
         .map((id) => mediaMap.get(id))
         .filter((m): m is ImageEntry => m !== undefined);
@@ -88,7 +87,7 @@ const Index = () => {
     queryKey: ["indexing-status"],
     queryFn: api.getIndexingStatus,
     enabled: hasData,
-    staleTime: 0,
+    staleTime: 5000,
   });
 
   const aiSearchAvailable = (indexingStatus?.indexed ?? 0) > 0;
@@ -292,7 +291,12 @@ const Index = () => {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleImportComplete = () => {
-    queryClient.invalidateQueries();
+    queryClient.invalidateQueries({ queryKey: ["import-status"] });
+    queryClient.invalidateQueries({ queryKey: ["media"] });
+    queryClient.invalidateQueries({ queryKey: ["media-count"] });
+    queryClient.invalidateQueries({ queryKey: ["filter-facets"] });
+    queryClient.invalidateQueries({ queryKey: ["albums"] });
+    queryClient.invalidateQueries({ queryKey: ["indexing-status"] });
   };
 
   if (statusLoading) {

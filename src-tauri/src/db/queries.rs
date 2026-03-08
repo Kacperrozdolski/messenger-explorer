@@ -466,6 +466,46 @@ pub fn get_media_count(conn: &Connection, filters: &MediaFilters) -> Result<i64,
         .map_err(|e| e.to_string())
 }
 
+pub fn get_media_by_ids(conn: &Connection, ids: &[i64]) -> Result<Vec<MediaItem>, String> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let placeholders: Vec<String> = ids.iter().map(|_| "?".to_string()).collect();
+    let sql = format!(
+        "SELECT m.id, m.file_path, s.name, m.timestamp_ms, c.title, c.chat_type, m.file_type, m.conversation_id, m.sender_id
+         FROM media m
+         INNER JOIN senders s ON s.id = m.sender_id
+         INNER JOIN conversations c ON c.id = m.conversation_id
+         WHERE m.id IN ({})",
+        placeholders.join(",")
+    );
+    let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+    let params: Vec<Box<dyn rusqlite::types::ToSql>> = ids.iter().map(|id| Box::new(*id) as Box<dyn rusqlite::types::ToSql>).collect();
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
+    let rows = stmt
+        .query_map(param_refs.as_slice(), |row| {
+            Ok(MediaItem {
+                id: row.get(0)?,
+                file_path: row.get(1)?,
+                sender_name: row.get(2)?,
+                timestamp_ms: row.get(3)?,
+                conversation_title: row.get(4)?,
+                chat_type: row.get(5)?,
+                file_type: row.get(6)?,
+                conversation_id: row.get(7)?,
+                sender_id: row.get(8)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(result)
+}
+
 pub fn get_media_albums(conn: &Connection, media_id: i64) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare("SELECT album_id FROM album_media WHERE media_id = ?1")

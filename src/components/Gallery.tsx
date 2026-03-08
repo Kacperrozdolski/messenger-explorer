@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import type { ImageEntry, ViewMode, AlbumInfo } from "@/data/types";
@@ -44,6 +44,20 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
     return () => observer.disconnect();
   }, [onLoadMore]);
 
+  const grouped = useMemo(() => {
+    const result: Record<string, ImageEntry[]> = {};
+    for (const img of images) {
+      const key = formatMonthYear(img.timestamp);
+      if (!result[key]) result[key] = [];
+      result[key].push(img);
+    }
+    return result;
+  }, [images]);
+
+  const handleImageClick = useCallback((img: ImageEntry) => {
+    onImageClick(img);
+  }, [onImageClick]);
+
   if (images.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -52,14 +66,6 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
       </div>
     );
   }
-
-  // Group by month/year
-  const grouped: Record<string, ImageEntry[]> = {};
-  images.forEach((img) => {
-    const key = formatMonthYear(img.timestamp);
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(img);
-  });
 
   return (
     <div className="p-5 space-y-8">
@@ -76,7 +82,7 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
                 <ImageCard
                   key={img.id}
                   image={img}
-                  onClick={() => onImageClick(img)}
+                  onClick={handleImageClick}
                   albums={albums}
                   activeAlbumId={activeAlbumId}
                 />
@@ -88,7 +94,7 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
                 <ImageListRow
                   key={img.id}
                   image={img}
-                  onClick={() => onImageClick(img)}
+                  onClick={handleImageClick}
                   albums={albums}
                   activeAlbumId={activeAlbumId}
                 />
@@ -116,4 +122,4 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
   );
 };
 
-export default Gallery;
+export default memo(Gallery);
