@@ -6,6 +6,7 @@ use image::GenericImageView;
 use ndarray::Array4;
 use ort::session::Session;
 use ort::value::Tensor;
+use safetensors::SafeTensors;
 use tokenizers::Tokenizer;
 
 static ORT_INIT: Once = Once::new();
@@ -45,7 +46,9 @@ pub fn init_ort(lib_dir: &Path) -> Result<(), String> {
 }
 
 const IMAGE_SIZE: usize = 224;
-const MAX_TOKEN_LEN: usize = 77;
+const MAX_TOKEN_LEN: usize = 128;
+const DISTILBERT_DIM: usize = 768;
+const CLIP_DIM: usize = 512;
 
 // CLIP normalization constants
 const MEAN: [f32; 3] = [0.48145466, 0.4578275, 0.40821073];
@@ -55,6 +58,8 @@ pub struct ClipModel {
     visual: Session,
     textual: Session,
     tokenizer: Tokenizer,
+    /// Dense projection weights [CLIP_DIM, DISTILBERT_DIM] (512 x 768), no bias
+    dense_weights: Vec<f32>,
 }
 
 impl ClipModel {
@@ -65,6 +70,7 @@ impl ClipModel {
         let visual_path = models_dir.join("clip-visual.onnx");
         let textual_path = models_dir.join("clip-textual.onnx");
         let tokenizer_path = models_dir.join("tokenizer.json");
+        let dense_path = models_dir.join("dense.safetensors");
 
         if !visual_path.exists() {
             return Err(format!("Visual model not found: {}", visual_path.display()));
@@ -75,6 +81,9 @@ impl ClipModel {
         if !tokenizer_path.exists() {
             return Err(format!("Tokenizer not found: {}", tokenizer_path.display()));
         }
+        if !dense_path.exists() {
+            return Err(format!("Dense weights not found: {}", dense_path.display()));
+        }
 
         let visual = Self::create_session(&visual_path)?;
         let textual = Self::create_session(&textual_path)?;
@@ -82,12 +91,40 @@ impl ClipModel {
         let tokenizer = Tokenizer::from_file(&tokenizer_path)
             .map_err(|e| format!("Failed to load tokenizer: {}", e))?;
 
+        let dense_weights = Self::load_dense_weights(&dense_path)?;
+
         log::info!("CLIP models loaded from {}", models_dir.display());
         Ok(Self {
             visual,
             textual,
             tokenizer,
+            dense_weights,
         })
+    }
+
+    fn load_dense_weights(path: &Path) -> Result<Vec<f32>, String> {
+        let data = std::fs::read(path)
+            .map_err(|e| format!("Failed to read dense weights: {}", e))?;
+        let tensors = SafeTensors::deserialize(&data)
+            .map_err(|e| format!("Failed to parse safetensors: {}", e))?;
+        let weight = tensors
+            .tensor("linear.weight")
+            .or_else(|_| tensors.tensor("weight"))
+            .map_err(|e| format!("Failed to find weight tensor in dense: {}", e))?;
+        let bytes = weight.data();
+        let floats: Vec<f32> = bytes
+            .chunks_exact(4)
+            .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+            .collect();
+        if floats.len() != CLIP_DIM * DISTILBERT_DIM {
+            return Err(format!(
+                "Dense weight size mismatch: expected {}, got {}",
+                CLIP_DIM * DISTILBERT_DIM,
+                floats.len()
+            ));
+        }
+        log::info!("Loaded dense projection weights ({}x{})", CLIP_DIM, DISTILBERT_DIM);
+        Ok(floats)
     }
 
     fn create_session(model_path: &Path) -> Result<Session, String> {
@@ -130,25 +167,56 @@ impl ClipModel {
             .encode(text, true)
             .map_err(|e| format!("Tokenization failed: {}", e))?;
 
+        let ids = encoding.get_ids();
+        let token_count = ids.len().min(MAX_TOKEN_LEN);
+
         let mut token_ids = vec![0i64; MAX_TOKEN_LEN];
-        for (i, &id) in encoding.get_ids().iter().enumerate().take(MAX_TOKEN_LEN) {
-            token_ids[i] = id as i64;
+        let mut attention_mask = vec![0i64; MAX_TOKEN_LEN];
+        for i in 0..token_count {
+            token_ids[i] = ids[i] as i64;
+            attention_mask[i] = 1;
         }
 
-        let input_value = Tensor::from_array(([1usize, MAX_TOKEN_LEN], token_ids))
+        let input_ids = Tensor::from_array(([1usize, MAX_TOKEN_LEN], token_ids))
             .map_err(|e| format!("Failed to create tensor: {}", e))?;
+        let attn_mask = Tensor::from_array(([1usize, MAX_TOKEN_LEN], attention_mask.clone()))
+            .map_err(|e| format!("Failed to create attention mask tensor: {}", e))?;
 
         let outputs = self
             .textual
-            .run(ort::inputs!["input_ids" => input_value])
+            .run(ort::inputs!["input_ids" => input_ids, "attention_mask" => attn_mask])
             .map_err(|e| format!("Text inference failed: {}", e))?;
 
+        // Output shape: [1, seq_len, 768] — token-level embeddings
         let output = &outputs[0];
-        let (_, emb_data) = output
+        let (_, token_embeddings) = output
             .try_extract_tensor::<f32>()
             .map_err(|e| format!("Failed to extract text embedding: {}", e))?;
 
-        Ok(normalize_vec(emb_data))
+        // Mean pooling: average token embeddings weighted by attention mask
+        let mut pooled = vec![0.0f32; DISTILBERT_DIM];
+        let mask_sum: f32 = attention_mask.iter().map(|&m| m as f32).sum();
+        for i in 0..MAX_TOKEN_LEN {
+            if attention_mask[i] == 1 {
+                for j in 0..DISTILBERT_DIM {
+                    pooled[j] += token_embeddings[i * DISTILBERT_DIM + j];
+                }
+            }
+        }
+        for v in &mut pooled {
+            *v /= mask_sum;
+        }
+
+        // Dense projection: [768] -> [512], weights are [512, 768] row-major
+        let mut projected = vec![0.0f32; CLIP_DIM];
+        for i in 0..CLIP_DIM {
+            let row_offset = i * DISTILBERT_DIM;
+            for j in 0..DISTILBERT_DIM {
+                projected[i] += self.dense_weights[row_offset + j] * pooled[j];
+            }
+        }
+
+        Ok(normalize_vec(&projected))
     }
 }
 
