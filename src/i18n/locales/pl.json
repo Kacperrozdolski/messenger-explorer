@@ -38,7 +38,9 @@
     "emptyAlbum": "Ten album jest pusty",
     "exportPdf": "Eksportuj jako PDF",
     "exporting": "Eksportowanie...",
-    "exportDone": "Wyeksportowano {{count}} zdjęć do PDF"
+    "exportDone": "Wyeksportowano {{count}} zdjęć do PDF",
+    "exportFolder": "Eksportuj do folderu",
+    "exportFolderDone": "Wyeksportowano {{count}} plików do folderu"
   },
   "topbar": {
     "search": "Szukaj w wiadomościach...",

@@ -38,7 +38,9 @@
     "emptyAlbum": "このアルバムは空です",
     "exportPdf": "PDFとしてエクスポート",
     "exporting": "エクスポート中...",
-    "exportDone": "{{count}}枚の写真をPDFにエクスポートしました"
+    "exportDone": "{{count}}枚の写真をPDFにエクスポートしました",
+    "exportFolder": "フォルダにエクスポート",
+    "exportFolderDone": "{{count}}件のファイルをフォルダにエクスポートしました"
   },
   "topbar": {
     "search": "メッセージを検索...",

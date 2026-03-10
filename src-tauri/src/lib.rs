@@ -564,6 +564,70 @@ fn cmd_export_album_pdf(
     })
 }
 
+#[tauri::command]
+fn cmd_export_album_folder(
+    state: tauri::State<'_, DbState>,
+    album_id: i64,
+    output_path: String,
+) -> Result<ExportPdfResult, String> {
+    let media_paths: Vec<String> = {
+        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        let filters = MediaFilters {
+            conversation_id: None,
+            sender_id: None,
+            file_type: None,
+            month: None,
+            search: None,
+            album_id: Some(album_id),
+            sort: "date-asc".to_string(),
+            limit: Some(1_000_000),
+            offset: None,
+        };
+        let items = queries::get_media(&conn, &filters)?;
+        items.into_iter().map(|m| m.file_path).collect()
+    };
+
+    let dest = std::path::Path::new(&output_path);
+    if !dest.is_dir() {
+        return Err("Destination folder does not exist".to_string());
+    }
+
+    let mut exported_count = 0usize;
+    let mut skipped_count = 0usize;
+
+    for src_path_str in &media_paths {
+        let src_path = std::path::Path::new(src_path_str);
+        if !src_path.exists() {
+            skipped_count += 1;
+            continue;
+        }
+
+        let file_stem = src_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+        let extension = src_path.extension().map(|e| e.to_string_lossy().to_string());
+
+        let mut dest_file = dest.join(src_path.file_name().unwrap_or_default());
+        let mut suffix = 1u32;
+        while dest_file.exists() {
+            let new_name = match &extension {
+                Some(ext) => format!("{}_{}.{}", file_stem, suffix, ext),
+                None => format!("{}_{}", file_stem, suffix),
+            };
+            dest_file = dest.join(new_name);
+            suffix += 1;
+        }
+
+        match std::fs::copy(src_path, &dest_file) {
+            Ok(_) => exported_count += 1,
+            Err(_) => skipped_count += 1,
+        }
+    }
+
+    Ok(ExportPdfResult {
+        exported_count,
+        skipped_count,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -697,6 +761,7 @@ pub fn run() {
             cmd_get_media_by_ids,
             cmd_get_media_albums,
             cmd_export_album_pdf,
+            cmd_export_album_folder,
             cmd_show_in_folder,
             cmd_get_indexing_status,
             cmd_has_clip_models,

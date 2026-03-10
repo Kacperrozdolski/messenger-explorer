@@ -38,7 +38,9 @@
     "emptyAlbum": "此相册为空",
     "exportPdf": "导出为PDF",
     "exporting": "正在导出...",
-    "exportDone": "已导出 {{count}} 张照片为PDF"
+    "exportDone": "已导出 {{count}} 张照片为PDF",
+    "exportFolder": "导出到文件夹",
+    "exportFolderDone": "已导出 {{count}} 个文件到文件夹"
   },
   "topbar": {
     "search": "搜索消息...",

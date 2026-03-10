@@ -17,9 +17,10 @@ import {
   Trash2,
   Palette,
   FileDown,
+  FolderOutput,
   Brain,
 } from "lucide-react";
-import { save } from "@tauri-apps/plugin-dialog";
+import { save, open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import type { ChatSource, SenderInfo, FileTypeFilter, AlbumInfo } from "@/data/types";
 import type { TimelineEntry, FileTypeCounts } from "@/lib/api";
@@ -459,6 +460,26 @@ const ArchiveSidebar = ({
     onSettled: () => setExportingAlbumId(null),
   });
 
+  const exportAlbumFolder = useMutation({
+    mutationFn: async (album: AlbumInfo) => {
+      const path = await open({
+        directory: true,
+        title: t("albums.exportFolder"),
+      });
+      if (!path) return null;
+      setExportingAlbumId(album.id);
+      const result = api.exportAlbumFolder(album.id, path);
+      toast.promise(result, {
+        loading: t("albums.exporting"),
+        success: (r) =>
+          t("albums.exportFolderDone", { count: r.exported_count }),
+        error: (e) => String(e),
+      });
+      return result;
+    },
+    onSettled: () => setExportingAlbumId(null),
+  });
+
   // Sort all conversations by mediaCount descending
   const allSorted = useMemo(
     () => [...conversations].sort((a, b) => b.mediaCount - a.mediaCount),
@@ -734,6 +755,15 @@ const ArchiveSidebar = ({
                       {exportingAlbumId === album.id
                         ? t("albums.exporting")
                         : t("albums.exportPdf")}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onSelect={() => exportAlbumFolder.mutate(album)}
+                      disabled={exportingAlbumId !== null}
+                    >
+                      <FolderOutput className="h-4 w-4 mr-2" />
+                      {exportingAlbumId === album.id
+                        ? t("albums.exporting")
+                        : t("albums.exportFolder")}
                     </ContextMenuItem>
                     <ContextMenuItem
                       onSelect={() => setDeleteAlbumId(album.id)}
