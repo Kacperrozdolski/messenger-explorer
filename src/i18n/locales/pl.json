@@ -75,7 +75,10 @@
     "addAnother": "Dodaj kolejny folder",
     "importButton": "Importuj {{count}} źródło",
     "importButtonPlural": "Importuj {{count}} źródeł",
-    "importing": "Importowanie..."
+    "importing": "Importowanie...",
+    "dropHere": "Upuść foldery tutaj",
+    "dropHereHint": "Upuść foldery eksportu, aby je zaimportować",
+    "orDragAndDrop": "lub przeciągnij i upuść foldery tutaj"
   },
   "settings": {
     "title": "Ustawienia",

@@ -75,7 +75,10 @@
     "addAnother": "添加另一个文件夹",
     "importButton": "导入 {{count}} 个来源",
     "importButtonPlural": "导入 {{count}} 个来源",
-    "importing": "正在导入..."
+    "importing": "正在导入...",
+    "dropHere": "将文件夹拖放到此处",
+    "dropHereHint": "拖放导出文件夹以导入",
+    "orDragAndDrop": "或将文件夹拖放到此处"
   },
   "settings": {
     "title": "设置",

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { FolderOpen, Loader2, X, Plus, HelpCircle, AlertTriangle, ExternalLink } from "lucide-react";
+import { useTauriDrop } from "@/hooks/useTauriDrop";
 import * as api from "@/lib/api";
 import LanguageSelector from "@/components/LanguageSelector";
 import {
@@ -195,6 +196,36 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<api.ImportResult | null>(null);
 
+  const addPaths = useCallback((paths: string[]) => {
+    for (const path of paths) {
+      setFolders((prev) => {
+        if (prev.some((f) => f.path === path)) return prev;
+        return [...prev, { path, format: null, error: null, detecting: true }];
+      });
+
+      api.detectFormat(path).then(
+        (format) => {
+          setFolders((prev) =>
+            prev.map((f) =>
+              f.path === path ? { ...f, format, detecting: false } : f
+            )
+          );
+        },
+        (e) => {
+          setFolders((prev) =>
+            prev.map((f) =>
+              f.path === path
+                ? { ...f, error: String(e), detecting: false }
+                : f
+            )
+          );
+        }
+      );
+    }
+  }, []);
+
+  const isDragging = useTauriDrop(addPaths);
+
   const handleAddFolder = async () => {
     try {
       const selected = await open({
@@ -205,40 +236,8 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
 
       if (!selected) return;
 
-      // Normalize to array — single select returns string, multi returns string[]
       const paths = Array.isArray(selected) ? selected : [selected];
-
-      for (const path of paths) {
-        // Don't add duplicates
-        if (folders.some((f) => f.path === path)) continue;
-
-        const entry: FolderEntry = {
-          path,
-          format: null,
-          error: null,
-          detecting: true,
-        };
-        setFolders((prev) => [...prev, entry]);
-
-        api.detectFormat(path).then(
-          (format) => {
-            setFolders((prev) =>
-              prev.map((f) =>
-                f.path === path ? { ...f, format, detecting: false } : f
-              )
-            );
-          },
-          (e) => {
-            setFolders((prev) =>
-              prev.map((f) =>
-                f.path === path
-                  ? { ...f, error: String(e), detecting: false }
-                  : f
-              )
-            );
-          }
-        );
-      }
+      addPaths(paths);
     } catch (e) {
       setError(String(e));
     }
@@ -272,6 +271,17 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
 
   return (
     <div className="relative flex h-screen items-center justify-center bg-background">
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-lg m-4 pointer-events-none">
+          <div className="text-center">
+            <FolderOpen className="h-12 w-12 text-primary mx-auto mb-3" />
+            <p className="text-lg font-semibold text-primary">{t("import.dropHere")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("import.dropHereHint")}</p>
+          </div>
+        </div>
+      )}
+
       <div className="absolute top-4 right-5">
         <LanguageSelector />
       </div>
@@ -362,6 +372,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                 </>
               )}
             </button>
+            <p className="text-[12px] text-muted-foreground">{t("import.orDragAndDrop")}</p>
 
             {/* Import button */}
             {validFolders.length > 0 && (

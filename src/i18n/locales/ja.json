@@ -75,7 +75,10 @@
     "addAnother": "別のフォルダを追加",
     "importButton": "{{count}} ソースをインポート",
     "importButtonPlural": "{{count}} ソースをインポート",
-    "importing": "インポート中..."
+    "importing": "インポート中...",
+    "dropHere": "フォルダをここにドロップ",
+    "dropHereHint": "エクスポートフォルダをドロップしてインポート",
+    "orDragAndDrop": "またはフォルダをドラッグ＆ドロップ"
   },
   "settings": {
     "title": "設定",

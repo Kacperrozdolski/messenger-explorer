@@ -75,7 +75,10 @@
     "addAnother": "Weiteren Ordner hinzufügen",
     "importButton": "{{count}} Quelle importieren",
     "importButtonPlural": "{{count}} Quellen importieren",
-    "importing": "Importiere..."
+    "importing": "Importiere...",
+    "dropHere": "Ordner hier ablegen",
+    "dropHereHint": "Export-Ordner hierher ziehen, um sie zu importieren",
+    "orDragAndDrop": "oder Ordner hierher ziehen"
   },
   "settings": {
     "title": "Einstellungen",

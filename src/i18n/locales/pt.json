@@ -75,7 +75,10 @@
     "addAnother": "Adicionar outra pasta",
     "importButton": "Importar {{count}} fonte",
     "importButtonPlural": "Importar {{count}} fontes",
-    "importing": "Importando..."
+    "importing": "Importando...",
+    "dropHere": "Solte as pastas aqui",
+    "dropHereHint": "Solte suas pastas de exportação para importá-las",
+    "orDragAndDrop": "ou arraste e solte pastas aqui"
   },
   "settings": {
     "title": "Configurações",

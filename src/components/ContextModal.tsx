@@ -108,7 +108,11 @@ const ContextModal = ({ image, onClose }: ContextModalProps) => {
                 <div className={cn("flex flex-col gap-0.5", "items-end")}>
                   <span className="text-[10px] text-muted-foreground px-1">{image.sender} · {formatTime(image.timestamp)}</span>
                   <div className="bg-primary/10 border border-primary/20 rounded-lg p-1.5 rounded-br-sm">
-                    <img src={image.src} alt="" className="h-24 w-auto rounded object-cover" />
+                    {image.fileType === "video" ? (
+                      <video src={image.src} muted preload="metadata" className="h-24 w-auto rounded object-cover" />
+                    ) : (
+                      <img src={image.src} alt="" className="h-24 w-auto rounded object-cover" />
+                    )}
                   </div>
                 </div>
 

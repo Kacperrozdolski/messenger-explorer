@@ -31,11 +31,20 @@ const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowPro
         onClick={handleClick}
         className="flex items-center gap-4 w-full px-4 py-2.5 rounded-md hover:bg-accent/50 transition-colors text-left animate-fade-in"
       >
-        <img
-          src={image.src}
-          alt={`Photo by ${image.sender}`}
-          className="h-12 w-12 rounded object-cover shrink-0"
-        />
+        {image.fileType === "video" ? (
+          <video
+            src={image.src}
+            className="h-12 w-12 rounded object-cover shrink-0"
+            muted
+            preload="metadata"
+          />
+        ) : (
+          <img
+            src={image.src}
+            alt={`Photo by ${image.sender}`}
+            className="h-12 w-12 rounded object-cover shrink-0"
+          />
+        )}
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium text-foreground truncate">{image.sender}</p>
           <p className="text-[11px] text-muted-foreground">{image.chat}</p>

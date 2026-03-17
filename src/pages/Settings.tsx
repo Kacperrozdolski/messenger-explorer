@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
+import { useTauriDrop } from "@/hooks/useTauriDrop";
 import {
   ArrowLeft,
   Database,
@@ -130,6 +131,23 @@ const Settings = () => {
       setClearing(false);
     }
   };
+
+  const handleDrop = useCallback(async (paths: string[]) => {
+    setAddError(null);
+    setAddingSource(true);
+    try {
+      for (const path of paths) {
+        await api.addSource(path);
+      }
+      queryClient.invalidateQueries();
+    } catch (e) {
+      setAddError(String(e));
+    } finally {
+      setAddingSource(false);
+    }
+  }, [queryClient]);
+
+  const isDragging = useTauriDrop(handleDrop);
 
   const handleAddSource = async () => {
     try {
@@ -326,7 +344,16 @@ const Settings = () => {
             </Card>
 
             {/* Data Sources Card */}
-            <Card>
+            <Card className="relative overflow-hidden">
+              {isDragging && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary rounded-lg pointer-events-none">
+                  <div className="text-center">
+                    <FolderOpen className="h-10 w-10 text-primary mx-auto mb-2" />
+                    <p className="text-base font-semibold text-primary">{t("import.dropHere")}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{t("import.dropHereHint")}</p>
+                  </div>
+                </div>
+              )}
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <FolderOpen className="h-5 w-5 text-muted-foreground" />
@@ -402,19 +429,22 @@ const Settings = () => {
                   </p>
                 )}
 
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={handleAddSource}
-                  disabled={addingSource}
-                >
-                  {addingSource ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                  {t("settings.addSource")}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleAddSource}
+                    disabled={addingSource}
+                  >
+                    {addingSource ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                    {t("settings.addSource")}
+                  </Button>
+                  <span className="text-[12px] text-muted-foreground">{t("import.orDragAndDrop")}</span>
+                </div>
 
                 {addError && (
                   <p className="text-[12px] text-destructive bg-destructive/10 rounded-md p-3">

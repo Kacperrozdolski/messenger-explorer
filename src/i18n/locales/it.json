@@ -75,7 +75,10 @@
     "addAnother": "Aggiungi un'altra cartella",
     "importButton": "Importa {{count}} fonte",
     "importButtonPlural": "Importa {{count}} fonti",
-    "importing": "Importazione..."
+    "importing": "Importazione...",
+    "dropHere": "Rilascia le cartelle qui",
+    "dropHereHint": "Rilascia le cartelle di esportazione per importarle",
+    "orDragAndDrop": "o trascina e rilascia le cartelle qui"
   },
   "settings": {
     "title": "Impostazioni",
