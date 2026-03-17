@@ -132,12 +132,15 @@ const Settings = () => {
     }
   };
 
-  const handleDrop = useCallback(async (paths: string[]) => {
+  const resolveAndAddSources = useCallback(async (paths: string[]) => {
     setAddError(null);
     setAddingSource(true);
     try {
       for (const path of paths) {
-        await api.addSource(path);
+        const results = await api.detectFormat(path);
+        for (const result of results) {
+          await api.addSource(result.resolvedPath);
+        }
       }
       queryClient.invalidateQueries();
     } catch (e) {
@@ -147,24 +150,23 @@ const Settings = () => {
     }
   }, [queryClient]);
 
+  const handleDrop = useCallback((paths: string[]) => {
+    resolveAndAddSources(paths);
+  }, [resolveAndAddSources]);
+
   const isDragging = useTauriDrop(handleDrop);
 
   const handleAddSource = async () => {
     try {
-      setAddError(null);
       const selected = await open({
         directory: true,
         title: "Select Export Folder to Add",
       });
       if (!selected) return;
 
-      setAddingSource(true);
-      await api.addSource(selected as string);
-      queryClient.invalidateQueries();
+      await resolveAndAddSources([selected as string]);
     } catch (e) {
       setAddError(String(e));
-    } finally {
-      setAddingSource(false);
     }
   };
 

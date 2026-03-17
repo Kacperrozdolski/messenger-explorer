@@ -22,6 +22,8 @@ interface ImportDialogProps {
 
 interface FolderEntry {
   path: string;
+  /** The actual export root path (may differ from path if user dropped a subfolder) */
+  resolvedPath: string | null;
   format: "facebook" | "messenger" | null;
   error: string | null;
   detecting: boolean;
@@ -145,17 +147,30 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
     for (const path of paths) {
       const isZip = /\.zip$/i.test(path);
       setFolders((prev) => {
-        if (prev.some((f) => f.path === path)) return prev;
-        return [...prev, { path, format: null, error: null, detecting: true, isZip, extractedPath: null }];
+        if (prev.some((f) => f.path === path || f.resolvedPath === path)) return prev;
+        return [...prev, { path, resolvedPath: null, format: null, error: null, detecting: true, isZip, extractedPath: null }];
       });
 
       api.detectFormat(path).then(
-        (format) => {
-          setFolders((prev) =>
-            prev.map((f) =>
-              f.path === path ? { ...f, format, detecting: false } : f
-            )
-          );
+        (results) => {
+          setFolders((prev) => {
+            // Remove the placeholder entry for the original path
+            const without = prev.filter((f) => f.path !== path);
+            // Add one entry per detected export, deduplicating by resolvedPath
+            const existingResolved = new Set(without.map((f) => f.resolvedPath ?? f.path));
+            const newEntries: FolderEntry[] = results
+              .filter((r) => !existingResolved.has(r.resolvedPath))
+              .map((r) => ({
+                path: r.resolvedPath !== path ? path : r.resolvedPath,
+                resolvedPath: r.resolvedPath,
+                format: r.format,
+                error: null,
+                detecting: false,
+                isZip,
+                extractedPath: null,
+              }));
+            return [...without, ...newEntries];
+          });
         },
         (e) => {
           setFolders((prev) =>
@@ -207,8 +222,8 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
     }
   };
 
-  const handleRemoveFolder = (path: string) => {
-    setFolders((prev) => prev.filter((f) => f.path !== path));
+  const handleRemoveFolder = (resolvedPath: string) => {
+    setFolders((prev) => prev.filter((f) => (f.resolvedPath ?? f.path) !== resolvedPath));
   };
 
   const validFolders = folders.filter((f) => f.format && !f.error);
@@ -224,7 +239,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
 
       const zipFolders = validFolders.filter((f) => f.isZip);
       const regularFolders = validFolders.filter((f) => !f.isZip);
-      const importPaths: string[] = regularFolders.map((f) => f.path);
+      const importPaths: string[] = regularFolders.map((f) => f.resolvedPath ?? f.path);
 
       // Extract all zips to the same directory (multi-part exports merge)
       if (zipFolders.length > 0 && !cancelledRef.current) {
@@ -313,11 +328,11 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
               <div className="space-y-2 text-left max-h-[40vh] overflow-y-auto pr-2 w-full">
                 {folders.map((folder) => (
                   <div
-                    key={folder.path}
+                    key={folder.resolvedPath ?? folder.path}
                     className="flex items-center gap-2.5 bg-secondary rounded-lg px-3.5 py-2.5 text-[13px]"
                   >
-                    <p className="flex-1 min-w-0 truncate text-foreground" title={folder.path}>
-                      {folder.path.split(/[\\/]/).pop()}
+                    <p className="flex-1 min-w-0 truncate text-foreground" title={folder.resolvedPath ?? folder.path}>
+                      {(folder.resolvedPath ?? folder.path).split(/[\\/]/).pop()}
                     </p>
                     {folder.detecting && (
                       <span className="shrink-0 text-muted-foreground flex items-center gap-1">
@@ -330,12 +345,20 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                         {formatLabel(folder.format)}
                       </span>
                     )}
+                    {folder.resolvedPath && folder.resolvedPath !== folder.path && (
+                      <span
+                        className="shrink-0 text-[11px] text-muted-foreground"
+                        title={t("import.autoResolved", { path: folder.resolvedPath })}
+                      >
+                        {t("import.resolved")}
+                      </span>
+                    )}
                     {folder.error && (
                       <span className="shrink-0 text-destructive" title={folder.error}>!</span>
                     )}
                     {!importing && (
                       <button
-                        onClick={() => handleRemoveFolder(folder.path)}
+                        onClick={() => handleRemoveFolder(folder.resolvedPath ?? folder.path)}
                         className="shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors"
                       >
                         <X className="h-4 w-4" />

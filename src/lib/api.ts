@@ -58,9 +58,14 @@ export async function removeSource(sourcePath: string): Promise<void> {
   return invoke("cmd_remove_source", { sourcePath });
 }
 
+export interface DetectFormatResult {
+  format: "facebook" | "messenger";
+  resolvedPath: string;
+}
+
 export async function detectFormat(
   exportPath: string
-): Promise<"facebook" | "messenger"> {
+): Promise<DetectFormatResult[]> {
   return invoke("cmd_detect_format", { exportPath });
 }
 

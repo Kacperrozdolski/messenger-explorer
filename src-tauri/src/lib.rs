@@ -205,10 +205,17 @@ fn cmd_remove_source(
     Ok(())
 }
 
+#[derive(serde::Serialize, Clone)]
+struct DetectFormatResult {
+    format: String,
+    #[serde(rename = "resolvedPath")]
+    resolved_path: String,
+}
+
 #[tauri::command]
 fn cmd_detect_format(
     export_path: String,
-) -> Result<String, String> {
+) -> Result<Vec<DetectFormatResult>, String> {
     let path = PathBuf::from(&export_path);
     if !path.exists() {
         return Err(format!("Path does not exist: {}", export_path));
@@ -217,17 +224,31 @@ fn cmd_detect_format(
     // Handle zip files by peeking inside
     if path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("zip")) {
         let (format, _prefix) = parser::detect_format_zip(&path)?;
-        return Ok(match format {
-            parser::DataFormat::Facebook => "facebook".to_string(),
-            parser::DataFormat::Messenger => "messenger".to_string(),
-        });
+        let fmt_str = match format {
+            parser::DataFormat::Facebook => "facebook",
+            parser::DataFormat::Messenger => "messenger",
+        };
+        return Ok(vec![DetectFormatResult {
+            format: fmt_str.to_string(),
+            resolved_path: export_path,
+        }]);
     }
 
-    let format = parser::detect_format(&path)?;
-    Ok(match format {
-        parser::DataFormat::Facebook => "facebook".to_string(),
-        parser::DataFormat::Messenger => "messenger".to_string(),
-    })
+    let matches = parser::detect_format_flexible(&path)?;
+    let results: Vec<DetectFormatResult> = matches
+        .into_iter()
+        .map(|(format, resolved)| {
+            let fmt_str = match format {
+                parser::DataFormat::Facebook => "facebook",
+                parser::DataFormat::Messenger => "messenger",
+            };
+            DetectFormatResult {
+                format: fmt_str.to_string(),
+                resolved_path: resolved.to_string_lossy().to_string(),
+            }
+        })
+        .collect();
+    Ok(results)
 }
 
 #[tauri::command]

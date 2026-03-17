@@ -80,7 +80,9 @@
     "cancel": "Anuluj",
     "dropHere": "Upuść tutaj",
     "dropHereHint": "Upuść foldery eksportu lub pliki zip, aby je zaimportować",
-    "orDragAndDrop": "lub przeciągnij i upuść foldery / pliki zip tutaj"
+    "orDragAndDrop": "lub przeciągnij i upuść foldery / pliki zip tutaj",
+    "resolved": "wykryto automatycznie",
+    "autoResolved": "Upuszczono podfolder — znaleziono katalog eksportu: {{path}}"
   },
   "settings": {
     "title": "Ustawienia",

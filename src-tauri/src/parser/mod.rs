@@ -84,6 +84,87 @@ pub fn detect_format(path: &Path) -> Result<DataFormat, String> {
     Err("Unrecognized export format. Expected Facebook or Messenger data.".into())
 }
 
+/// Flexible format detection that also walks up parent directories and recognizes
+/// known subfolder entry points. Returns one or more (format, resolved root) pairs.
+/// Multiple results occur when a parent folder contains several valid exports.
+pub fn detect_format_flexible(path: &Path) -> Result<Vec<(DataFormat, PathBuf)>, String> {
+    // 1. Try the path as-is
+    if let Ok(fmt) = detect_format(path) {
+        return Ok(vec![(fmt, path.to_path_buf())]);
+    }
+
+    // 2. Check if the user dropped a known Facebook subfolder and walk up
+    //    e.g. inbox/ -> messages/inbox/ -> your_facebook_activity/messages/inbox/
+    let known_fb_segments = ["inbox", "messages", "your_facebook_activity"];
+    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+        let name_lower = name.to_lowercase();
+        if let Some(pos) = known_fb_segments.iter().position(|&s| s == name_lower) {
+            // Walk up (pos + 1) levels from the dropped path to reach the expected root
+            // inbox -> up 3 (inbox < messages < your_facebook_activity < ROOT)
+            // messages -> up 2
+            // your_facebook_activity -> up 1
+            let levels_up = known_fb_segments.len() - pos;
+            let mut candidate = path.to_path_buf();
+            for _ in 0..levels_up {
+                if let Some(parent) = candidate.parent() {
+                    candidate = parent.to_path_buf();
+                } else {
+                    break;
+                }
+            }
+            if let Ok(fmt) = detect_format(&candidate) {
+                return Ok(vec![(fmt, candidate)]);
+            }
+        }
+    }
+
+    // 3. Walk up parent directories (up to 5 levels) looking for a valid root
+    let mut candidate = path.to_path_buf();
+    for _ in 0..5 {
+        if let Some(parent) = candidate.parent() {
+            candidate = parent.to_path_buf();
+            if let Ok(fmt) = detect_format(&candidate) {
+                return Ok(vec![(fmt, candidate)]);
+            }
+        } else {
+            break;
+        }
+    }
+
+    // 4. Walk down children (up to 2 levels deep) — the user may have dropped a parent
+    //    that wraps one or more exports
+    let mut results: Vec<(DataFormat, PathBuf)> = Vec::new();
+    collect_exports_recursive(path, 2, &mut results);
+    if !results.is_empty() {
+        // Deduplicate by resolved path
+        results.sort_by(|a, b| a.1.cmp(&b.1));
+        results.dedup_by(|a, b| a.1 == b.1);
+        return Ok(results);
+    }
+
+    Err("Unrecognized export format. Expected Facebook or Messenger data.".into())
+}
+
+/// Recursively scan child directories up to `depth` levels looking for valid exports.
+fn collect_exports_recursive(
+    dir: &Path,
+    depth: usize,
+    results: &mut Vec<(DataFormat, PathBuf)>,
+) {
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let child = entry.path();
+            if child.is_dir() {
+                if let Ok(fmt) = detect_format(&child) {
+                    results.push((fmt, child));
+                } else if depth > 1 {
+                    collect_exports_recursive(&child, depth - 1, results);
+                }
+            }
+        }
+    }
+}
+
 /// Detect format by peeking inside a zip file's entry listing (no extraction).
 pub fn detect_format_zip(zip_path: &Path) -> Result<(DataFormat, String), String> {
     let file = std::fs::File::open(zip_path)

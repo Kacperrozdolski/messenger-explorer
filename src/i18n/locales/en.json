@@ -80,7 +80,9 @@
     "cancel": "Cancel",
     "dropHere": "Drop here",
     "dropHereHint": "Drop your export folders or zip files to import them",
-    "orDragAndDrop": "or drag & drop folders / zip files here"
+    "orDragAndDrop": "or drag & drop folders / zip files here",
+    "resolved": "auto-detected",
+    "autoResolved": "You dropped a subfolder — we found the export root at: {{path}}"
   },
   "settings": {
     "title": "Settings",
