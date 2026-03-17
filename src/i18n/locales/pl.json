@@ -67,7 +67,7 @@
     "title": "Kontekst rozmowy"
   },
   "import": {
-    "description": "Wybierz foldery eksportu Facebooka lub Messengera, aby rozpocząć. Możesz dodać wiele źródeł naraz.",
+    "description": "Wybierz foldery eksportu danych lub pliki zip, aby rozpocząć. Możesz dodać wiele źródeł naraz.",
     "importComplete": "Import zakończony!",
     "stats": "{{conversations}} rozmów, {{media}} plików, {{senders}} nadawców",
     "detectingFormat": "Wykrywanie formatu...",

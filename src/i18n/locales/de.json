@@ -67,7 +67,7 @@
     "title": "Chat-Kontext"
   },
   "import": {
-    "description": "Wählen Sie Ihre Facebook- oder Messenger-Exportordner aus, um zu beginnen. Sie können mehrere Quellen gleichzeitig hinzufügen.",
+    "description": "Wählen Sie Ihre Datenexport-Ordner oder Zip-Dateien aus, um zu beginnen. Sie können mehrere Quellen gleichzeitig hinzufügen.",
     "importComplete": "Import abgeschlossen!",
     "stats": "{{conversations}} Unterhaltungen, {{media}} Mediendateien, {{senders}} Absender",
     "detectingFormat": "Format wird erkannt...",

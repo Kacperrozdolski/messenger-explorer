@@ -33,12 +33,12 @@ const StepRow = ({ num, titleKey, bodyKey }: { num: number; titleKey: string; bo
   const { t } = useTranslation();
   return (
     <div className="flex gap-3">
-      <div className="shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-[12px] font-semibold mt-0.5">
+      <div className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary text-xs font-semibold mt-0.5">
         {num}
       </div>
       <div className="min-w-0">
-        <p className="text-[13px] font-medium text-foreground">{t(titleKey)}</p>
-        <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">{t(bodyKey)}</p>
+        <p className="text-sm font-medium text-foreground">{t(titleKey)}</p>
+        <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{t(bodyKey)}</p>
       </div>
     </div>
   );
@@ -83,11 +83,12 @@ const TutorialDialog = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 text-[13px] text-primary hover:text-primary/80 transition-colors">
-          <HelpCircle className="h-3.5 w-3.5" />
+        <button className="inline-flex items-center gap-1.5 text-base text-primary hover:text-primary/80 transition-colors">
+          <HelpCircle className="h-4.5 w-4.5" />
           {t("tutorial.openGuide")}
         </button>
       </DialogTrigger>
+
       <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base">{t("tutorial.title")}</DialogTitle>
@@ -96,16 +97,16 @@ const TutorialDialog = () => {
 
         <Tabs defaultValue="facebook" className="mt-2">
           <TabsList className="w-full">
-            <TabsTrigger value="facebook" className="flex-1 text-[13px]">
+            <TabsTrigger value="facebook" className="flex-1 text-sm">
               {t("tutorial.tabFacebook")}
             </TabsTrigger>
-            <TabsTrigger value="messenger" className="flex-1 text-[13px]">
+            <TabsTrigger value="messenger" className="flex-1 text-sm">
               {t("tutorial.tabMessenger")}
             </TabsTrigger>
-            <TabsTrigger value="instagram" className="flex-1 text-[13px]">
+            <TabsTrigger value="instagram" className="flex-1 text-sm">
               {t("tutorial.tabInstagram")}
             </TabsTrigger>
-            <TabsTrigger value="snapchat" className="flex-1 text-[13px]">
+            <TabsTrigger value="snapchat" className="flex-1 text-sm">
               {t("tutorial.tabSnapchat")}
             </TabsTrigger>
           </TabsList>
@@ -114,7 +115,7 @@ const TutorialDialog = () => {
             {/* Direct link */}
             <button
               onClick={() => openUrl(FACEBOOK_LINK)}
-              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3 text-[12px] text-primary hover:bg-primary/10 transition-colors text-left"
+              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-4 py-3 text-[13px] text-primary hover:bg-primary/10 transition-colors text-left"
             >
               <ExternalLink className="h-4 w-4 shrink-0" />
               <span className="leading-relaxed">{t("tutorial.fbDirectLink")}</span>
@@ -125,9 +126,9 @@ const TutorialDialog = () => {
             ))}
 
             {/* JSON tip */}
-            <div className="flex gap-2.5 bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3">
+            <div className="flex gap-2.5 bg-primary/5 border border-primary/15 rounded-lg px-4 py-3">
               <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <p className="text-[12px] text-foreground leading-relaxed">
+              <p className="text-[13px] text-foreground leading-relaxed">
                 {t("tutorial.tip")}
               </p>
             </div>
@@ -137,7 +138,7 @@ const TutorialDialog = () => {
             {/* Direct link */}
             <button
               onClick={() => openUrl(MESSENGER_LINK)}
-              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3 text-[12px] text-primary hover:bg-primary/10 transition-colors text-left"
+              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-4 py-3 text-[13px] text-primary hover:bg-primary/10 transition-colors text-left"
             >
               <ExternalLink className="h-4 w-4 shrink-0" />
               <span className="leading-relaxed">{t("tutorial.msgDirectLink")}</span>
@@ -152,7 +153,7 @@ const TutorialDialog = () => {
             {/* Direct link */}
             <button
               onClick={() => openUrl(INSTAGRAM_LINK)}
-              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3 text-[12px] text-primary hover:bg-primary/10 transition-colors text-left"
+              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-4 py-3 text-[13px] text-primary hover:bg-primary/10 transition-colors text-left"
             >
               <ExternalLink className="h-4 w-4 shrink-0" />
               <span className="leading-relaxed">{t("tutorial.igDirectLink")}</span>
@@ -163,9 +164,9 @@ const TutorialDialog = () => {
             ))}
 
             {/* JSON tip */}
-            <div className="flex gap-2.5 bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3">
+            <div className="flex gap-2.5 bg-primary/5 border border-primary/15 rounded-lg px-4 py-3">
               <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <p className="text-[12px] text-foreground leading-relaxed">
+              <p className="text-[13px] text-foreground leading-relaxed">
                 {t("tutorial.tip")}
               </p>
             </div>
@@ -175,7 +176,7 @@ const TutorialDialog = () => {
             {/* Direct link */}
             <button
               onClick={() => openUrl(SNAPCHAT_LINK)}
-              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-3.5 py-3 text-[12px] text-primary hover:bg-primary/10 transition-colors text-left"
+              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-4 py-3 text-[13px] text-primary hover:bg-primary/10 transition-colors text-left"
             >
               <ExternalLink className="h-4 w-4 shrink-0" />
               <span className="leading-relaxed">{t("tutorial.snapDirectLink")}</span>
@@ -339,25 +340,22 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
         <LanguageSelector />
       </div>
 
-      <div className="max-w-lg w-full mx-auto p-8 text-center space-y-6 max-h-screen overflow-y-auto">
+      <div className="max-w-xl w-full mx-auto px-8 py-10 text-center flex flex-col items-center max-h-screen overflow-y-auto">
         <div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">
+          <h1 className="text-5xl font-bold text-foreground tracking-tight">
             {t("brand.title")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-lg text-muted-foreground mt-2">
             {t("brand.subtitle")}
           </p>
         </div>
 
-        <div className="space-y-3">
-          <p className="text-[13px] text-muted-foreground leading-relaxed">
-            {t("import.description")}
-          </p>
+        <div className="mt-6">
           <TutorialDialog />
         </div>
 
         {stats ? (
-          <div className="bg-secondary rounded-lg p-4 text-[13px] text-foreground space-y-1">
+          <div className="mt-8 bg-secondary rounded-lg p-5 text-sm text-foreground space-y-1 w-full">
             <p className="font-medium">{t("import.importComplete")}</p>
             <p className="text-muted-foreground">
               {t("import.stats", {
@@ -368,25 +366,25 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="mt-8 flex flex-col items-center gap-4 w-full">
             {/* Folder list */}
             {folders.length > 0 && (
-              <div className="space-y-2 text-left max-h-[40vh] overflow-y-auto pr-2 pb-2">
+              <div className="space-y-2 text-left max-h-[40vh] overflow-y-auto pr-2 w-full">
                 {folders.map((folder) => (
                   <div
                     key={folder.path}
-                    className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-[12px]"
+                    className="flex items-center gap-2.5 bg-secondary rounded-lg px-3.5 py-2.5 text-[13px]"
                   >
                     <p className="flex-1 min-w-0 truncate text-foreground" title={folder.path}>
                       {folder.path.split(/[\\/]/).pop()}
                     </p>
                     {folder.detecting && (
                       <span className="shrink-0 text-muted-foreground flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       </span>
                     )}
                     {folder.format && (
-                      <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded text-[11px] font-medium">
                         {folder.isZip && <Archive className="h-3 w-3" />}
                         {formatLabel(folder.format)}
                       </span>
@@ -399,7 +397,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                         onClick={() => handleRemoveFolder(folder.path)}
                         className="shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -407,51 +405,53 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
               </div>
             )}
 
-            {/* Add folder / zip buttons */}
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={handleAddFolder}
-                disabled={importing}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-md text-[13px] font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
-              >
-                {folders.length === 0 ? (
-                  <>
-                    <FolderOpen className="h-4 w-4" />
-                    {t("import.selectFolder")}
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4" />
-                    {t("import.addAnother")}
-                  </>
-                )}
-              </button>
-              <button
-                onClick={handleAddZip}
-                disabled={importing}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-md text-[13px] font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
-              >
-                <Archive className="h-4 w-4" />
-                {t("import.selectZip")}
-              </button>
+            {/* Add folder / zip buttons + drag hint */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleAddFolder}
+                  disabled={importing}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-lg text-sm font-medium whitespace-nowrap hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                >
+                  {folders.length === 0 ? (
+                    <>
+                      <FolderOpen className="h-4 w-4" />
+                      {t("import.selectFolder")}
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      {t("import.addAnother")}
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleAddZip}
+                  disabled={importing}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-lg text-sm font-medium whitespace-nowrap hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                >
+                  <Archive className="h-4 w-4" />
+                  {t("import.selectZip")}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("import.orDragAndDrop")}</p>
             </div>
-            <p className="text-[12px] text-muted-foreground">{t("import.orDragAndDrop")}</p>
 
             {/* Import button */}
             {validFolders.length > 0 && (
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-3">
                 {importing ? (
                   <>
                     <button
                       disabled
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-md text-[13px] font-medium opacity-50"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium opacity-50"
                     >
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {t("import.importing")}
                     </button>
                     <button
                       onClick={handleCancelImport}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-md text-[13px] font-medium hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-lg text-sm font-medium hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       {t("import.cancel")}
                     </button>
@@ -459,7 +459,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                 ) : (
                   <button
                     onClick={handleImport}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary/90 transition-colors"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                   >
                     {validFolders.length > 1
                       ? t("import.importButtonPlural", { count: validFolders.length })
@@ -472,7 +472,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
         )}
 
         {error && (
-          <p className="text-[12px] text-destructive bg-destructive/10 rounded-md p-3">
+          <p className="text-[13px] text-destructive bg-destructive/10 rounded-lg p-3.5 w-full">
             {error}
           </p>
         )}

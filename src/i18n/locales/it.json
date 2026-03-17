@@ -67,7 +67,7 @@
     "title": "Contesto della chat"
   },
   "import": {
-    "description": "Seleziona le cartelle di esportazione di Facebook o Messenger per iniziare. Puoi aggiungere più fonti contemporaneamente.",
+    "description": "Seleziona le cartelle di esportazione dati o i file zip per iniziare. Puoi aggiungere più fonti contemporaneamente.",
     "importComplete": "Importazione completata!",
     "stats": "{{conversations}} conversazioni, {{media}} file multimediali, {{senders}} mittenti",
     "detectingFormat": "Rilevamento formato...",

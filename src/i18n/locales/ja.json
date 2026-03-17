@@ -67,7 +67,7 @@
     "title": "チャットコンテキスト"
   },
   "import": {
-    "description": "FacebookまたはMessengerのデータエクスポートフォルダを選択して開始します。複数のソースを一度に追加できます。",
+    "description": "データエクスポートフォルダまたはzipファイルを選択して開始します。複数のソースを一度に追加できます。",
     "importComplete": "インポート完了！",
     "stats": "{{conversations}} 会話、{{media}} メディアファイル、{{senders}} 送信者",
     "detectingFormat": "フォーマットを検出中...",

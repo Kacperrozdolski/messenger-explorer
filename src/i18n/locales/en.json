@@ -67,7 +67,7 @@
     "title": "Chat Context"
   },
   "import": {
-    "description": "Select your Facebook or Messenger data export folders to get started. You can add multiple sources at once.",
+    "description": "Select your data export folders or zip files to get started. You can add multiple sources at once.",
     "importComplete": "Import complete!",
     "stats": "{{conversations}} conversations, {{media}} media files, {{senders}} senders",
     "detectingFormat": "Detecting format...",

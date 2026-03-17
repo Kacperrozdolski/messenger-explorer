@@ -67,7 +67,7 @@
     "title": "聊天上下文"
   },
   "import": {
-    "description": "选择您的 Facebook 或 Messenger 数据导出文件夹以开始。您可以一次添加多个来源。",
+    "description": "选择您的数据导出文件夹或 zip 文件以开始。您可以一次添加多个来源。",
     "importComplete": "导入完成！",
     "stats": "{{conversations}} 个对话，{{media}} 个媒体文件，{{senders}} 个发送者",
     "detectingFormat": "正在检测格式...",
