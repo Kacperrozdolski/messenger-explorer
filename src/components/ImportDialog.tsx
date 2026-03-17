@@ -339,7 +339,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
         <LanguageSelector />
       </div>
 
-      <div className="max-w-lg w-full mx-auto p-8 text-center space-y-6">
+      <div className="max-w-lg w-full mx-auto p-8 text-center space-y-6 max-h-screen overflow-y-auto">
         <div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">
             {t("brand.title")}
@@ -371,32 +371,29 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
           <div className="space-y-4">
             {/* Folder list */}
             {folders.length > 0 && (
-              <div className="space-y-2 text-left">
+              <div className="space-y-2 text-left max-h-[40vh] overflow-y-auto pr-2 pb-2">
                 {folders.map((folder) => (
                   <div
                     key={folder.path}
                     className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 text-[12px]"
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-foreground" title={folder.path}>
-                        {folder.path.split(/[\\/]/).pop()}
-                      </p>
-                      {folder.detecting && (
-                        <p className="text-muted-foreground flex items-center gap-1">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          {t("import.detectingFormat")}
-                        </p>
-                      )}
-                      {folder.format && (
-                        <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
-                          {folder.isZip && <Archive className="h-3 w-3" />}
-                          {formatLabel(folder.format)}
-                        </span>
-                      )}
-                      {folder.error && (
-                        <p className="text-destructive mt-0.5">{folder.error}</p>
-                      )}
-                    </div>
+                    <p className="flex-1 min-w-0 truncate text-foreground" title={folder.path}>
+                      {folder.path.split(/[\\/]/).pop()}
+                    </p>
+                    {folder.detecting && (
+                      <span className="shrink-0 text-muted-foreground flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      </span>
+                    )}
+                    {folder.format && (
+                      <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+                        {folder.isZip && <Archive className="h-3 w-3" />}
+                        {formatLabel(folder.format)}
+                      </span>
+                    )}
+                    {folder.error && (
+                      <span className="shrink-0 text-destructive" title={folder.error}>!</span>
+                    )}
                     {!importing && (
                       <button
                         onClick={() => handleRemoveFolder(folder.path)}
