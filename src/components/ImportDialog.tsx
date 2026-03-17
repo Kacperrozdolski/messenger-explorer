@@ -58,24 +58,8 @@ const MSG_STEPS = [
   { titleKey: "tutorial.msgStep3title", bodyKey: "tutorial.msgStep3" },
 ];
 
-const IG_STEPS = [
-  { titleKey: "tutorial.igStep1title", bodyKey: "tutorial.igStep1" },
-  { titleKey: "tutorial.igStep2title", bodyKey: "tutorial.igStep2" },
-  { titleKey: "tutorial.step3title", bodyKey: "tutorial.step3" },
-  { titleKey: "tutorial.step4title", bodyKey: "tutorial.step4" },
-  { titleKey: "tutorial.step5title", bodyKey: "tutorial.step5" },
-];
-
-const SNAP_STEPS = [
-  { titleKey: "tutorial.snapStep1title", bodyKey: "tutorial.snapStep1" },
-  { titleKey: "tutorial.snapStep2title", bodyKey: "tutorial.snapStep2" },
-  { titleKey: "tutorial.snapStep3title", bodyKey: "tutorial.snapStep3" },
-];
-
 const FACEBOOK_LINK = "https://accountscenter.facebook.com/info_and_permissions";
 const MESSENGER_LINK = "https://www.messenger.com/secure_storage/dyi";
-const INSTAGRAM_LINK = "https://accountscenter.instagram.com/info_and_permissions";
-const SNAPCHAT_LINK = "https://accounts.snapchat.com/accounts/downloadmydata";
 
 const TutorialDialog = () => {
   const { t } = useTranslation();
@@ -103,12 +87,6 @@ const TutorialDialog = () => {
             <TabsTrigger value="messenger" className="flex-1 text-sm">
               {t("tutorial.tabMessenger")}
             </TabsTrigger>
-            <TabsTrigger value="instagram" className="flex-1 text-sm">
-              {t("tutorial.tabInstagram")}
-            </TabsTrigger>
-            <TabsTrigger value="snapchat" className="flex-1 text-sm">
-              {t("tutorial.tabSnapchat")}
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="facebook" className="space-y-4 mt-4">
@@ -121,10 +99,6 @@ const TutorialDialog = () => {
               <span className="leading-relaxed">{t("tutorial.fbDirectLink")}</span>
             </button>
 
-            {FB_STEPS.map((s, i) => (
-              <StepRow key={s.titleKey} num={i + 1} titleKey={s.titleKey} bodyKey={s.bodyKey} />
-            ))}
-
             {/* JSON tip */}
             <div className="flex gap-2.5 bg-primary/5 border border-primary/15 rounded-lg px-4 py-3">
               <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -132,6 +106,10 @@ const TutorialDialog = () => {
                 {t("tutorial.tip")}
               </p>
             </div>
+
+            {FB_STEPS.map((s, i) => (
+              <StepRow key={s.titleKey} num={i + 1} titleKey={s.titleKey} bodyKey={s.bodyKey} />
+            ))}
           </TabsContent>
 
           <TabsContent value="messenger" className="space-y-4 mt-4">
@@ -149,43 +127,6 @@ const TutorialDialog = () => {
             ))}
           </TabsContent>
 
-          <TabsContent value="instagram" className="space-y-4 mt-4">
-            {/* Direct link */}
-            <button
-              onClick={() => openUrl(INSTAGRAM_LINK)}
-              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-4 py-3 text-[13px] text-primary hover:bg-primary/10 transition-colors text-left"
-            >
-              <ExternalLink className="h-4 w-4 shrink-0" />
-              <span className="leading-relaxed">{t("tutorial.igDirectLink")}</span>
-            </button>
-
-            {IG_STEPS.map((s, i) => (
-              <StepRow key={s.titleKey} num={i + 1} titleKey={s.titleKey} bodyKey={s.bodyKey} />
-            ))}
-
-            {/* JSON tip */}
-            <div className="flex gap-2.5 bg-primary/5 border border-primary/15 rounded-lg px-4 py-3">
-              <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <p className="text-[13px] text-foreground leading-relaxed">
-                {t("tutorial.tip")}
-              </p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="snapchat" className="space-y-4 mt-4">
-            {/* Direct link */}
-            <button
-              onClick={() => openUrl(SNAPCHAT_LINK)}
-              className="flex items-center gap-2 w-full bg-primary/5 border border-primary/15 rounded-lg px-4 py-3 text-[13px] text-primary hover:bg-primary/10 transition-colors text-left"
-            >
-              <ExternalLink className="h-4 w-4 shrink-0" />
-              <span className="leading-relaxed">{t("tutorial.snapDirectLink")}</span>
-            </button>
-
-            {SNAP_STEPS.map((s, i) => (
-              <StepRow key={s.titleKey} num={i + 1} titleKey={s.titleKey} bodyKey={s.bodyKey} />
-            ))}
-          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
