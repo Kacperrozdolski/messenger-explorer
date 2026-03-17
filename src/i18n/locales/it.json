@@ -72,13 +72,15 @@
     "stats": "{{conversations}} conversazioni, {{media}} file multimediali, {{senders}} mittenti",
     "detectingFormat": "Rilevamento formato...",
     "selectFolder": "Seleziona cartella di esportazione",
+    "selectZip": "Seleziona file Zip",
     "addAnother": "Aggiungi un'altra cartella",
     "importButton": "Importa {{count}} fonte",
     "importButtonPlural": "Importa {{count}} fonti",
     "importing": "Importazione...",
-    "dropHere": "Rilascia le cartelle qui",
-    "dropHereHint": "Rilascia le cartelle di esportazione per importarle",
-    "orDragAndDrop": "o trascina e rilascia le cartelle qui"
+    "cancel": "Annulla",
+    "dropHere": "Rilascia qui",
+    "dropHereHint": "Rilascia le cartelle di esportazione o i file zip per importarli",
+    "orDragAndDrop": "o trascina e rilascia cartelle / file zip qui"
   },
   "settings": {
     "title": "Impostazioni",

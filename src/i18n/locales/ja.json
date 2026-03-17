@@ -72,13 +72,15 @@
     "stats": "{{conversations}} 会話、{{media}} メディアファイル、{{senders}} 送信者",
     "detectingFormat": "フォーマットを検出中...",
     "selectFolder": "エクスポートフォルダを選択",
+    "selectZip": "Zipファイルを選択",
     "addAnother": "別のフォルダを追加",
     "importButton": "{{count}} ソースをインポート",
     "importButtonPlural": "{{count}} ソースをインポート",
     "importing": "インポート中...",
-    "dropHere": "フォルダをここにドロップ",
-    "dropHereHint": "エクスポートフォルダをドロップしてインポート",
-    "orDragAndDrop": "またはフォルダをドラッグ＆ドロップ"
+    "cancel": "キャンセル",
+    "dropHere": "ここにドロップ",
+    "dropHereHint": "エクスポートフォルダまたはZipファイルをドロップしてインポート",
+    "orDragAndDrop": "またはフォルダ / Zipファイルをドラッグ＆ドロップ"
   },
   "settings": {
     "title": "設定",

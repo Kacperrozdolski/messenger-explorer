@@ -72,13 +72,15 @@
     "stats": "{{conversations}} Unterhaltungen, {{media}} Mediendateien, {{senders}} Absender",
     "detectingFormat": "Format wird erkannt...",
     "selectFolder": "Exportordner auswählen",
+    "selectZip": "Zip-Datei auswählen",
     "addAnother": "Weiteren Ordner hinzufügen",
     "importButton": "{{count}} Quelle importieren",
     "importButtonPlural": "{{count}} Quellen importieren",
     "importing": "Importiere...",
-    "dropHere": "Ordner hier ablegen",
-    "dropHereHint": "Export-Ordner hierher ziehen, um sie zu importieren",
-    "orDragAndDrop": "oder Ordner hierher ziehen"
+    "cancel": "Abbrechen",
+    "dropHere": "Hier ablegen",
+    "dropHereHint": "Export-Ordner oder Zip-Dateien hierher ziehen, um sie zu importieren",
+    "orDragAndDrop": "oder Ordner / Zip-Dateien hierher ziehen"
   },
   "settings": {
     "title": "Einstellungen",

@@ -72,13 +72,15 @@
     "stats": "{{conversations}} conversations, {{media}} media files, {{senders}} senders",
     "detectingFormat": "Detecting format...",
     "selectFolder": "Select Export Folder",
+    "selectZip": "Select Zip File",
     "addAnother": "Add Another Folder",
     "importButton": "Import {{count}} source",
     "importButtonPlural": "Import {{count}} sources",
     "importing": "Importing...",
-    "dropHere": "Drop folders here",
-    "dropHereHint": "Drop your export folders to import them",
-    "orDragAndDrop": "or drag & drop folders here"
+    "cancel": "Cancel",
+    "dropHere": "Drop here",
+    "dropHereHint": "Drop your export folders or zip files to import them",
+    "orDragAndDrop": "or drag & drop folders / zip files here"
   },
   "settings": {
     "title": "Settings",

@@ -64,6 +64,18 @@ export async function detectFormat(
   return invoke("cmd_detect_format", { exportPath });
 }
 
+export async function extractZip(zipPath: string): Promise<string> {
+  return invoke("cmd_extract_zip", { zipPath });
+}
+
+export async function extractZips(zipPaths: string[]): Promise<string> {
+  return invoke("cmd_extract_zips", { zipPaths });
+}
+
+export async function cleanupZipExtract(extractedPath: string): Promise<void> {
+  return invoke("cmd_cleanup_zip_extract", { extractedPath });
+}
+
 export async function getConversations(): Promise<ChatSource[]> {
   const data = await invoke<
     { id: number; title: string; chat_type: string; media_count: number }[]

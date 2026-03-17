@@ -72,13 +72,15 @@
     "stats": "{{conversations}} rozmów, {{media}} plików, {{senders}} nadawców",
     "detectingFormat": "Wykrywanie formatu...",
     "selectFolder": "Wybierz folder eksportu",
+    "selectZip": "Wybierz plik Zip",
     "addAnother": "Dodaj kolejny folder",
     "importButton": "Importuj {{count}} źródło",
     "importButtonPlural": "Importuj {{count}} źródeł",
     "importing": "Importowanie...",
-    "dropHere": "Upuść foldery tutaj",
-    "dropHereHint": "Upuść foldery eksportu, aby je zaimportować",
-    "orDragAndDrop": "lub przeciągnij i upuść foldery tutaj"
+    "cancel": "Anuluj",
+    "dropHere": "Upuść tutaj",
+    "dropHereHint": "Upuść foldery eksportu lub pliki zip, aby je zaimportować",
+    "orDragAndDrop": "lub przeciągnij i upuść foldery / pliki zip tutaj"
   },
   "settings": {
     "title": "Ustawienia",

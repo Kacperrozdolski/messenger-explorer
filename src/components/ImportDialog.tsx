@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
-import { FolderOpen, Loader2, X, Plus, HelpCircle, AlertTriangle, ExternalLink } from "lucide-react";
+import { FolderOpen, Loader2, X, Plus, HelpCircle, AlertTriangle, ExternalLink, Archive } from "lucide-react";
 import { useTauriDrop } from "@/hooks/useTauriDrop";
 import * as api from "@/lib/api";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -25,6 +25,8 @@ interface FolderEntry {
   format: "facebook" | "messenger" | null;
   error: string | null;
   detecting: boolean;
+  isZip: boolean;
+  extractedPath: string | null;
 }
 
 const StepRow = ({ num, titleKey, bodyKey }: { num: number; titleKey: string; bodyKey: string }) => {
@@ -195,12 +197,14 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<api.ImportResult | null>(null);
+  const cancelledRef = useRef(false);
 
   const addPaths = useCallback((paths: string[]) => {
     for (const path of paths) {
+      const isZip = /\.zip$/i.test(path);
       setFolders((prev) => {
         if (prev.some((f) => f.path === path)) return prev;
-        return [...prev, { path, format: null, error: null, detecting: true }];
+        return [...prev, { path, format: null, error: null, detecting: true, isZip, extractedPath: null }];
       });
 
       api.detectFormat(path).then(
@@ -243,6 +247,24 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
     }
   };
 
+  const handleAddZip = async () => {
+    try {
+      const selected = await open({
+        directory: false,
+        multiple: true,
+        title: "Select Export Zip Files",
+        filters: [{ name: "Zip Archives", extensions: ["zip"] }],
+      });
+
+      if (!selected) return;
+
+      const paths = Array.isArray(selected) ? selected : [selected];
+      addPaths(paths);
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
   const handleRemoveFolder = (path: string) => {
     setFolders((prev) => prev.filter((f) => f.path !== path));
   };
@@ -252,18 +274,49 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
   const handleImport = async () => {
     if (validFolders.length === 0) return;
 
+    cancelledRef.current = false;
+    const extractedPaths: string[] = [];
     try {
       setError(null);
       setImporting(true);
-      const paths = validFolders.map((f) => f.path);
-      const result = await api.importExport(paths);
-      setStats(result);
-      setTimeout(() => onImportComplete(), 1500);
+
+      const zipFolders = validFolders.filter((f) => f.isZip);
+      const regularFolders = validFolders.filter((f) => !f.isZip);
+      const importPaths: string[] = regularFolders.map((f) => f.path);
+
+      // Extract all zips to the same directory (multi-part exports merge)
+      if (zipFolders.length > 0 && !cancelledRef.current) {
+        const zipPaths = zipFolders.map((f) => f.path);
+        const extracted = await api.extractZips(zipPaths);
+        if (cancelledRef.current) throw new Error("Cancelled");
+        extractedPaths.push(extracted);
+        importPaths.push(extracted);
+      }
+
+      if (!cancelledRef.current && importPaths.length > 0) {
+        const result = await api.importExport(importPaths);
+        if (!cancelledRef.current) {
+          setStats(result);
+          setTimeout(() => onImportComplete(), 1500);
+        }
+      }
     } catch (e) {
-      setError(String(e));
+      if (!cancelledRef.current) {
+        setError(String(e));
+      }
+      // Only cleanup extracted zips on failure/cancel — on success the
+      // database stores absolute paths into the extracted directory so the
+      // files must remain on disk for images to load.
+      for (const extracted of extractedPaths) {
+        api.cleanupZipExtract(extracted).catch(() => {});
+      }
     } finally {
       setImporting(false);
     }
+  };
+
+  const handleCancelImport = () => {
+    cancelledRef.current = true;
   };
 
   const formatLabel = (format: string) =>
@@ -335,7 +388,8 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                         </p>
                       )}
                       {folder.format && (
-                        <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+                        <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium">
+                          {folder.isZip && <Archive className="h-3 w-3" />}
                           {formatLabel(folder.format)}
                         </span>
                       )}
@@ -343,58 +397,78 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
                         <p className="text-destructive mt-0.5">{folder.error}</p>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleRemoveFolder(folder.path)}
-                      className="shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                    {!importing && (
+                      <button
+                        onClick={() => handleRemoveFolder(folder.path)}
+                        className="shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Add folder button */}
-            <button
-              onClick={handleAddFolder}
-              disabled={importing}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-md text-[13px] font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
-            >
-              {folders.length === 0 ? (
-                <>
-                  <FolderOpen className="h-4 w-4" />
-                  {t("import.selectFolder")}
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  {t("import.addAnother")}
-                </>
-              )}
-            </button>
+            {/* Add folder / zip buttons */}
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={handleAddFolder}
+                disabled={importing}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-md text-[13px] font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
+              >
+                {folders.length === 0 ? (
+                  <>
+                    <FolderOpen className="h-4 w-4" />
+                    {t("import.selectFolder")}
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    {t("import.addAnother")}
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleAddZip}
+                disabled={importing}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-md text-[13px] font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
+              >
+                <Archive className="h-4 w-4" />
+                {t("import.selectZip")}
+              </button>
+            </div>
             <p className="text-[12px] text-muted-foreground">{t("import.orDragAndDrop")}</p>
 
             {/* Import button */}
             {validFolders.length > 0 && (
-              <div>
-                <button
-                  onClick={handleImport}
-                  disabled={importing}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-                >
-                  {importing ? (
-                    <>
+              <div className="flex items-center justify-center gap-2">
+                {importing ? (
+                  <>
+                    <button
+                      disabled
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-md text-[13px] font-medium opacity-50"
+                    >
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {t("import.importing")}
-                    </>
-                  ) : (
-                    <>
-                      {validFolders.length > 1
-                        ? t("import.importButtonPlural", { count: validFolders.length })
-                        : t("import.importButton", { count: validFolders.length })}
-                    </>
-                  )}
-                </button>
+                    </button>
+                    <button
+                      onClick={handleCancelImport}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-foreground rounded-md text-[13px] font-medium hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    >
+                      {t("import.cancel")}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleImport}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-md text-[13px] font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    {validFolders.length > 1
+                      ? t("import.importButtonPlural", { count: validFolders.length })
+                      : t("import.importButton", { count: validFolders.length })}
+                  </button>
+                )}
               </div>
             )}
           </div>

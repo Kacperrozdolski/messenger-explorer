@@ -3,6 +3,7 @@ pub mod messenger;
 pub mod mojibake;
 
 use std::path::{Path, PathBuf};
+use std::io::BufReader;
 use facebook::{FacebookExport, Message};
 use mojibake::fix_mojibake;
 
@@ -81,6 +82,127 @@ pub fn detect_format(path: &Path) -> Result<DataFormat, String> {
     }
 
     Err("Unrecognized export format. Expected Facebook or Messenger data.".into())
+}
+
+/// Detect format by peeking inside a zip file's entry listing (no extraction).
+pub fn detect_format_zip(zip_path: &Path) -> Result<(DataFormat, String), String> {
+    let file = std::fs::File::open(zip_path)
+        .map_err(|e| format!("Failed to open zip: {}", e))?;
+    let reader = BufReader::new(file);
+    let archive = zip::ZipArchive::new(reader)
+        .map_err(|e| format!("Failed to read zip archive: {}", e))?;
+
+    let names: Vec<&str> = archive.file_names().collect();
+
+    // Facebook: look for */your_facebook_activity/messages/inbox/ pattern
+    // The zip may have a top-level folder wrapping everything
+    for name in &names {
+        if name.contains("your_facebook_activity/messages/inbox/") {
+            // Find the root prefix (everything before your_facebook_activity)
+            let prefix = name.split("your_facebook_activity/").next().unwrap_or("");
+            return Ok((DataFormat::Facebook, prefix.to_string()));
+        }
+    }
+
+    // Messenger: look for *.json + media/ at the same level
+    // Find the common prefix (top-level folder or empty)
+    let first_slash_prefixes: std::collections::HashSet<&str> = names
+        .iter()
+        .filter_map(|n| {
+            // Get the top-level component
+            n.split('/').next()
+        })
+        .collect();
+
+    // Check if there's a single top-level folder wrapping everything
+    if first_slash_prefixes.len() == 1 {
+        let prefix = first_slash_prefixes.into_iter().next().unwrap();
+        let has_json = names.iter().any(|n| {
+            // JSON file directly inside the top-level folder (not nested deeper)
+            if let Some(rest) = n.strip_prefix(prefix).and_then(|r| r.strip_prefix('/')) {
+                !rest.contains('/') && rest.ends_with(".json")
+            } else {
+                false
+            }
+        });
+        let has_media = names.iter().any(|n| {
+            n.starts_with(&format!("{}/media/", prefix))
+        });
+        if has_json && has_media {
+            return Ok((DataFormat::Messenger, format!("{}/", prefix)));
+        }
+    }
+
+    // Also check root-level (no wrapper folder)
+    let has_root_json = names.iter().any(|n| !n.contains('/') && n.ends_with(".json"));
+    let has_root_media = names.iter().any(|n| n.starts_with("media/"));
+    if has_root_json && has_root_media {
+        return Ok((DataFormat::Messenger, String::new()));
+    }
+
+    Err("Unrecognized export format in zip. Expected Facebook or Messenger data.".into())
+}
+
+/// Extract a zip file to a destination directory. Returns the path to the export root
+/// (accounting for the inner prefix).
+pub fn extract_zip(zip_path: &Path, dest_dir: &Path) -> Result<PathBuf, String> {
+    extract_zip_cancelable(zip_path, dest_dir, None)
+}
+
+/// Extract a zip file with optional cancellation support via an AtomicBool flag.
+pub fn extract_zip_cancelable(
+    zip_path: &Path,
+    dest_dir: &Path,
+    cancel_flag: Option<&std::sync::atomic::AtomicBool>,
+) -> Result<PathBuf, String> {
+    let file = std::fs::File::open(zip_path)
+        .map_err(|e| format!("Failed to open zip: {}", e))?;
+    let reader = BufReader::new(file);
+    let mut archive = zip::ZipArchive::new(reader)
+        .map_err(|e| format!("Failed to read zip archive: {}", e))?;
+
+    // Extract file-by-file so we can check cancellation and avoid blocking
+    // the system with one massive I/O burst.
+    for i in 0..archive.len() {
+        if let Some(flag) = cancel_flag {
+            if flag.load(std::sync::atomic::Ordering::Relaxed) {
+                return Err("Cancelled".into());
+            }
+        }
+
+        let mut entry = archive.by_index(i)
+            .map_err(|e| format!("Failed to read zip entry {}: {}", i, e))?;
+
+        let out_path = match entry.enclosed_name() {
+            Some(p) => dest_dir.join(p),
+            None => continue, // skip entries with unsafe paths
+        };
+
+        if entry.is_dir() {
+            std::fs::create_dir_all(&out_path)
+                .map_err(|e| format!("Failed to create dir {}: {}", out_path.display(), e))?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create parent dir: {}", e))?;
+            }
+            let mut out_file = std::fs::File::create(&out_path)
+                .map_err(|e| format!("Failed to create file {}: {}", out_path.display(), e))?;
+            std::io::copy(&mut entry, &mut out_file)
+                .map_err(|e| format!("Failed to write file {}: {}", out_path.display(), e))?;
+        }
+
+        // Yield CPU periodically so other threads can make progress
+        if i % 50 == 0 {
+            std::thread::yield_now();
+        }
+    }
+
+    // Detect the format to find the correct root prefix
+    let (_, prefix) = detect_format_zip(zip_path)?;
+
+    let export_root = dest_dir.join(&prefix);
+    Ok(export_root)
 }
 
 /// Parse an export, auto-detecting the format.

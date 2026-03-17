@@ -72,33 +72,40 @@ fn cmd_get_import_status(state: tauri::State<'_, DbState>) -> Result<ImportStatu
 }
 
 #[tauri::command]
-fn cmd_import_export(
+async fn cmd_import_export(
     state: tauri::State<'_, DbState>,
     export_paths: Vec<String>,
     context_window: Option<usize>,
 ) -> Result<ImportStats, String> {
     let window_size = context_window.unwrap_or(5);
 
-    // Parse all paths first (before touching the database)
-    let mut all_conversations = Vec::new();
-    let mut normalized_paths = Vec::new();
-    for path_str in &export_paths {
-        let export_root = PathBuf::from(path_str);
-        if !export_root.exists() {
-            return Err(format!("Export path does not exist: {}", path_str));
+    // Parse all paths on a blocking thread (heavy I/O, no DB needed)
+    let paths = export_paths.clone();
+    let parsed = tauri::async_runtime::spawn_blocking(move || {
+        let mut all_conversations = Vec::new();
+        let mut normalized_paths = Vec::new();
+        for path_str in &paths {
+            let export_root = PathBuf::from(path_str);
+            if !export_root.exists() {
+                return Err(format!("Export path does not exist: {}", path_str));
+            }
+
+            let parse_result = parser::parse_export(&export_root, window_size)
+                .map_err(|e| format!("Error parsing {}: {}", path_str, e))?;
+            all_conversations.extend(parse_result.conversations);
+            normalized_paths.push(export_root.to_string_lossy().to_string());
         }
+        Ok((all_conversations, normalized_paths))
+    })
+    .await
+    .map_err(|e| e.to_string())??;
 
-        let parse_result = parser::parse_export(&export_root, window_size)
-            .map_err(|e| format!("Error parsing {}: {}", path_str, e))?;
-        all_conversations.extend(parse_result.conversations);
-        normalized_paths.push(export_root.to_string_lossy().to_string());
-    }
-
+    let (all_conversations, normalized_paths) = parsed;
     let combined = parser::ParseResult {
         conversations: all_conversations,
     };
 
-    // Clear and insert within a single transaction
+    // DB write phase — hold the lock only for the actual transaction
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
@@ -108,6 +115,7 @@ fn cmd_import_export(
 
     let stats = db::writer::insert_all(&tx, &combined)?;
     tx.commit().map_err(|e| e.to_string())?;
+    drop(conn);
 
     log::info!(
         "Import complete: {} conversations, {} media, {} senders",
@@ -120,34 +128,38 @@ fn cmd_import_export(
 }
 
 #[tauri::command]
-fn cmd_add_source(
+async fn cmd_add_source(
     state: tauri::State<'_, DbState>,
     export_path: String,
     context_window: Option<usize>,
 ) -> Result<ImportStats, String> {
     let window_size = context_window.unwrap_or(5);
-    let export_root = PathBuf::from(&export_path);
+    let path = export_path.clone();
 
-    if !export_root.exists() {
-        return Err(format!("Export path does not exist: {}", export_path));
-    }
+    // Parse on a blocking thread (heavy I/O, no DB needed)
+    let parse_result = tauri::async_runtime::spawn_blocking(move || {
+        let export_root = PathBuf::from(&path);
+        if !export_root.exists() {
+            return Err(format!("Export path does not exist: {}", path));
+        }
+        let result = parser::parse_export(&export_root, window_size)?;
+        let normalized_path = export_root.to_string_lossy().to_string();
+        Ok((result, normalized_path))
+    })
+    .await
+    .map_err(|e| e.to_string())??;
 
-    // Parse first (before touching the database)
-    let parse_result = parser::parse_export(&export_root, window_size)?;
+    let (parse_result, normalized_path) = parse_result;
 
-    // Use normalized path to match what the parser stores in source_path
-    let normalized_path = export_root.to_string_lossy().to_string();
-
-    // Clear and insert within a single transaction
+    // DB write phase — hold the lock only for the actual transaction
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
-    // Clear any existing data from this source path (handles re-import of same folder)
     db::schema::clear_source(&tx, &normalized_path).map_err(|e| e.to_string())?;
 
-    // Insert additively (no global clear)
     let stats = db::writer::insert_all(&tx, &parse_result)?;
     tx.commit().map_err(|e| e.to_string())?;
+    drop(conn);
 
     log::info!(
         "Added source {}: {} conversations, {} media, {} senders",
@@ -173,6 +185,23 @@ fn cmd_remove_source(
 ) -> Result<(), String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::schema::clear_source(&conn, &source_path).map_err(|e| e.to_string())?;
+
+    // If the source was extracted from a zip, clean up the extracted directory
+    if source_path.contains("zip_extracts") {
+        let mut dir = PathBuf::from(&source_path);
+        loop {
+            if let Some(parent) = dir.parent() {
+                if parent.file_name().map_or(false, |n| n == "zip_extracts") {
+                    let _ = std::fs::remove_dir_all(&dir);
+                    break;
+                }
+                dir = parent.to_path_buf();
+            } else {
+                break;
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -184,11 +213,106 @@ fn cmd_detect_format(
     if !path.exists() {
         return Err(format!("Path does not exist: {}", export_path));
     }
+
+    // Handle zip files by peeking inside
+    if path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("zip")) {
+        let (format, _prefix) = parser::detect_format_zip(&path)?;
+        return Ok(match format {
+            parser::DataFormat::Facebook => "facebook".to_string(),
+            parser::DataFormat::Messenger => "messenger".to_string(),
+        });
+    }
+
     let format = parser::detect_format(&path)?;
     Ok(match format {
         parser::DataFormat::Facebook => "facebook".to_string(),
         parser::DataFormat::Messenger => "messenger".to_string(),
     })
+}
+
+#[tauri::command]
+async fn cmd_extract_zip(
+    app_handle: tauri::AppHandle,
+    zip_path: String,
+) -> Result<String, String> {
+    cmd_extract_zips(app_handle, vec![zip_path]).await
+}
+
+#[tauri::command]
+async fn cmd_extract_zips(
+    app_handle: tauri::AppHandle,
+    zip_paths: Vec<String>,
+) -> Result<String, String> {
+    if zip_paths.is_empty() {
+        return Err("No zip files provided".into());
+    }
+
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let extracts_dir = app_data.join("zip_extracts");
+    std::fs::create_dir_all(&extracts_dir)
+        .map_err(|e| format!("Failed to create extracts directory: {}", e))?;
+
+    // Use a single shared directory for all zips (so multi-part exports merge)
+    let first_zip = PathBuf::from(&zip_paths[0]);
+    let stem = first_zip
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("export");
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let dest_dir = extracts_dir.join(format!("{}_{}", stem, ts));
+    std::fs::create_dir_all(&dest_dir)
+        .map_err(|e| format!("Failed to create extraction directory: {}", e))?;
+
+    // Run extraction on a blocking thread so the async runtime stays free
+    let paths = zip_paths.clone();
+    let dest = dest_dir.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let mut export_root = dest.clone();
+        for zip_path_str in &paths {
+            let zip = PathBuf::from(zip_path_str);
+            if !zip.exists() {
+                return Err(format!("Zip file does not exist: {}", zip_path_str));
+            }
+            export_root = parser::extract_zip(&zip, &dest)?;
+        }
+        Ok(export_root.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    result
+}
+
+#[tauri::command]
+fn cmd_cleanup_zip_extract(extracted_path: String) -> Result<(), String> {
+    let path = PathBuf::from(&extracted_path);
+    // Safety: only allow deleting paths under zip_extracts
+    let path_str = path.to_string_lossy();
+    if !path_str.contains("zip_extracts") {
+        return Err("Cannot cleanup path outside of zip_extracts directory".into());
+    }
+    // Walk up to find the zip_extracts/<name_timestamp> directory to remove
+    let mut dir = path.clone();
+    loop {
+        if let Some(parent) = dir.parent() {
+            if parent.file_name().map_or(false, |n| n == "zip_extracts") {
+                // `dir` is the extraction root (e.g. zip_extracts/export_123456)
+                std::fs::remove_dir_all(&dir)
+                    .map_err(|e| format!("Failed to cleanup: {}", e))?;
+                return Ok(());
+            }
+            dir = parent.to_path_buf();
+        } else {
+            break;
+        }
+    }
+    Err("Could not determine extraction root to cleanup".into())
 }
 
 #[tauri::command]
@@ -748,6 +872,9 @@ pub fn run() {
             cmd_get_sources,
             cmd_remove_source,
             cmd_detect_format,
+            cmd_extract_zip,
+            cmd_extract_zips,
+            cmd_cleanup_zip_extract,
             cmd_get_conversations,
             cmd_get_senders,
             cmd_get_media,

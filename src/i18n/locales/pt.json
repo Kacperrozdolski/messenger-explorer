@@ -72,13 +72,15 @@
     "stats": "{{conversations}} conversas, {{media}} arquivos de mídia, {{senders}} remetentes",
     "detectingFormat": "Detectando formato...",
     "selectFolder": "Selecionar pasta de exportação",
+    "selectZip": "Selecionar arquivo Zip",
     "addAnother": "Adicionar outra pasta",
     "importButton": "Importar {{count}} fonte",
     "importButtonPlural": "Importar {{count}} fontes",
     "importing": "Importando...",
-    "dropHere": "Solte as pastas aqui",
-    "dropHereHint": "Solte suas pastas de exportação para importá-las",
-    "orDragAndDrop": "ou arraste e solte pastas aqui"
+    "cancel": "Cancelar",
+    "dropHere": "Solte aqui",
+    "dropHereHint": "Solte suas pastas de exportação ou arquivos zip para importá-los",
+    "orDragAndDrop": "ou arraste e solte pastas / arquivos zip aqui"
   },
   "settings": {
     "title": "Configurações",

@@ -4,6 +4,7 @@ use crate::parser::{ParseResult, ParsedConversation, ParsedMedia, ContextMsg};
 
 /// Insert all parsed data into the database.
 /// Caller is responsible for transaction management.
+/// Uses prepare_cached for fast bulk inserts.
 pub fn insert_all(conn: &Connection, result: &ParseResult) -> Result<ImportStats, String> {
     let mut stats = ImportStats::default();
     let mut sender_cache: HashMap<String, i64> = HashMap::new();
@@ -15,10 +16,11 @@ pub fn insert_all(conn: &Connection, result: &ParseResult) -> Result<ImportStats
         // Insert participants
         for participant_name in &conv.participants {
             let sender_id = get_or_create_sender_cached(conn, participant_name, &mut sender_cache)?;
-            conn.execute(
+            conn.prepare_cached(
                 "INSERT OR IGNORE INTO conversation_participants (conversation_id, sender_id) VALUES (?1, ?2)",
-                rusqlite::params![conv_id, sender_id],
-            ).map_err(|e| e.to_string())?;
+            ).map_err(|e| e.to_string())?
+            .execute(rusqlite::params![conv_id, sender_id])
+            .map_err(|e| e.to_string())?;
         }
 
         // Insert media
@@ -51,19 +53,19 @@ fn insert_conversation(
     conn: &Connection,
     conv: &ParsedConversation,
 ) -> Result<i64, String> {
-    conn.execute(
+    conn.prepare_cached(
         "INSERT INTO conversations (folder_name, title, chat_type, participant_count, thread_path, source_type, source_path)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        rusqlite::params![
-            conv.folder_name,
-            conv.title,
-            conv.chat_type,
-            conv.participants.len() as i64,
-            conv.thread_path,
-            conv.source_type,
-            conv.source_path,
-        ],
-    ).map_err(|e| e.to_string())?;
+    ).map_err(|e| e.to_string())?
+    .execute(rusqlite::params![
+        conv.folder_name,
+        conv.title,
+        conv.chat_type,
+        conv.participants.len() as i64,
+        conv.thread_path,
+        conv.source_type,
+        conv.source_path,
+    ]).map_err(|e| e.to_string())?;
     Ok(conn.last_insert_rowid())
 }
 
@@ -72,19 +74,17 @@ fn get_or_create_sender_cached(conn: &Connection, name: &str, cache: &mut HashMa
         return Ok(id);
     }
 
-    let result: Result<i64, _> = conn.query_row(
-        "SELECT id FROM senders WHERE name = ?1",
-        rusqlite::params![name],
-        |row| row.get(0),
-    );
-
-    let id = match result {
+    let id = match conn
+        .prepare_cached("SELECT id FROM senders WHERE name = ?1")
+        .map_err(|e| e.to_string())?
+        .query_row(rusqlite::params![name], |row| row.get(0))
+    {
         Ok(id) => id,
         Err(rusqlite::Error::QueryReturnedNoRows) => {
-            conn.execute(
-                "INSERT INTO senders (name) VALUES (?1)",
-                rusqlite::params![name],
-            ).map_err(|e| e.to_string())?;
+            conn.prepare_cached("INSERT INTO senders (name) VALUES (?1)")
+                .map_err(|e| e.to_string())?
+                .execute(rusqlite::params![name])
+                .map_err(|e| e.to_string())?;
             conn.last_insert_rowid()
         }
         Err(e) => return Err(e.to_string()),
@@ -101,20 +101,20 @@ fn insert_media(
     sender_id: i64,
     media: &ParsedMedia,
 ) -> Result<i64, String> {
-    conn.execute(
+    conn.prepare_cached(
         "INSERT INTO media (conversation_id, sender_id, file_path, relative_uri, file_type, timestamp_ms, creation_timestamp, message_content)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![
-            conversation_id,
-            sender_id,
-            media.file_path,
-            media.relative_uri,
-            media.file_type,
-            media.timestamp_ms,
-            media.creation_timestamp,
-            media.message_content,
-        ],
-    ).map_err(|e| e.to_string())?;
+    ).map_err(|e| e.to_string())?
+    .execute(rusqlite::params![
+        conversation_id,
+        sender_id,
+        media.file_path,
+        media.relative_uri,
+        media.file_type,
+        media.timestamp_ms,
+        media.creation_timestamp,
+        media.message_content,
+    ]).map_err(|e| e.to_string())?;
     Ok(conn.last_insert_rowid())
 }
 
@@ -126,17 +126,17 @@ fn insert_context_message_cached(
     cache: &mut HashMap<String, i64>,
 ) -> Result<(), String> {
     let sender_id = get_or_create_sender_cached(conn, &ctx.sender_name, cache)?;
-    conn.execute(
+    conn.prepare_cached(
         "INSERT INTO context_messages (media_id, sender_id, content, timestamp_ms, position)
          VALUES (?1, ?2, ?3, ?4, ?5)",
-        rusqlite::params![
-            media_id,
-            sender_id,
-            ctx.content,
-            ctx.timestamp_ms,
-            position,
-        ],
-    ).map_err(|e| e.to_string())?;
+    ).map_err(|e| e.to_string())?
+    .execute(rusqlite::params![
+        media_id,
+        sender_id,
+        ctx.content,
+        ctx.timestamp_ms,
+        position,
+    ]).map_err(|e| e.to_string())?;
     Ok(())
 }
 

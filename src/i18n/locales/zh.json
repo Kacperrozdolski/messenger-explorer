@@ -72,13 +72,15 @@
     "stats": "{{conversations}} 个对话，{{media}} 个媒体文件，{{senders}} 个发送者",
     "detectingFormat": "正在检测格式...",
     "selectFolder": "选择导出文件夹",
+    "selectZip": "选择Zip文件",
     "addAnother": "添加另一个文件夹",
     "importButton": "导入 {{count}} 个来源",
     "importButtonPlural": "导入 {{count}} 个来源",
     "importing": "正在导入...",
-    "dropHere": "将文件夹拖放到此处",
-    "dropHereHint": "拖放导出文件夹以导入",
-    "orDragAndDrop": "或将文件夹拖放到此处"
+    "cancel": "取消",
+    "dropHere": "拖放到此处",
+    "dropHereHint": "拖放导出文件夹或Zip文件以导入",
+    "orDragAndDrop": "或将文件夹 / Zip文件拖放到此处"
   },
   "settings": {
     "title": "设置",
