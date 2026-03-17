@@ -137,6 +137,63 @@ export async function getMedia(filters: {
   }));
 }
 
+export interface MediaPageResult {
+  items: ImageEntry[];
+  nextCursor: string | null;
+}
+
+export async function getMediaPage(filters: {
+  conversationId?: number;
+  senderId?: number;
+  fileType?: string;
+  search?: string;
+  albumId?: number;
+  sort: string;
+  cursorMonth?: string;
+  monthsPerPage: number;
+}): Promise<MediaPageResult> {
+  const data = await invoke<{
+    items: {
+      id: number;
+      file_path: string;
+      sender_name: string;
+      timestamp_ms: number;
+      conversation_title: string;
+      chat_type: string;
+      file_type: string;
+      conversation_id: number;
+      sender_id: number;
+    }[];
+    next_cursor: string | null;
+  }>("cmd_get_media_page", {
+    filters: {
+      conversation_id: filters.conversationId ?? null,
+      sender_id: filters.senderId ?? null,
+      file_type: filters.fileType ?? null,
+      search: filters.search ?? null,
+      album_id: filters.albumId ?? null,
+      sort: filters.sort,
+      cursor_month: filters.cursorMonth ?? null,
+      months_per_page: filters.monthsPerPage,
+    },
+  });
+  return {
+    items: data.items.map((m) => ({
+      id: m.id,
+      src: convertFileSrc(m.file_path, "media"),
+      file_path: m.file_path,
+      sender: m.sender_name,
+      senderId: m.sender_id,
+      timestamp: m.timestamp_ms,
+      chat: m.conversation_title,
+      chatId: m.conversation_id,
+      chatType: m.chat_type as "group" | "dm",
+      fileType: m.file_type as "image" | "video" | "gif",
+    })),
+    nextCursor: data.next_cursor,
+  };
+}
+
 export async function getMediaByIds(ids: number[]): Promise<ImageEntry[]> {
   const data = await invoke<
     {

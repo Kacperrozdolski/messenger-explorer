@@ -17,6 +17,7 @@ import type {
 import type { FileTypeCounts } from "@/lib/api";
 
 const PAGE_SIZE = 60;
+const MONTHS_PER_PAGE = 3;
 
 const Index = () => {
   const { t } = useTranslation();
@@ -241,12 +242,45 @@ const Index = () => {
     placeholderData: keepPreviousData,
   });
 
-  // Infinite scroll media query
+  // Use month-based pagination for date sorts (no month filter),
+  // offset-based for sender sort or when a specific month is selected.
+  const useMonthPagination = (sort === "date-desc" || sort === "date-asc") && !selectedMonth;
+
+  // Month-based infinite scroll query
   const {
-    data: mediaData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+    data: monthMediaData,
+    fetchNextPage: fetchNextMonthPage,
+    hasNextPage: hasNextMonthPage,
+    isFetchingNextPage: isFetchingNextMonthPage,
+  } = useInfiniteQuery({
+    queryKey: [
+      "media-month",
+      selectedChatId,
+      selectedSenderId,
+      fileType,
+      committedSearch,
+      sort,
+      selectedAlbumId,
+    ],
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      api.getMediaPage({
+        ...filterParams,
+        sort,
+        cursorMonth: pageParam,
+        monthsPerPage: MONTHS_PER_PAGE,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    enabled: hasData && useMonthPagination,
+    placeholderData: keepPreviousData,
+  });
+
+  // Offset-based infinite scroll query (for sender sort or specific month filter)
+  const {
+    data: offsetMediaData,
+    fetchNextPage: fetchNextOffsetPage,
+    hasNextPage: hasNextOffsetPage,
+    isFetchingNextPage: isFetchingNextOffsetPage,
   } = useInfiniteQuery({
     queryKey: [
       "media",
@@ -270,13 +304,23 @@ const Index = () => {
       if (lastPage.length < PAGE_SIZE) return undefined;
       return allPages.reduce((sum, page) => sum + page.length, 0);
     },
-    enabled: hasData,
+    enabled: hasData && !useMonthPagination,
     placeholderData: keepPreviousData,
   });
 
+  const mediaData = useMonthPagination ? monthMediaData : offsetMediaData;
+  const fetchNextPage = useMonthPagination ? fetchNextMonthPage : fetchNextOffsetPage;
+  const hasNextPage = useMonthPagination ? hasNextMonthPage : hasNextOffsetPage;
+  const isFetchingNextPage = useMonthPagination ? isFetchingNextMonthPage : isFetchingNextOffsetPage;
+
   const images = useMemo(
-    () => mediaData?.pages.flat() ?? [],
-    [mediaData],
+    () => {
+      if (useMonthPagination) {
+        return monthMediaData?.pages.flatMap((p) => p.items) ?? [];
+      }
+      return offsetMediaData?.pages.flat() ?? [];
+    },
+    [useMonthPagination, monthMediaData, offsetMediaData],
   );
 
   // Scroll to top when filters change

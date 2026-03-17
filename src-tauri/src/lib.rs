@@ -13,7 +13,7 @@ use tauri::{Emitter, Manager};
 
 use db::queries::{
     self, AlbumInfo, ConversationInfo, FilterFacets, ImportStatus, MediaContext, MediaFilters,
-    MediaItem, SenderInfo, SourceInfo, TimelineEntry,
+    MediaItem, MediaPage, MonthPageFilters, SenderInfo, SourceInfo, TimelineEntry,
 };
 use db::writer::{self as db_writer, ImportStats};
 
@@ -207,6 +207,12 @@ fn cmd_get_senders(state: tauri::State<'_, DbState>) -> Result<Vec<SenderInfo>, 
 fn cmd_get_media(state: tauri::State<'_, DbState>, filters: MediaFilters) -> Result<Vec<MediaItem>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     queries::get_media(&conn, &filters)
+}
+
+#[tauri::command]
+fn cmd_get_media_page(state: tauri::State<'_, DbState>, filters: MonthPageFilters) -> Result<MediaPage, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_media_month_page(&conn, &filters)
 }
 
 #[tauri::command]
@@ -745,6 +751,7 @@ pub fn run() {
             cmd_get_conversations,
             cmd_get_senders,
             cmd_get_media,
+            cmd_get_media_page,
             cmd_get_media_count,
             cmd_get_context,
             cmd_get_timeline,

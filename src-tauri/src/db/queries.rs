@@ -718,6 +718,166 @@ pub fn get_filter_facets(conn: &Connection, filters: &MediaFilters) -> Result<Fi
     })
 }
 
+#[derive(Debug, Serialize)]
+pub struct MediaPage {
+    pub items: Vec<MediaItem>,
+    pub next_cursor: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct MonthPageFilters {
+    pub conversation_id: Option<i64>,
+    pub sender_id: Option<i64>,
+    pub file_type: Option<String>,
+    pub search: Option<String>,
+    pub album_id: Option<i64>,
+    pub sort: String,
+    pub cursor_month: Option<String>,
+    pub months_per_page: i64,
+}
+
+pub fn get_media_month_page(
+    conn: &Connection,
+    filters: &MonthPageFilters,
+) -> Result<MediaPage, String> {
+    let is_desc = filters.sort.as_str() != "date-asc";
+
+    // Build common WHERE clause (reused for both queries)
+    let build_where = || -> (String, Vec<Box<dyn rusqlite::types::ToSql>>) {
+        let mut sql = String::from("WHERE 1=1");
+        let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+        if let Some(cid) = filters.conversation_id {
+            sql.push_str(" AND m.conversation_id = ?");
+            params.push(Box::new(cid));
+        }
+        if let Some(sid) = filters.sender_id {
+            sql.push_str(" AND m.sender_id = ?");
+            params.push(Box::new(sid));
+        }
+        if let Some(ref ft) = filters.file_type {
+            sql.push_str(" AND m.file_type = ?");
+            params.push(Box::new(ft.clone()));
+        }
+        if let Some(aid) = filters.album_id {
+            sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
+            params.push(Box::new(aid));
+        }
+        if let Some(ref search) = filters.search {
+            let trimmed = search.trim();
+            if trimmed.len() >= 2 {
+                let pattern = format!("%{}%", trimmed.to_lowercase());
+                sql.push_str(
+                    " AND (LOWER(COALESCE(m.message_content, '')) LIKE ?
+                       OR m.id IN (SELECT cm.media_id FROM context_messages cm
+                                   WHERE LOWER(cm.content) LIKE ?))",
+                );
+                params.push(Box::new(pattern.clone()));
+                params.push(Box::new(pattern));
+            }
+        }
+        (sql, params)
+    };
+
+    // Step 1: Get target months
+    let (where_sql, mut months_params) = build_where();
+    let mut months_sql = format!(
+        "SELECT DISTINCT strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) as mk
+         FROM media m
+         INNER JOIN senders s ON s.id = m.sender_id
+         INNER JOIN conversations c ON c.id = m.conversation_id
+         {}",
+        where_sql
+    );
+
+    if let Some(ref cursor) = filters.cursor_month {
+        if is_desc {
+            months_sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) < ?");
+        } else {
+            months_sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) > ?");
+        }
+        months_params.push(Box::new(cursor.clone()));
+    }
+
+    months_sql.push_str(if is_desc { " ORDER BY mk DESC" } else { " ORDER BY mk ASC" });
+    // Fetch one extra month to detect if there's a next page
+    months_sql.push_str(&format!(" LIMIT {}", filters.months_per_page + 1));
+
+    let months_refs: Vec<&dyn rusqlite::types::ToSql> = months_params.iter().map(|p| p.as_ref()).collect();
+    let mut months_stmt = conn.prepare(&months_sql).map_err(|e| e.to_string())?;
+    let month_rows = months_stmt
+        .query_map(months_refs.as_slice(), |row| row.get::<_, String>(0))
+        .map_err(|e| e.to_string())?;
+
+    let mut all_months = Vec::new();
+    for row in month_rows {
+        all_months.push(row.map_err(|e| e.to_string())?);
+    }
+
+    let has_more = all_months.len() as i64 > filters.months_per_page;
+    let target_months: Vec<String> = all_months
+        .into_iter()
+        .take(filters.months_per_page as usize)
+        .collect();
+
+    if target_months.is_empty() {
+        return Ok(MediaPage {
+            items: Vec::new(),
+            next_cursor: None,
+        });
+    }
+
+    let next_cursor = if has_more {
+        target_months.last().cloned()
+    } else {
+        None
+    };
+
+    // Step 2: Fetch all images from the target months
+    let (where_sql2, mut items_params) = build_where();
+    let month_placeholders: String = target_months.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let items_sql = format!(
+        "SELECT m.id, m.file_path, s.name, m.timestamp_ms, c.title, c.chat_type, m.file_type, m.conversation_id, m.sender_id
+         FROM media m
+         INNER JOIN senders s ON s.id = m.sender_id
+         INNER JOIN conversations c ON c.id = m.conversation_id
+         {} AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) IN ({})
+         ORDER BY m.timestamp_ms {}",
+        where_sql2,
+        month_placeholders,
+        if is_desc { "DESC" } else { "ASC" }
+    );
+
+    for m in &target_months {
+        items_params.push(Box::new(m.clone()));
+    }
+
+    let items_refs: Vec<&dyn rusqlite::types::ToSql> = items_params.iter().map(|p| p.as_ref()).collect();
+    let mut items_stmt = conn.prepare(&items_sql).map_err(|e| e.to_string())?;
+    let item_rows = items_stmt
+        .query_map(items_refs.as_slice(), |row| {
+            Ok(MediaItem {
+                id: row.get(0)?,
+                file_path: row.get(1)?,
+                sender_name: row.get(2)?,
+                timestamp_ms: row.get(3)?,
+                conversation_title: row.get(4)?,
+                chat_type: row.get(5)?,
+                file_type: row.get(6)?,
+                conversation_id: row.get(7)?,
+                sender_id: row.get(8)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut items = Vec::new();
+    for row in item_rows {
+        items.push(row.map_err(|e| e.to_string())?);
+    }
+
+    Ok(MediaPage { items, next_cursor })
+}
+
 fn format_month_label(month_key: &str) -> String {
     let parts: Vec<&str> = month_key.split('-').collect();
     if parts.len() != 2 {
