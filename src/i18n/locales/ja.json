@@ -18,7 +18,14 @@
     "gifs": "GIF",
     "albums": "アルバム",
     "activeFilters": "フィルター",
-    "clearAll": "すべてクリア"
+    "clearAll": "すべてクリア",
+    "removeSender": "送信者を削除",
+    "removeConversation": "ソースを削除",
+    "removeSenderConfirm": "送信者を削除しますか？",
+    "removeSenderConfirmDesc": "この送信者のすべてのメディアが完全に削除されます。元のエクスポートファイルは影響を受けません。",
+    "removeConversationConfirm": "ソースを削除しますか？",
+    "removeConversationConfirmDesc": "この会話のすべてのメディアが完全に削除されます。元のエクスポートファイルは影響を受けません。",
+    "aiPrefix": "AI:"
   },
   "albums": {
     "addToAlbum": "アルバムに追加",
@@ -53,7 +60,8 @@
     "items": "{{count}} 件",
     "newestFirst": "新しい順",
     "oldestFirst": "古い順",
-    "bySender": "送信者別"
+    "bySender": "送信者別",
+    "aiSearchHint": "ビジュアルコンテンツ"
   },
   "gallery": {
     "noMatch": "フィルターに一致する画像がありません",
@@ -61,7 +69,8 @@
     "photos": "{{count}} 枚の写真",
     "showContext": "コンテキストを表示",
     "openInExplorer": "エクスプローラーで開く",
-    "endOfResults": "すべて読み込み完了"
+    "endOfResults": "すべて読み込み完了",
+    "photoBy": "{{sender}} の写真"
   },
   "context": {
     "title": "チャットコンテキスト"
@@ -80,7 +89,12 @@
     "cancel": "キャンセル",
     "dropHere": "ここにドロップ",
     "dropHereHint": "エクスポートフォルダまたはZipファイルをドロップしてインポート",
-    "orDragAndDrop": "またはフォルダ / Zipファイルをドラッグ＆ドロップ"
+    "orDragAndDrop": "またはフォルダ / Zipファイルをドラッグ＆ドロップ",
+    "resolved": "自動検出",
+    "autoResolved": "サブフォルダがドロップされました — エクスポートルートが見つかりました: {{path}}",
+    "selectFolderTitle": "エクスポートフォルダを選択",
+    "selectZipTitle": "エクスポートZipファイルを選択",
+    "zipArchives": "Zipアーカイブ"
   },
   "settings": {
     "title": "設定",
@@ -118,6 +132,19 @@
     "aiResetTitle": "AIインデックスをリセット",
     "aiResetDesc": "すべての画像埋め込みが削除されます。AI検索を使用するには再インデックスが必要です。",
     "aiResetConfirm": "インデックスをリセット"
+  },
+  "indexing": {
+    "title": "選択的AIインデックス",
+    "description": "AIでインデックスする送信者またはグループを選択します。選択した項目の画像のみが処理されます。",
+    "indexSender": "AIでインデックス",
+    "indexGroup": "AIでインデックス",
+    "selectedCount": "~{{count}} 枚の画像をインデックス",
+    "indexed": "インデックス済み",
+    "noImages": "画像なし",
+    "unindexedCount": "{{count}} 件のインデックス待ち",
+    "noSelection": "項目が選択されていません",
+    "startButton": "インデックスを開始",
+    "inProgress": "インデックス中..."
   },
   "notFound": {
     "title": "404",

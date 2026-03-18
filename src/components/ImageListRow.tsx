@@ -1,4 +1,5 @@
 import { memo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { MessageCircle } from "lucide-react";
 import type { ImageEntry, AlbumInfo } from "@/data/types";
 import AlbumContextMenu from "./AlbumContextMenu";
@@ -18,6 +19,7 @@ const formatTime = (ts: number) => {
 };
 
 const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowProps) => {
+  const { t } = useTranslation();
   const handleClick = useCallback(() => onClick(image), [onClick, image]);
   return (
     <AlbumContextMenu
@@ -41,7 +43,7 @@ const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowPro
         ) : (
           <img
             src={image.src}
-            alt={`Photo by ${image.sender}`}
+            alt={t("gallery.photoBy", { sender: image.sender })}
             className="h-12 w-12 rounded object-cover shrink-0"
           />
         )}

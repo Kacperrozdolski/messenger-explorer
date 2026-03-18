@@ -192,7 +192,7 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
       const selected = await open({
         directory: true,
         multiple: true,
-        title: "Select Export Folders",
+        title: t("import.selectFolderTitle"),
       });
 
       if (!selected) return;
@@ -209,8 +209,8 @@ const ImportDialog = ({ onImportComplete }: ImportDialogProps) => {
       const selected = await open({
         directory: false,
         multiple: true,
-        title: "Select Export Zip Files",
-        filters: [{ name: "Zip Archives", extensions: ["zip"] }],
+        title: t("import.selectZipTitle"),
+        filters: [{ name: t("import.zipArchives"), extensions: ["zip"] }],
       });
 
       if (!selected) return;

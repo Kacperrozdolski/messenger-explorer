@@ -18,7 +18,14 @@
     "gifs": "GIFs",
     "albums": "Alben",
     "activeFilters": "Filter",
-    "clearAll": "Alle löschen"
+    "clearAll": "Alle löschen",
+    "removeSender": "Absender entfernen",
+    "removeConversation": "Quelle entfernen",
+    "removeSenderConfirm": "Absender entfernen?",
+    "removeSenderConfirmDesc": "Alle Medien dieses Absenders werden dauerhaft gelöscht. Ihre Original-Exportdateien bleiben unberührt.",
+    "removeConversationConfirm": "Quelle entfernen?",
+    "removeConversationConfirmDesc": "Alle Medien dieser Unterhaltung werden dauerhaft gelöscht. Ihre Original-Exportdateien bleiben unberührt.",
+    "aiPrefix": "KI:"
   },
   "albums": {
     "addToAlbum": "Zum Album hinzufügen",
@@ -53,7 +60,8 @@
     "items": "{{count}} Elemente",
     "newestFirst": "Neueste zuerst",
     "oldestFirst": "Älteste zuerst",
-    "bySender": "Nach Absender"
+    "bySender": "Nach Absender",
+    "aiSearchHint": "Visueller Inhalt"
   },
   "gallery": {
     "noMatch": "Keine Bilder entsprechen Ihren Filtern",
@@ -61,7 +69,8 @@
     "photos": "{{count}} Fotos",
     "showContext": "Kontext anzeigen",
     "openInExplorer": "Im Datei-Explorer öffnen",
-    "endOfResults": "Alle Elemente geladen"
+    "endOfResults": "Alle Elemente geladen",
+    "photoBy": "Foto von {{sender}}"
   },
   "context": {
     "title": "Chat-Kontext"
@@ -80,7 +89,12 @@
     "cancel": "Abbrechen",
     "dropHere": "Hier ablegen",
     "dropHereHint": "Export-Ordner oder Zip-Dateien hierher ziehen, um sie zu importieren",
-    "orDragAndDrop": "oder Ordner / Zip-Dateien hierher ziehen"
+    "orDragAndDrop": "oder Ordner / Zip-Dateien hierher ziehen",
+    "resolved": "automatisch erkannt",
+    "autoResolved": "Sie haben einen Unterordner abgelegt — der Export-Stammordner wurde gefunden: {{path}}",
+    "selectFolderTitle": "Exportordner auswählen",
+    "selectZipTitle": "Export-Zip-Dateien auswählen",
+    "zipArchives": "Zip-Archive"
   },
   "settings": {
     "title": "Einstellungen",
@@ -118,6 +132,19 @@
     "aiResetTitle": "KI-Index zurücksetzen",
     "aiResetDesc": "Alle Bild-Embeddings werden gelöscht. Sie müssen erneut indexieren, um die KI-Suche zu nutzen.",
     "aiResetConfirm": "Index zurücksetzen"
+  },
+  "indexing": {
+    "title": "Selektive KI-Indexierung",
+    "description": "Wählen Sie Absender oder Gruppen zur KI-Indexierung. Nur Bilder der ausgewählten Elemente werden verarbeitet.",
+    "indexSender": "Mit KI indexieren",
+    "indexGroup": "Mit KI indexieren",
+    "selectedCount": "~{{count}} Bilder zu indexieren",
+    "indexed": "indexiert",
+    "noImages": "keine Bilder",
+    "unindexedCount": "{{count}} zu indexieren",
+    "noSelection": "Keine Elemente ausgewählt",
+    "startButton": "Indexierung starten",
+    "inProgress": "Indexierung läuft..."
   },
   "notFound": {
     "title": "404",

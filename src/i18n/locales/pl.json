@@ -24,7 +24,8 @@
     "removeSenderConfirm": "Usunąć nadawcę?",
     "removeSenderConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów od tego nadawcy. Twoje oryginalne pliki eksportu nie zostaną zmienione.",
     "removeConversationConfirm": "Usunąć źródło?",
-    "removeConversationConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów z tej konwersacji. Twoje oryginalne pliki eksportu nie zostaną zmienione."
+    "removeConversationConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów z tej konwersacji. Twoje oryginalne pliki eksportu nie zostaną zmienione.",
+    "aiPrefix": "AI:"
   },
   "albums": {
     "addToAlbum": "Dodaj do albumu",
@@ -59,7 +60,8 @@
     "items": "{{count}} elementów",
     "newestFirst": "Najnowsze",
     "oldestFirst": "Najstarsze",
-    "bySender": "Wg nadawcy"
+    "bySender": "Wg nadawcy",
+    "aiSearchHint": "Treść wizualna"
   },
   "gallery": {
     "noMatch": "Brak wyników dla wybranych filtrów",
@@ -67,7 +69,8 @@
     "photos": "{{count}} zdjęć",
     "showContext": "Pokaż kontekst",
     "openInExplorer": "Otwórz w eksploratorze plików",
-    "endOfResults": "Wszystkie elementy załadowane"
+    "endOfResults": "Wszystkie elementy załadowane",
+    "photoBy": "Zdjęcie od {{sender}}"
   },
   "context": {
     "title": "Kontekst rozmowy"
@@ -88,7 +91,10 @@
     "dropHereHint": "Upuść foldery eksportu lub pliki zip, aby je zaimportować",
     "orDragAndDrop": "lub przeciągnij i upuść foldery / pliki zip tutaj",
     "resolved": "wykryto automatycznie",
-    "autoResolved": "Upuszczono podfolder — znaleziono katalog eksportu: {{path}}"
+    "autoResolved": "Upuszczono podfolder — znaleziono katalog eksportu: {{path}}",
+    "selectFolderTitle": "Wybierz foldery eksportu",
+    "selectZipTitle": "Wybierz pliki ZIP eksportu",
+    "zipArchives": "Archiwa ZIP"
   },
   "settings": {
     "title": "Ustawienia",
@@ -126,6 +132,19 @@
     "aiResetTitle": "Resetuj indeks AI",
     "aiResetDesc": "Spowoduje to usunięcie wszystkich osadzeń obrazów. Będziesz musiał ponownie zaindeksować, aby korzystać z wyszukiwania AI.",
     "aiResetConfirm": "Resetuj indeks"
+  },
+  "indexing": {
+    "title": "Selektywne indeksowanie AI",
+    "description": "Wybierz nadawców lub grupy do indeksowania za pomocą AI. Przetwarzane będą tylko obrazy z wybranych elementów.",
+    "indexSender": "Indeksuj za pomocą AI",
+    "indexGroup": "Indeksuj za pomocą AI",
+    "selectedCount": "~{{count}} obrazów do zaindeksowania",
+    "indexed": "zaindeksowano",
+    "noImages": "brak obrazów",
+    "unindexedCount": "{{count}} do zaindeksowania",
+    "noSelection": "Nie wybrano elementów",
+    "startButton": "Rozpocznij indeksowanie",
+    "inProgress": "Indeksowanie w toku..."
   },
   "notFound": {
     "title": "404",

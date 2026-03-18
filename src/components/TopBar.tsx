@@ -319,7 +319,7 @@ const TopBar = ({
                   {s.type === "sender" && t("topbar.filterBySender")}
                   {s.type === "media-type" && t("topbar.filterByMediaType")}
                   {s.type === "date" && t("topbar.filterByDate")}
-                  {s.type === "ai-search" && t("topbar.aiSearchHint", "Visual content")}
+                  {s.type === "ai-search" && t("topbar.aiSearchHint")}
                 </span>
               </button>
             ))}

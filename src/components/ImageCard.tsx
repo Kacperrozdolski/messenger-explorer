@@ -61,7 +61,7 @@ const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) =>
       ) : (
         <img
           src={image.src}
-          alt={`Photo by ${image.sender}`}
+          alt={t("gallery.photoBy", { sender: image.sender })}
           className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />

@@ -1033,7 +1033,7 @@ const ArchiveSidebar = ({
               className="text-[11px] px-2 py-0.5 gap-1"
             >
               <Brain className="h-3 w-3 shrink-0" />
-              AI: {aiSearchQuery}
+              {t("sidebar.aiPrefix")} {aiSearchQuery}
               <button
                 onClick={onClearAiSearch}
                 className="ml-0.5 hover:text-destructive"

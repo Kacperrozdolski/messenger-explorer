@@ -73,7 +73,7 @@ const ContextModal = ({ image, onClose }: ContextModalProps) => {
           ) : (
             <img
               src={image.src}
-              alt={`Photo by ${image.sender}`}
+              alt={t("gallery.photoBy", { sender: image.sender })}
               className="max-w-full max-h-[80vh] object-contain rounded-md"
             />
           )}

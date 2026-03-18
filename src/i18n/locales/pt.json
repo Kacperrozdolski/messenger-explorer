@@ -18,7 +18,14 @@
     "gifs": "gifs",
     "albums": "Álbuns",
     "activeFilters": "Filtros",
-    "clearAll": "Limpar tudo"
+    "clearAll": "Limpar tudo",
+    "removeSender": "Remover remetente",
+    "removeConversation": "Remover fonte",
+    "removeSenderConfirm": "Remover remetente?",
+    "removeSenderConfirmDesc": "Todas as mídias deste remetente serão excluídas permanentemente. Seus arquivos de exportação originais não serão afetados.",
+    "removeConversationConfirm": "Remover fonte?",
+    "removeConversationConfirmDesc": "Todas as mídias desta conversa serão excluídas permanentemente. Seus arquivos de exportação originais não serão afetados.",
+    "aiPrefix": "IA:"
   },
   "albums": {
     "addToAlbum": "Adicionar ao álbum",
@@ -53,7 +60,8 @@
     "items": "{{count}} itens",
     "newestFirst": "Mais recentes",
     "oldestFirst": "Mais antigos",
-    "bySender": "Por remetente"
+    "bySender": "Por remetente",
+    "aiSearchHint": "Conteúdo visual"
   },
   "gallery": {
     "noMatch": "Nenhuma imagem corresponde aos seus filtros",
@@ -61,7 +69,8 @@
     "photos": "{{count}} fotos",
     "showContext": "Mostrar contexto",
     "openInExplorer": "Abrir no explorador de ficheiros",
-    "endOfResults": "Todos os itens carregados"
+    "endOfResults": "Todos os itens carregados",
+    "photoBy": "Foto de {{sender}}"
   },
   "context": {
     "title": "Contexto do chat"
@@ -80,7 +89,12 @@
     "cancel": "Cancelar",
     "dropHere": "Solte aqui",
     "dropHereHint": "Solte suas pastas de exportação ou arquivos zip para importá-los",
-    "orDragAndDrop": "ou arraste e solte pastas / arquivos zip aqui"
+    "orDragAndDrop": "ou arraste e solte pastas / arquivos zip aqui",
+    "resolved": "detectado automaticamente",
+    "autoResolved": "Você soltou uma subpasta — a raiz de exportação foi encontrada em: {{path}}",
+    "selectFolderTitle": "Selecionar pastas de exportação",
+    "selectZipTitle": "Selecionar arquivos Zip de exportação",
+    "zipArchives": "Arquivos Zip"
   },
   "settings": {
     "title": "Configurações",
@@ -118,6 +132,19 @@
     "aiResetTitle": "Redefinir índice IA",
     "aiResetDesc": "Isso excluirá todos os embeddings de imagens. Você precisará re-indexar para usar a pesquisa IA.",
     "aiResetConfirm": "Redefinir índice"
+  },
+  "indexing": {
+    "title": "Indexação seletiva com IA",
+    "description": "Selecione remetentes ou grupos para indexar com IA. Apenas imagens dos itens selecionados serão processadas.",
+    "indexSender": "Indexar com IA",
+    "indexGroup": "Indexar com IA",
+    "selectedCount": "~{{count}} imagens para indexar",
+    "indexed": "indexado",
+    "noImages": "sem imagens",
+    "unindexedCount": "{{count}} para indexar",
+    "noSelection": "Nenhum item selecionado",
+    "startButton": "Iniciar indexação",
+    "inProgress": "Indexação em andamento..."
   },
   "notFound": {
     "title": "404",

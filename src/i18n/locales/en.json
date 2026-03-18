@@ -24,7 +24,8 @@
     "removeSenderConfirm": "Remove sender?",
     "removeSenderConfirmDesc": "This will permanently remove all media from this sender. Your original export files will not be affected.",
     "removeConversationConfirm": "Remove source?",
-    "removeConversationConfirmDesc": "This will permanently remove all media from this conversation. Your original export files will not be affected."
+    "removeConversationConfirmDesc": "This will permanently remove all media from this conversation. Your original export files will not be affected.",
+    "aiPrefix": "AI:"
   },
   "albums": {
     "addToAlbum": "Add to Album",
@@ -59,7 +60,8 @@
     "items": "{{count}} items",
     "newestFirst": "Newest First",
     "oldestFirst": "Oldest First",
-    "bySender": "By Sender"
+    "bySender": "By Sender",
+    "aiSearchHint": "Visual content"
   },
   "gallery": {
     "noMatch": "No images match your filters",
@@ -67,7 +69,8 @@
     "photos": "{{count}} photos",
     "showContext": "Show Context",
     "openInExplorer": "Open in File Explorer",
-    "endOfResults": "All items loaded"
+    "endOfResults": "All items loaded",
+    "photoBy": "Photo by {{sender}}"
   },
   "context": {
     "title": "Chat Context"
@@ -88,7 +91,10 @@
     "dropHereHint": "Drop your export folders or zip files to import them",
     "orDragAndDrop": "or drag & drop folders / zip files here",
     "resolved": "auto-detected",
-    "autoResolved": "You dropped a subfolder — we found the export root at: {{path}}"
+    "autoResolved": "You dropped a subfolder — we found the export root at: {{path}}",
+    "selectFolderTitle": "Select Export Folders",
+    "selectZipTitle": "Select Export Zip Files",
+    "zipArchives": "Zip Archives"
   },
   "settings": {
     "title": "Settings",

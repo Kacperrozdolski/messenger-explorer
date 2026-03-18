@@ -18,7 +18,14 @@
     "gifs": "gif",
     "albums": "Album",
     "activeFilters": "Filtri",
-    "clearAll": "Cancella tutto"
+    "clearAll": "Cancella tutto",
+    "removeSender": "Rimuovi mittente",
+    "removeConversation": "Rimuovi fonte",
+    "removeSenderConfirm": "Rimuovere il mittente?",
+    "removeSenderConfirmDesc": "Tutti i media di questo mittente saranno eliminati permanentemente. I file di esportazione originali non saranno interessati.",
+    "removeConversationConfirm": "Rimuovere la fonte?",
+    "removeConversationConfirmDesc": "Tutti i media di questa conversazione saranno eliminati permanentemente. I file di esportazione originali non saranno interessati.",
+    "aiPrefix": "IA:"
   },
   "albums": {
     "addToAlbum": "Aggiungi all'album",
@@ -53,7 +60,8 @@
     "items": "{{count}} elementi",
     "newestFirst": "Più recenti",
     "oldestFirst": "Più vecchi",
-    "bySender": "Per mittente"
+    "bySender": "Per mittente",
+    "aiSearchHint": "Contenuto visivo"
   },
   "gallery": {
     "noMatch": "Nessuna immagine corrisponde ai tuoi filtri",
@@ -61,7 +69,8 @@
     "photos": "{{count}} foto",
     "showContext": "Mostra contesto",
     "openInExplorer": "Apri nel file explorer",
-    "endOfResults": "Tutti gli elementi caricati"
+    "endOfResults": "Tutti gli elementi caricati",
+    "photoBy": "Foto di {{sender}}"
   },
   "context": {
     "title": "Contesto della chat"
@@ -80,7 +89,12 @@
     "cancel": "Annulla",
     "dropHere": "Rilascia qui",
     "dropHereHint": "Rilascia le cartelle di esportazione o i file zip per importarli",
-    "orDragAndDrop": "o trascina e rilascia cartelle / file zip qui"
+    "orDragAndDrop": "o trascina e rilascia cartelle / file zip qui",
+    "resolved": "rilevato automaticamente",
+    "autoResolved": "Hai trascinato una sottocartella — la radice di esportazione è stata trovata in: {{path}}",
+    "selectFolderTitle": "Seleziona cartelle di esportazione",
+    "selectZipTitle": "Seleziona file Zip di esportazione",
+    "zipArchives": "Archivi Zip"
   },
   "settings": {
     "title": "Impostazioni",
@@ -118,6 +132,19 @@
     "aiResetTitle": "Reimposta indice IA",
     "aiResetDesc": "Questo eliminerà tutti gli embedding delle immagini. Dovrai re-indicizzare per usare la ricerca IA.",
     "aiResetConfirm": "Reimposta indice"
+  },
+  "indexing": {
+    "title": "Indicizzazione selettiva con IA",
+    "description": "Seleziona mittenti o gruppi da indicizzare con l'IA. Verranno elaborate solo le immagini degli elementi selezionati.",
+    "indexSender": "Indicizza con IA",
+    "indexGroup": "Indicizza con IA",
+    "selectedCount": "~{{count}} immagini da indicizzare",
+    "indexed": "indicizzato",
+    "noImages": "nessuna immagine",
+    "unindexedCount": "{{count}} da indicizzare",
+    "noSelection": "Nessun elemento selezionato",
+    "startButton": "Avvia indicizzazione",
+    "inProgress": "Indicizzazione in corso..."
   },
   "notFound": {
     "title": "404",

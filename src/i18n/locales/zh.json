@@ -18,7 +18,14 @@
     "gifs": "动图",
     "albums": "相册",
     "activeFilters": "筛选条件",
-    "clearAll": "全部清除"
+    "clearAll": "全部清除",
+    "removeSender": "移除发送者",
+    "removeConversation": "移除来源",
+    "removeSenderConfirm": "移除发送者？",
+    "removeSenderConfirmDesc": "该发送者的所有媒体将被永久删除。您的原始导出文件不会受到影响。",
+    "removeConversationConfirm": "移除来源？",
+    "removeConversationConfirmDesc": "该对话的所有媒体将被永久删除。您的原始导出文件不会受到影响。",
+    "aiPrefix": "AI:"
   },
   "albums": {
     "addToAlbum": "添加到相册",
@@ -53,7 +60,8 @@
     "items": "{{count}} 项",
     "newestFirst": "最新优先",
     "oldestFirst": "最早优先",
-    "bySender": "按发送者"
+    "bySender": "按发送者",
+    "aiSearchHint": "视觉内容"
   },
   "gallery": {
     "noMatch": "没有匹配的图片",
@@ -61,7 +69,8 @@
     "photos": "{{count}} 张照片",
     "showContext": "显示上下文",
     "openInExplorer": "在文件管理器中打开",
-    "endOfResults": "所有项目已加载"
+    "endOfResults": "所有项目已加载",
+    "photoBy": "{{sender}} 的照片"
   },
   "context": {
     "title": "聊天上下文"
@@ -80,7 +89,12 @@
     "cancel": "取消",
     "dropHere": "拖放到此处",
     "dropHereHint": "拖放导出文件夹或Zip文件以导入",
-    "orDragAndDrop": "或将文件夹 / Zip文件拖放到此处"
+    "orDragAndDrop": "或将文件夹 / Zip文件拖放到此处",
+    "resolved": "自动检测",
+    "autoResolved": "您拖放了一个子文件夹——已找到导出根目录：{{path}}",
+    "selectFolderTitle": "选择导出文件夹",
+    "selectZipTitle": "选择导出Zip文件",
+    "zipArchives": "Zip压缩包"
   },
   "settings": {
     "title": "设置",
@@ -118,6 +132,19 @@
     "aiResetTitle": "重置AI索引",
     "aiResetDesc": "这将删除所有图像嵌入。您需要重新索引才能使用AI搜索。",
     "aiResetConfirm": "重置索引"
+  },
+  "indexing": {
+    "title": "选择性AI索引",
+    "description": "选择要使用AI索引的发送者或群组。仅处理所选项目的图像。",
+    "indexSender": "使用AI索引",
+    "indexGroup": "使用AI索引",
+    "selectedCount": "~{{count}} 张图像待索引",
+    "indexed": "已索引",
+    "noImages": "无图像",
+    "unindexedCount": "{{count}} 待索引",
+    "noSelection": "未选择任何项目",
+    "startButton": "开始索引",
+    "inProgress": "索引进行中..."
   },
   "notFound": {
     "title": "404",
