@@ -443,7 +443,6 @@ const ArchiveSidebar = ({
     queryClient.invalidateQueries({ queryKey: ["filter-facets"] });
     queryClient.invalidateQueries({ queryKey: ["media"] });
     queryClient.invalidateQueries({ queryKey: ["media-month"] });
-    queryClient.invalidateQueries({ queryKey: ["media-count"] });
     queryClient.invalidateQueries({ queryKey: ["timeline"] });
     queryClient.invalidateQueries({ queryKey: ["albums"] });
     queryClient.invalidateQueries({ queryKey: ["import-status"] });

@@ -102,8 +102,8 @@ fn insert_media(
     media: &ParsedMedia,
 ) -> Result<i64, String> {
     conn.prepare_cached(
-        "INSERT INTO media (conversation_id, sender_id, file_path, relative_uri, file_type, timestamp_ms, creation_timestamp, message_content)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        "INSERT INTO media (conversation_id, sender_id, file_path, relative_uri, file_type, timestamp_ms, creation_timestamp, message_content, year_month)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, strftime('%Y-%m', datetime(?6 / 1000, 'unixepoch')))",
     ).map_err(|e| e.to_string())?
     .execute(rusqlite::params![
         conversation_id,

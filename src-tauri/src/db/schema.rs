@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-const CURRENT_SCHEMA_VERSION: i32 = 5;
+const CURRENT_SCHEMA_VERSION: i32 = 6;
 
 /// Initialize the database schema. Creates tables if they don't exist.
 /// Handles migration from old schema versions by recreating tables.
@@ -54,6 +54,15 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         )?;
     }
 
+    if version >= 5 && version < 6 {
+        // v5 -> v6: add year_month column for fast timeline queries
+        conn.execute_batch(
+            "ALTER TABLE media ADD COLUMN year_month TEXT;
+             UPDATE media SET year_month = strftime('%Y-%m', datetime(timestamp_ms / 1000, 'unixepoch'));
+             CREATE INDEX IF NOT EXISTS idx_media_year_month ON media(year_month);"
+        )?;
+    }
+
     if version < CURRENT_SCHEMA_VERSION {
         // Update version
         if version == 0 {
@@ -103,7 +112,8 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
             file_type           TEXT NOT NULL CHECK(file_type IN ('image', 'video', 'gif')),
             timestamp_ms        INTEGER NOT NULL,
             creation_timestamp  INTEGER,
-            message_content     TEXT
+            message_content     TEXT,
+            year_month          TEXT
         );
 
         CREATE TABLE IF NOT EXISTS context_messages (
@@ -121,6 +131,7 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         CREATE INDEX IF NOT EXISTS idx_media_timestamp ON media(timestamp_ms);
         CREATE INDEX IF NOT EXISTS idx_context_media ON context_messages(media_id);
         CREATE INDEX IF NOT EXISTS idx_context_content ON context_messages(media_id, content);
+        CREATE INDEX IF NOT EXISTS idx_media_year_month ON media(year_month);
 
         CREATE TABLE IF NOT EXISTS albums (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,183 +177,87 @@ pub fn clear_all(conn: &Connection) -> Result<(), rusqlite::Error> {
 
 /// Delete all media from a specific sender (cascading manually).
 pub fn clear_sender(conn: &Connection, sender_id: i64) -> Result<(), rusqlite::Error> {
-    // Delete context_messages for media from this sender
+    conn.execute("CREATE TEMP TABLE IF NOT EXISTS _doomed_media(id INTEGER PRIMARY KEY)", [])?;
+    conn.execute("DELETE FROM _doomed_media", [])?;
     conn.execute(
-        "DELETE FROM context_messages WHERE media_id IN (
-            SELECT id FROM media WHERE sender_id = ?1
-        )",
+        "INSERT INTO _doomed_media SELECT id FROM media WHERE sender_id = ?1",
         rusqlite::params![sender_id],
     )?;
-
-    // Delete embeddings for media from this sender
-    conn.execute(
-        "DELETE FROM media_embeddings WHERE media_id IN (
-            SELECT id FROM media WHERE sender_id = ?1
-        )",
-        rusqlite::params![sender_id],
-    )?;
-
-    // Delete album_media for media from this sender
-    conn.execute(
-        "DELETE FROM album_media WHERE media_id IN (
-            SELECT id FROM media WHERE sender_id = ?1
-        )",
-        rusqlite::params![sender_id],
-    )?;
-
-    // Delete media from this sender
-    conn.execute(
-        "DELETE FROM media WHERE sender_id = ?1",
-        rusqlite::params![sender_id],
-    )?;
-
-    // Delete conversation_participants for this sender
-    conn.execute(
-        "DELETE FROM conversation_participants WHERE sender_id = ?1",
-        rusqlite::params![sender_id],
-    )?;
-
-    // Delete context_messages authored by this sender (in other media's context)
-    conn.execute(
-        "DELETE FROM context_messages WHERE sender_id = ?1",
-        rusqlite::params![sender_id],
-    )?;
-
-    // Delete the sender record itself
-    conn.execute(
-        "DELETE FROM senders WHERE id = ?1",
-        rusqlite::params![sender_id],
-    )?;
-
-    // Clean up orphaned conversations (conversations with no media left)
     conn.execute_batch(
-        "DELETE FROM conversation_participants WHERE conversation_id NOT IN (
-            SELECT DISTINCT conversation_id FROM media
-        );
-        DELETE FROM conversations WHERE id NOT IN (
-            SELECT DISTINCT conversation_id FROM media
-        )"
+        "DELETE FROM context_messages WHERE media_id IN (SELECT id FROM _doomed_media);
+         DELETE FROM media_embeddings WHERE media_id IN (SELECT id FROM _doomed_media);
+         DELETE FROM album_media WHERE media_id IN (SELECT id FROM _doomed_media);"
     )?;
-
+    conn.execute("DELETE FROM context_messages WHERE sender_id = ?1", rusqlite::params![sender_id])?;
+    conn.execute("DELETE FROM media WHERE sender_id = ?1", rusqlite::params![sender_id])?;
+    conn.execute("DELETE FROM conversation_participants WHERE sender_id = ?1", rusqlite::params![sender_id])?;
+    conn.execute("DELETE FROM senders WHERE id = ?1", rusqlite::params![sender_id])?;
+    conn.execute_batch(
+        "DELETE FROM conversation_participants WHERE conversation_id NOT IN (SELECT DISTINCT conversation_id FROM media);
+         DELETE FROM conversations WHERE id NOT IN (SELECT DISTINCT conversation_id FROM media);
+         DROP TABLE IF EXISTS _doomed_media;"
+    )?;
     Ok(())
 }
 
 /// Delete all media from a specific conversation (cascading manually).
 pub fn clear_conversation(conn: &Connection, conversation_id: i64) -> Result<(), rusqlite::Error> {
-    // Delete context_messages for media in this conversation
+    conn.execute("CREATE TEMP TABLE IF NOT EXISTS _doomed_media(id INTEGER PRIMARY KEY)", [])?;
+    conn.execute("DELETE FROM _doomed_media", [])?;
     conn.execute(
-        "DELETE FROM context_messages WHERE media_id IN (
-            SELECT id FROM media WHERE conversation_id = ?1
-        )",
+        "INSERT INTO _doomed_media SELECT id FROM media WHERE conversation_id = ?1",
         rusqlite::params![conversation_id],
     )?;
-
-    // Delete embeddings for media in this conversation
-    conn.execute(
-        "DELETE FROM media_embeddings WHERE media_id IN (
-            SELECT id FROM media WHERE conversation_id = ?1
-        )",
-        rusqlite::params![conversation_id],
+    conn.execute_batch(
+        "DELETE FROM context_messages WHERE media_id IN (SELECT id FROM _doomed_media);
+         DELETE FROM media_embeddings WHERE media_id IN (SELECT id FROM _doomed_media);
+         DELETE FROM album_media WHERE media_id IN (SELECT id FROM _doomed_media);"
     )?;
-
-    // Delete album_media for media in this conversation
-    conn.execute(
-        "DELETE FROM album_media WHERE media_id IN (
-            SELECT id FROM media WHERE conversation_id = ?1
-        )",
-        rusqlite::params![conversation_id],
-    )?;
-
-    // Delete media in this conversation
-    conn.execute(
-        "DELETE FROM media WHERE conversation_id = ?1",
-        rusqlite::params![conversation_id],
-    )?;
-
-    // Delete conversation_participants
-    conn.execute(
-        "DELETE FROM conversation_participants WHERE conversation_id = ?1",
-        rusqlite::params![conversation_id],
-    )?;
-
-    // Delete the conversation itself
-    conn.execute(
-        "DELETE FROM conversations WHERE id = ?1",
-        rusqlite::params![conversation_id],
-    )?;
-
-    // Clean up orphaned senders
+    conn.execute("DELETE FROM media WHERE conversation_id = ?1", rusqlite::params![conversation_id])?;
+    conn.execute("DELETE FROM conversation_participants WHERE conversation_id = ?1", rusqlite::params![conversation_id])?;
+    conn.execute("DELETE FROM conversations WHERE id = ?1", rusqlite::params![conversation_id])?;
     conn.execute_batch(
         "DELETE FROM senders WHERE id NOT IN (
             SELECT DISTINCT sender_id FROM media
-            UNION
-            SELECT DISTINCT sender_id FROM conversation_participants
-            UNION
-            SELECT DISTINCT sender_id FROM context_messages
-        )"
+            UNION SELECT DISTINCT sender_id FROM conversation_participants
+            UNION SELECT DISTINCT sender_id FROM context_messages
+        );
+        DROP TABLE IF EXISTS _doomed_media;"
     )?;
-
     Ok(())
 }
 
 /// Delete only data from a specific source path (cascading manually).
 pub fn clear_source(conn: &Connection, source_path: &str) -> Result<(), rusqlite::Error> {
-    // Delete context_messages for media in conversations from this source
+    conn.execute("CREATE TEMP TABLE IF NOT EXISTS _doomed_media(id INTEGER PRIMARY KEY)", [])?;
+    conn.execute("DELETE FROM _doomed_media", [])?;
     conn.execute(
-        "DELETE FROM context_messages WHERE media_id IN (
-            SELECT m.id FROM media m
-            INNER JOIN conversations c ON c.id = m.conversation_id
-            WHERE c.source_path = ?1
-        )",
+        "INSERT INTO _doomed_media SELECT m.id FROM media m
+         INNER JOIN conversations c ON c.id = m.conversation_id
+         WHERE c.source_path = ?1",
         rusqlite::params![source_path],
     )?;
-
-    // Delete media in conversations from this source
-    conn.execute(
-        "DELETE FROM media WHERE conversation_id IN (
-            SELECT id FROM conversations WHERE source_path = ?1
-        )",
-        rusqlite::params![source_path],
-    )?;
-
-    // Delete conversation_participants for conversations from this source
-    conn.execute(
-        "DELETE FROM conversation_participants WHERE conversation_id IN (
-            SELECT id FROM conversations WHERE source_path = ?1
-        )",
-        rusqlite::params![source_path],
-    )?;
-
-    // Delete conversations from this source
-    conn.execute(
-        "DELETE FROM conversations WHERE source_path = ?1",
-        rusqlite::params![source_path],
-    )?;
-
-    // Clean up orphaned embeddings (media that no longer exists)
     conn.execute_batch(
-        "DELETE FROM media_embeddings WHERE media_id NOT IN (
-            SELECT id FROM media
-        )"
+        "DELETE FROM context_messages WHERE media_id IN (SELECT id FROM _doomed_media);
+         DELETE FROM media_embeddings WHERE media_id IN (SELECT id FROM _doomed_media);
+         DELETE FROM album_media WHERE media_id IN (SELECT id FROM _doomed_media);"
     )?;
-
-    // Clean up orphaned album_media rows (media that no longer exists)
-    conn.execute_batch(
-        "DELETE FROM album_media WHERE media_id NOT IN (
-            SELECT id FROM media
-        )"
+    conn.execute(
+        "DELETE FROM media WHERE conversation_id IN (SELECT id FROM conversations WHERE source_path = ?1)",
+        rusqlite::params![source_path],
     )?;
-
-    // Clean up orphaned senders (senders with no media, no participants, and no context messages)
+    conn.execute(
+        "DELETE FROM conversation_participants WHERE conversation_id IN (SELECT id FROM conversations WHERE source_path = ?1)",
+        rusqlite::params![source_path],
+    )?;
+    conn.execute("DELETE FROM conversations WHERE source_path = ?1", rusqlite::params![source_path])?;
     conn.execute_batch(
         "DELETE FROM senders WHERE id NOT IN (
             SELECT DISTINCT sender_id FROM media
-            UNION
-            SELECT DISTINCT sender_id FROM conversation_participants
-            UNION
-            SELECT DISTINCT sender_id FROM context_messages
-        )"
+            UNION SELECT DISTINCT sender_id FROM conversation_participants
+            UNION SELECT DISTINCT sender_id FROM context_messages
+        );
+        DROP TABLE IF EXISTS _doomed_media;"
     )?;
-
     Ok(())
 }

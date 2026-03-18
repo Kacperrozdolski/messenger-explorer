@@ -91,6 +91,7 @@ const Index = () => {
   const { data: status, isLoading: statusLoading } = useQuery({
     queryKey: ["import-status"],
     queryFn: api.getImportStatus,
+    staleTime: 30_000,
   });
 
   const hasData = status?.has_data ?? false;
@@ -107,6 +108,7 @@ const Index = () => {
     queryKey: ["has-clip-models"],
     queryFn: api.hasClipModels,
     enabled: hasData,
+    staleTime: Infinity,
   });
 
   const aiSearchAvailable = (indexingStatus?.indexed ?? 0) > 0;
@@ -135,6 +137,7 @@ const Index = () => {
     queryFn: () => api.getFilterFacets(filterParams),
     enabled: hasData,
     placeholderData: keepPreviousData,
+    staleTime: 2_000,
   });
 
   // Client-side filtering & facets for AI search results
@@ -242,23 +245,14 @@ const Index = () => {
     queryKey: ["albums"],
     queryFn: api.getAlbums,
     enabled: hasData,
+    staleTime: 30_000,
   });
 
-  // Total count query for the top bar
-  const { data: totalCount = 0 } = useQuery({
-    queryKey: [
-      "media-count",
-      selectedChatId,
-      selectedSenderId,
-      fileType,
-      selectedMonth,
-      committedSearch,
-      selectedAlbumId,
-    ],
-    queryFn: () => api.getMediaCount(filterParams),
-    enabled: hasData,
-    placeholderData: keepPreviousData,
-  });
+  // Derive total count from facets (image + video + gif)
+  const totalCount = useMemo(() => {
+    if (!fileTypeCounts) return 0;
+    return fileTypeCounts.image + fileTypeCounts.video + fileTypeCounts.gif;
+  }, [fileTypeCounts]);
 
   // Use month-based pagination for date sorts (no month filter),
   // offset-based for sender sort or when a specific month is selected.
@@ -291,6 +285,7 @@ const Index = () => {
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: hasData && useMonthPagination,
     placeholderData: keepPreviousData,
+    staleTime: 10_000,
   });
 
   // Offset-based infinite scroll query (for sender sort or specific month filter)
@@ -324,6 +319,7 @@ const Index = () => {
     },
     enabled: hasData && !useMonthPagination,
     placeholderData: keepPreviousData,
+    staleTime: 10_000,
   });
 
   const mediaData = useMonthPagination ? monthMediaData : offsetMediaData;
@@ -355,7 +351,7 @@ const Index = () => {
   const handleImportComplete = () => {
     queryClient.invalidateQueries({ queryKey: ["import-status"] });
     queryClient.invalidateQueries({ queryKey: ["media"] });
-    queryClient.invalidateQueries({ queryKey: ["media-count"] });
+    queryClient.invalidateQueries({ queryKey: ["media-month"] });
     queryClient.invalidateQueries({ queryKey: ["filter-facets"] });
     queryClient.invalidateQueries({ queryKey: ["albums"] });
     queryClient.invalidateQueries({ queryKey: ["indexing-status"] });

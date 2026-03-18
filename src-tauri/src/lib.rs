@@ -63,6 +63,35 @@ fn percent_decode(input: &str) -> String {
     String::from_utf8_lossy(&result).to_string()
 }
 
+/// Parse an HTTP Range header value like "bytes=0-1023" or "bytes=500-".
+/// Returns (start, end) inclusive byte range, capped to file_size.
+fn parse_range(range_str: &str, file_size: u64) -> Option<(u64, u64)> {
+    let range_str = range_str.strip_prefix("bytes=")?;
+    let mut parts = range_str.splitn(2, '-');
+    let start_str = parts.next()?.trim();
+    let end_str = parts.next()?.trim();
+
+    let start: u64 = if start_str.is_empty() {
+        let suffix: u64 = end_str.parse().ok()?;
+        file_size.saturating_sub(suffix)
+    } else {
+        start_str.parse().ok()?
+    };
+
+    let end: u64 = if end_str.is_empty() {
+        // Cap open-ended ranges to 2MB chunks
+        (start + 2 * 1024 * 1024 - 1).min(file_size - 1)
+    } else {
+        end_str.parse::<u64>().ok()?.min(file_size - 1)
+    };
+
+    if start <= end && start < file_size {
+        Some((start, end))
+    } else {
+        None
+    }
+}
+
 fn guess_mime(path: &PathBuf) -> &'static str {
     match path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase()).as_deref() {
         Some("jpg") | Some("jpeg") => "image/jpeg",
@@ -953,12 +982,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .register_uri_scheme_protocol("media", |_ctx, request| {
-            // Extract the file path from the URI path component and percent-decode it.
-            // convertFileSrc produces: http://media.localhost/<encodeURIComponent(path)> on Windows
-            // The URI path() gives: /<encoded_path>
             let uri_path = request.uri().path();
             let raw_path = uri_path.strip_prefix('/').unwrap_or(uri_path);
-            // Also strip query string if present
             let raw_path = raw_path.split('?').next().unwrap_or(raw_path);
             let decoded = percent_decode(raw_path);
             let file_path = PathBuf::from(&decoded);
@@ -970,15 +995,58 @@ pub fn run() {
                     .unwrap();
             }
 
-            match std::fs::read(&file_path) {
-                Ok(bytes) => {
-                    let mime = guess_mime(&file_path);
-                    tauri::http::Response::builder()
-                        .status(200)
-                        .header("Content-Type", mime)
-                        .body(bytes)
-                        .unwrap()
+            let mime = guess_mime(&file_path);
+            let file_size = match std::fs::metadata(&file_path) {
+                Ok(m) => m.len(),
+                Err(_) => {
+                    return tauri::http::Response::builder()
+                        .status(500)
+                        .body(Vec::new())
+                        .unwrap();
                 }
+            };
+
+            // Check for Range header (enables video seeking without loading entire file)
+            let range_header = request.headers().get("range").and_then(|v| v.to_str().ok());
+
+            if let Some(range_str) = range_header {
+                if let Some((start, end)) = parse_range(range_str, file_size) {
+                    let length = end - start + 1;
+
+                    use std::io::{Read, Seek, SeekFrom};
+                    let mut file = match std::fs::File::open(&file_path) {
+                        Ok(f) => f,
+                        Err(_) => {
+                            return tauri::http::Response::builder()
+                                .status(500)
+                                .body(Vec::new())
+                                .unwrap();
+                        }
+                    };
+                    let _ = file.seek(SeekFrom::Start(start));
+                    let mut buf = vec![0u8; length as usize];
+                    let _ = file.read_exact(&mut buf);
+
+                    return tauri::http::Response::builder()
+                        .status(206)
+                        .header("Content-Type", mime)
+                        .header("Content-Length", length.to_string())
+                        .header("Content-Range", format!("bytes {}-{}/{}", start, end, file_size))
+                        .header("Accept-Ranges", "bytes")
+                        .body(buf)
+                        .unwrap();
+                }
+            }
+
+            // Full read for non-range requests (images, gifs — typically small)
+            match std::fs::read(&file_path) {
+                Ok(bytes) => tauri::http::Response::builder()
+                    .status(200)
+                    .header("Content-Type", mime)
+                    .header("Content-Length", file_size.to_string())
+                    .header("Accept-Ranges", "bytes")
+                    .body(bytes)
+                    .unwrap(),
                 Err(_) => tauri::http::Response::builder()
                     .status(500)
                     .body(Vec::new())

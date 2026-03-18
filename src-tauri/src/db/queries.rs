@@ -183,13 +183,14 @@ pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaI
     }
     if let Some(ref month) = filters.month {
         if month.len() == 4 {
-            // Year-only filter: "YYYY"
-            sql.push_str(" AND strftime('%Y', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+            // Year-only filter: "YYYY" — match year_month prefix
+            sql.push_str(" AND m.year_month LIKE ?");
+            params.push(Box::new(format!("{}-%", month)));
         } else {
             // Month filter: "YYYY-MM"
-            sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+            sql.push_str(" AND m.year_month = ?");
+            params.push(Box::new(month.clone()));
         }
-        params.push(Box::new(month.clone()));
     }
     if let Some(aid) = filters.album_id {
         sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
@@ -323,10 +324,10 @@ pub fn get_timeline(conn: &Connection) -> Result<Vec<TimelineEntry>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT
-                strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) as month_key,
+                m.year_month as month_key,
                 COUNT(*) as count
              FROM media m
-             GROUP BY month_key
+             GROUP BY m.year_month
              ORDER BY month_key DESC",
         )
         .map_err(|e| e.to_string())?;
@@ -502,11 +503,12 @@ pub fn get_media_count(conn: &Connection, filters: &MediaFilters) -> Result<i64,
     }
     if let Some(ref month) = filters.month {
         if month.len() == 4 {
-            sql.push_str(" AND strftime('%Y', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+            sql.push_str(" AND m.year_month LIKE ?");
+            params.push(Box::new(format!("{}-%", month)));
         } else {
-            sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+            sql.push_str(" AND m.year_month = ?");
+            params.push(Box::new(month.clone()));
         }
-        params.push(Box::new(month.clone()));
     }
     if let Some(aid) = filters.album_id {
         sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
@@ -634,11 +636,12 @@ fn build_media_where(filters: &MediaFilters, exclude: &str) -> WhereClause {
     if exclude != "month" {
         if let Some(ref month) = filters.month {
             if month.len() == 4 {
-                sql.push_str(" AND strftime('%Y', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+                sql.push_str(" AND m.year_month LIKE ?");
+                params.push(Box::new(format!("{}-%", month)));
             } else {
-                sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) = ?");
+                sql.push_str(" AND m.year_month = ?");
+                params.push(Box::new(month.clone()));
             }
-            params.push(Box::new(month.clone()));
         }
     }
     if exclude != "album_id" {
@@ -722,12 +725,12 @@ pub fn get_filter_facets(conn: &Connection, filters: &MediaFilters) -> Result<Fi
     let timeline = {
         let wc = build_media_where(filters, "month");
         let sql = format!(
-            "SELECT strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) as month_key,
+            "SELECT m.year_month as month_key,
                     COUNT(*) as count
              FROM media m
              INNER JOIN senders s ON s.id = m.sender_id
              INNER JOIN conversations c ON c.id = m.conversation_id
-             {} GROUP BY month_key ORDER BY month_key DESC",
+             {} GROUP BY m.year_month ORDER BY month_key DESC",
             wc.sql
         );
         let param_refs: Vec<&dyn rusqlite::types::ToSql> = wc.params.iter().map(|p| p.as_ref()).collect();
@@ -847,7 +850,7 @@ pub fn get_media_month_page(
     // Step 1: Get target months
     let (where_sql, mut months_params) = build_where();
     let mut months_sql = format!(
-        "SELECT DISTINCT strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) as mk
+        "SELECT DISTINCT m.year_month as mk
          FROM media m
          INNER JOIN senders s ON s.id = m.sender_id
          INNER JOIN conversations c ON c.id = m.conversation_id
@@ -857,9 +860,9 @@ pub fn get_media_month_page(
 
     if let Some(ref cursor) = filters.cursor_month {
         if is_desc {
-            months_sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) < ?");
+            months_sql.push_str(" AND m.year_month < ?");
         } else {
-            months_sql.push_str(" AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) > ?");
+            months_sql.push_str(" AND m.year_month > ?");
         }
         months_params.push(Box::new(cursor.clone()));
     }
@@ -906,7 +909,7 @@ pub fn get_media_month_page(
          FROM media m
          INNER JOIN senders s ON s.id = m.sender_id
          INNER JOIN conversations c ON c.id = m.conversation_id
-         {} AND strftime('%Y-%m', datetime(m.timestamp_ms / 1000, 'unixepoch')) IN ({})
+         {} AND m.year_month IN ({})
          ORDER BY m.timestamp_ms {}",
         where_sql2,
         month_placeholders,
