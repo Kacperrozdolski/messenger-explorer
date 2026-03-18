@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, MessageCircle, Trash2, FolderOpen } from "lucide-react";
@@ -215,4 +215,4 @@ const AlbumContextMenu = ({
   );
 };
 
-export default AlbumContextMenu;
+export default memo(AlbumContextMenu);

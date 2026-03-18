@@ -18,6 +18,16 @@ const formatTime = (ts: number) => {
   return d.toLocaleString(getLocale(), { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 };
 
+const handleVideoMouseEnter = (e: React.MouseEvent<HTMLVideoElement>) => {
+  (e.target as HTMLVideoElement).play();
+};
+
+const handleVideoMouseLeave = (e: React.MouseEvent<HTMLVideoElement>) => {
+  const v = e.target as HTMLVideoElement;
+  v.pause();
+  v.currentTime = 0;
+};
+
 const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) => {
   const { t } = useTranslation();
 
@@ -45,8 +55,8 @@ const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) =>
           className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
           muted
           preload="metadata"
-          onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
-          onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+          onMouseEnter={handleVideoMouseEnter}
+          onMouseLeave={handleVideoMouseLeave}
         />
       ) : (
         <img

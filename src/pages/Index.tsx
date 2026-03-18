@@ -87,6 +87,10 @@ const Index = () => {
     setCommittedSearch("");
   }, []);
 
+  const handleModalClose = useCallback(() => {
+    setModalImage(null);
+  }, []);
+
   // Check if we have data
   const { data: status, isLoading: statusLoading } = useQuery({
     queryKey: ["import-status"],
@@ -237,9 +241,12 @@ const Index = () => {
     return facets?.timeline ?? [];
   }, [facets?.timeline, aiFacets]);
 
-  const fileTypeCounts: FileTypeCounts | null = aiFacets
-    ? { image: aiFacets.ftMap.image ?? 0, video: aiFacets.ftMap.video ?? 0, gif: aiFacets.ftMap.gif ?? 0 }
-    : facets?.file_type_counts ?? null;
+  const fileTypeCounts: FileTypeCounts | null = useMemo(() => {
+    if (aiFacets) {
+      return { image: aiFacets.ftMap.image ?? 0, video: aiFacets.ftMap.video ?? 0, gif: aiFacets.ftMap.gif ?? 0 };
+    }
+    return facets?.file_type_counts ?? null;
+  }, [aiFacets, facets?.file_type_counts]);
 
   const { data: albums = [] } = useQuery({
     queryKey: ["albums"],
@@ -415,7 +422,7 @@ const Index = () => {
           onFileTypeChange={setFileType}
           onSelectMonth={setSelectedMonth}
           timelineData={timeline}
-          onOpenIndexing={hasClipModels ? () => handleOpenIndexing() : undefined}
+          onOpenIndexing={hasClipModels ? handleOpenIndexing : undefined}
         />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
@@ -433,7 +440,7 @@ const Index = () => {
       </div>
 
       {modalImage && (
-        <ContextModal image={modalImage} onClose={() => setModalImage(null)} />
+        <ContextModal image={modalImage} onClose={handleModalClose} />
       )}
 
       <SelectiveIndexingDialog

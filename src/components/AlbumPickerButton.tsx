@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FolderPlus, Plus, Check } from "lucide-react";
@@ -76,17 +76,22 @@ const AlbumPickerButton = ({ mediaId, albums, className }: AlbumPickerButtonProp
     [mediaId],
   );
 
+  const addToAlbumRef = useRef(addToAlbum);
+  addToAlbumRef.current = addToAlbum;
+  const removeFromAlbumRef = useRef(removeFromAlbum);
+  removeFromAlbumRef.current = removeFromAlbum;
+
   const handleToggle = useCallback(
     (albumId: number, isInAlbum: boolean) => {
       if (isInAlbum) {
-        removeFromAlbum.mutate(albumId);
+        removeFromAlbumRef.current.mutate(albumId);
         setMediaAlbumIds((prev) => prev.filter((id) => id !== albumId));
       } else {
-        addToAlbum.mutate(albumId);
+        addToAlbumRef.current.mutate(albumId);
         setMediaAlbumIds((prev) => [...prev, albumId]);
       }
     },
-    [addToAlbum, removeFromAlbum],
+    [],
   );
 
   const handleCreateSubmit = useCallback(
@@ -186,4 +191,4 @@ const AlbumPickerButton = ({ mediaId, albums, className }: AlbumPickerButtonProp
   );
 };
 
-export default AlbumPickerButton;
+export default memo(AlbumPickerButton);

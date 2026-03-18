@@ -1,4 +1,4 @@
-import { useState, useMemo, forwardRef } from "react";
+import { useState, useMemo, forwardRef, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1148,4 +1148,4 @@ const ArchiveSidebar = ({
   );
 };
 
-export default ArchiveSidebar;
+export default memo(ArchiveSidebar);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useEffect, useRef, useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import type { ImageEntry, ViewMode, AlbumInfo } from "@/data/types";
@@ -25,8 +25,10 @@ const formatMonthYear = (ts: number) => {
 const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore, hasMore, isLoadingMore }: GalleryProps) => {
   const { t } = useTranslation();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
 
-  // IntersectionObserver for infinite scroll
+  // IntersectionObserver for infinite scroll — stable, never tears down
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -34,7 +36,7 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          onLoadMore();
+          onLoadMoreRef.current();
         }
       },
       { rootMargin: "400px" },
@@ -42,7 +44,7 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [onLoadMore]);
+  }, []);
 
   const grouped = useMemo(() => {
     const result: Record<string, ImageEntry[]> = {};
@@ -54,9 +56,6 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
     return result;
   }, [images]);
 
-  const handleImageClick = useCallback((img: ImageEntry) => {
-    onImageClick(img);
-  }, [onImageClick]);
 
   if (images.length === 0) {
     return (
@@ -82,7 +81,7 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
                 <ImageCard
                   key={img.id}
                   image={img}
-                  onClick={handleImageClick}
+                  onClick={onImageClick}
                   albums={albums}
                   activeAlbumId={activeAlbumId}
                 />
@@ -94,7 +93,7 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
                 <ImageListRow
                   key={img.id}
                   image={img}
-                  onClick={handleImageClick}
+                  onClick={onImageClick}
                   albums={albums}
                   activeAlbumId={activeAlbumId}
                 />

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Search, Grid3X3, List, ArrowUpDown, Settings, Users, User, MessageSquare, Brain, X, Image, Video, Sparkles, Calendar } from "lucide-react";
@@ -391,4 +391,4 @@ const TopBar = ({
   );
 };
 
-export default TopBar;
+export default memo(TopBar);
