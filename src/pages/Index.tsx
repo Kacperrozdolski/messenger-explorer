@@ -7,6 +7,7 @@ import TopBar from "@/components/TopBar";
 import Gallery from "@/components/Gallery";
 import ContextModal from "@/components/ContextModal";
 import ImportDialog from "@/components/ImportDialog";
+import SelectiveIndexingDialog from "@/components/SelectiveIndexingDialog";
 import * as api from "@/lib/api";
 import type {
   SortOption,
@@ -36,6 +37,17 @@ const Index = () => {
   const [modalImage, setModalImage] = useState<ImageEntry | null>(null);
   const [aiSearchQuery, setAiSearchQuery] = useState<string | null>(null);
   const [aiSearchResults, setAiSearchResults] = useState<ImageEntry[] | null>(null);
+
+  // Selective AI indexing dialog
+  const [indexingDialogOpen, setIndexingDialogOpen] = useState(false);
+  const [indexingInitialSenderIds, setIndexingInitialSenderIds] = useState<number[]>([]);
+  const [indexingInitialConvIds, setIndexingInitialConvIds] = useState<number[]>([]);
+
+  const handleOpenIndexing = useCallback((senderIds: number[] = [], convIds: number[] = []) => {
+    setIndexingInitialSenderIds(senderIds);
+    setIndexingInitialConvIds(convIds);
+    setIndexingDialogOpen(true);
+  }, []);
 
   const handleAiSearch = useCallback(async (query: string) => {
     setAiSearchQuery(query);
@@ -89,6 +101,12 @@ const Index = () => {
     queryFn: api.getIndexingStatus,
     enabled: hasData,
     staleTime: 5000,
+  });
+
+  const { data: hasClipModels } = useQuery({
+    queryKey: ["has-clip-models"],
+    queryFn: api.hasClipModels,
+    enabled: hasData,
   });
 
   const aiSearchAvailable = (indexingStatus?.indexed ?? 0) > 0;
@@ -377,6 +395,7 @@ const Index = () => {
         onClearSearch={handleClearSearch}
         aiSearchQuery={aiSearchQuery}
         onClearAiSearch={handleClearAiSearch}
+        onOpenIndexing={hasClipModels ? handleOpenIndexing : undefined}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -400,6 +419,7 @@ const Index = () => {
           onFileTypeChange={setFileType}
           onSelectMonth={setSelectedMonth}
           timelineData={timeline}
+          onOpenIndexing={hasClipModels ? () => handleOpenIndexing() : undefined}
         />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
@@ -419,6 +439,15 @@ const Index = () => {
       {modalImage && (
         <ContextModal image={modalImage} onClose={() => setModalImage(null)} />
       )}
+
+      <SelectiveIndexingDialog
+        open={indexingDialogOpen}
+        onOpenChange={setIndexingDialogOpen}
+        conversations={conversations}
+        senders={senders}
+        initialSenderIds={indexingInitialSenderIds}
+        initialConversationIds={indexingInitialConvIds}
+      />
     </div>
   );
 };

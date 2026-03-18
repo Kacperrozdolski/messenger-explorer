@@ -130,6 +130,13 @@ impl ClipModel {
     fn create_session(model_path: &Path) -> Result<Session, String> {
         let mut builder =
             Session::builder().map_err(|e| format!("Failed to create session builder: {}", e))?;
+        // Limit ONNX to 2 threads to avoid starving the UI
+        builder = builder
+            .with_intra_threads(2)
+            .map_err(|e| format!("Failed to set intra threads: {}", e))?;
+        builder = builder
+            .with_inter_threads(1)
+            .map_err(|e| format!("Failed to set inter threads: {}", e))?;
         let model_bytes = std::fs::read(model_path)
             .map_err(|e| format!("Failed to read model file {}: {}", model_path.display(), e))?;
         builder
@@ -280,22 +287,55 @@ pub fn embedding_from_bytes(bytes: &[u8]) -> Vec<f32> {
 }
 
 /// Run indexing on all unindexed images in the database.
+/// When `sender_ids` or `conversation_ids` are non-empty, only images matching
+/// those filters are indexed (combined with OR).
 pub fn run_indexing(
     model: &mut ClipModel,
     conn: &rusqlite::Connection,
     cancel_flag: &AtomicBool,
     on_progress: impl Fn(u64, u64),
+    sender_ids: &[i64],
+    conversation_ids: &[i64],
 ) -> Result<u64, String> {
+    let mut sql = String::from(
+        "SELECT m.id, m.file_path FROM media m
+         WHERE m.file_type = 'image'
+         AND m.id NOT IN (SELECT media_id FROM media_embeddings)",
+    );
+
+    let mut params: Vec<rusqlite::types::Value> = Vec::new();
+
+    let has_sender = !sender_ids.is_empty();
+    let has_conv = !conversation_ids.is_empty();
+
+    if has_sender || has_conv {
+        let mut or_parts = Vec::new();
+
+        if has_sender {
+            let placeholders: Vec<String> = sender_ids.iter().map(|_| "?".to_string()).collect();
+            or_parts.push(format!("m.sender_id IN ({})", placeholders.join(",")));
+            for id in sender_ids {
+                params.push(rusqlite::types::Value::Integer(*id));
+            }
+        }
+
+        if has_conv {
+            let placeholders: Vec<String> = conversation_ids.iter().map(|_| "?".to_string()).collect();
+            or_parts.push(format!("m.conversation_id IN ({})", placeholders.join(",")));
+            for id in conversation_ids {
+                params.push(rusqlite::types::Value::Integer(*id));
+            }
+        }
+
+        sql.push_str(&format!(" AND ({})", or_parts.join(" OR ")));
+    }
+
     let mut stmt = conn
-        .prepare(
-            "SELECT m.id, m.file_path FROM media m
-             WHERE m.file_type = 'image'
-             AND m.id NOT IN (SELECT media_id FROM media_embeddings)",
-        )
+        .prepare(&sql)
         .map_err(|e| e.to_string())?;
 
     let items: Vec<(i64, String)> = stmt
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .query_map(rusqlite::params_from_iter(params.iter()), |row| Ok((row.get(0)?, row.get(1)?)))
         .map_err(|e| e.to_string())?
         .filter_map(|r| r.ok())
         .collect();
@@ -343,6 +383,11 @@ pub fn run_indexing(
         indexed += 1;
         if indexed % 10 == 0 || indexed == total {
             on_progress(indexed, total);
+        }
+
+        // Yield CPU periodically so the UI thread stays responsive
+        if indexed % 5 == 0 {
+            std::thread::sleep(std::time::Duration::from_millis(10));
         }
     }
 

@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, forwardRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronRight,
@@ -88,6 +88,7 @@ interface ArchiveSidebarProps {
   onClearSearch: () => void;
   aiSearchQuery?: string | null;
   onClearAiSearch?: () => void;
+  onOpenIndexing?: (senderIds?: number[], conversationIds?: number[]) => void;
 }
 
 const TOP_N = 5;
@@ -115,27 +116,32 @@ const Section = ({
   icon: Icon,
   children,
   defaultOpen = true,
+  headerAction,
 }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  headerAction?: React.ReactNode;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-1">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {open ? (
-          <ChevronDown className="h-3 w-3" />
-        ) : (
-          <ChevronRight className="h-3 w-3" />
-        )}
-        <Icon className="h-3.5 w-3.5" />
-        {title}
-      </button>
+      <div className="flex items-center">
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center gap-2 flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {open ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
+          <Icon className="h-3.5 w-3.5" />
+          {title}
+        </button>
+        {headerAction && <div className="pr-3">{headerAction}</div>}
+      </div>
       {open && <div className="px-1 pb-2">{children}</div>}
     </div>
   );
@@ -200,17 +206,13 @@ function BrowseAllCombobox<
   );
 }
 
-function SourceButton({
-  item,
-  isSelected,
-  onSelect,
-}: {
-  item: ChatSource;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
+const SourceButton = forwardRef<
+  HTMLButtonElement,
+  { item: ChatSource; isSelected: boolean; onSelect: () => void } & React.HTMLAttributes<HTMLButtonElement>
+>(({ item, isSelected, onSelect, ...props }, ref) => {
   return (
     <button
+      ref={ref}
       onClick={onSelect}
       className={cn(
         "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
@@ -218,6 +220,7 @@ function SourceButton({
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "text-sidebar-foreground hover:bg-sidebar-accent/50",
       )}
+      {...props}
     >
       <span
         className={cn(
@@ -233,19 +236,15 @@ function SourceButton({
       </span>
     </button>
   );
-}
+});
 
-function SenderButton({
-  sender,
-  isSelected,
-  onSelect,
-}: {
-  sender: SenderInfo;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
+const SenderButton = forwardRef<
+  HTMLButtonElement,
+  { sender: SenderInfo; isSelected: boolean; onSelect: () => void } & React.HTMLAttributes<HTMLButtonElement>
+>(({ sender, isSelected, onSelect, ...props }, ref) => {
   return (
     <button
+      ref={ref}
       onClick={onSelect}
       className={cn(
         "flex items-center justify-between w-full px-3 py-1.5 text-[13px] rounded-md transition-colors",
@@ -253,6 +252,7 @@ function SenderButton({
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "text-sidebar-foreground hover:bg-sidebar-accent/50",
       )}
+      {...props}
     >
       <span className="flex items-center gap-1.5 truncate">
         <User className="h-3 w-3 shrink-0" />
@@ -263,7 +263,7 @@ function SenderButton({
       </span>
     </button>
   );
-}
+});
 
 interface YearGroup {
   year: string;
@@ -404,13 +404,19 @@ const ArchiveSidebar = ({
   onClearSearch,
   aiSearchQuery,
   onClearAiSearch,
+  onOpenIndexing,
 }: ArchiveSidebarProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [renamingAlbumId, setRenamingAlbumId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteAlbumId, setDeleteAlbumId] = useState<number | null>(null);
-  const [colorPickerAlbumId, setColorPickerAlbumId] = useState<number | null>(null); 
+  const [colorPickerAlbumId, setColorPickerAlbumId] = useState<number | null>(null);
+
+  const { data: hasModels } = useQuery({
+    queryKey: ["has-clip-models"],
+    queryFn: api.hasClipModels,
+  });
 
   const renameAlbum = useMutation({
     mutationFn: ({ id, name }: { id: number; name: string }) =>
@@ -558,21 +564,44 @@ const ArchiveSidebar = ({
         return (
           <Section key={id} title={SECTION_TITLES[id]} icon={SECTION_ICONS[id]}>
             {selectedSource && !selectedSourceInTop && (
-              <SourceButton
-                item={selectedSource}
-                isSelected={true}
-                onSelect={() => onSelectChat(null)}
-              />
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <SourceButton
+                    item={selectedSource}
+                    isSelected={true}
+                    onSelect={() => onSelectChat(null)}
+                  />
+                </ContextMenuTrigger>
+                {hasModels && (
+                  <ContextMenuContent>
+                    <ContextMenuItem onSelect={() => onOpenIndexing?.([], [selectedSource.id])}>
+                      <Brain className="h-4 w-4 mr-2" />
+                      {t("indexing.indexGroup", "Index with AI")}
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                )}
+              </ContextMenu>
             )}
             {topSources.map((item) => (
-              <SourceButton
-                key={item.id}
-                item={item}
-                isSelected={selectedChat === item.id}
-                onSelect={() =>
-                  onSelectChat(selectedChat === item.id ? null : item.id)
-                }
-              />
+              <ContextMenu key={item.id}>
+                <ContextMenuTrigger asChild>
+                  <SourceButton
+                    item={item}
+                    isSelected={selectedChat === item.id}
+                    onSelect={() =>
+                      onSelectChat(selectedChat === item.id ? null : item.id)
+                    }
+                  />
+                </ContextMenuTrigger>
+                {hasModels && (
+                  <ContextMenuContent>
+                    <ContextMenuItem onSelect={() => onOpenIndexing?.([], [item.id])}>
+                      <Brain className="h-4 w-4 mr-2" />
+                      {t("indexing.indexGroup", "Index with AI")}
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                )}
+              </ContextMenu>
             ))}
             {allSorted.length > TOP_N && (
               <BrowseAllCombobox
@@ -591,21 +620,44 @@ const ArchiveSidebar = ({
         return (
           <Section key={id} title={SECTION_TITLES[id]} icon={SECTION_ICONS[id]}>
             {selectedSenderObj && !selectedSenderInTop && (
-              <SenderButton
-                sender={selectedSenderObj}
-                isSelected={true}
-                onSelect={() => onSelectSender(null)}
-              />
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <SenderButton
+                    sender={selectedSenderObj}
+                    isSelected={true}
+                    onSelect={() => onSelectSender(null)}
+                  />
+                </ContextMenuTrigger>
+                {hasModels && (
+                  <ContextMenuContent>
+                    <ContextMenuItem onSelect={() => onOpenIndexing?.([selectedSenderObj.id])}>
+                      <Brain className="h-4 w-4 mr-2" />
+                      {t("indexing.indexSender", "Index with AI")}
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                )}
+              </ContextMenu>
             )}
             {topSenders.map((s) => (
-              <SenderButton
-                key={s.id}
-                sender={s}
-                isSelected={selectedSender === s.id}
-                onSelect={() =>
-                  onSelectSender(selectedSender === s.id ? null : s.id)
-                }
-              />
+              <ContextMenu key={s.id}>
+                <ContextMenuTrigger asChild>
+                  <SenderButton
+                    sender={s}
+                    isSelected={selectedSender === s.id}
+                    onSelect={() =>
+                      onSelectSender(selectedSender === s.id ? null : s.id)
+                    }
+                  />
+                </ContextMenuTrigger>
+                {hasModels && (
+                  <ContextMenuContent>
+                    <ContextMenuItem onSelect={() => onOpenIndexing?.([s.id])}>
+                      <Brain className="h-4 w-4 mr-2" />
+                      {t("indexing.indexSender", "Index with AI")}
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                )}
+              </ContextMenu>
             ))}
             {sortedSenders.length > TOP_N && (
               <BrowseAllCombobox
@@ -985,6 +1037,7 @@ const ArchiveSidebar = ({
           })()}
         </DialogContent>
       </Dialog>
+
     </aside>
   );
 };

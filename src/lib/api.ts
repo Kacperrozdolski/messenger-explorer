@@ -425,6 +425,31 @@ export async function cancelIndexing(): Promise<void> {
   return invoke("cmd_cancel_indexing");
 }
 
+export interface UnindexedCounts {
+  senders: { id: number; total_images: number; unindexed: number }[];
+  conversations: { id: number; total_images: number; unindexed: number }[];
+}
+
+export async function getUnindexedCounts(): Promise<UnindexedCounts> {
+  return invoke("cmd_get_unindexed_counts");
+}
+
+export interface IndexingScope {
+  sender_ids: number[];
+  conversation_ids: number[];
+}
+
+export async function getIndexingScope(): Promise<IndexingScope> {
+  return invoke("cmd_get_indexing_scope");
+}
+
+export async function startIndexingFiltered(
+  senderIds: number[],
+  conversationIds: number[]
+): Promise<void> {
+  return invoke("cmd_start_indexing_filtered", { senderIds, conversationIds });
+}
+
 export interface AiSearchResult {
   media_id: number;
   score: number;

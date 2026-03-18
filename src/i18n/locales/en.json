@@ -121,6 +121,19 @@
     "aiResetDesc": "This will delete all image embeddings. You'll need to re-index to use AI search.",
     "aiResetConfirm": "Reset Index"
   },
+  "indexing": {
+    "title": "Selective AI Indexing",
+    "description": "Select senders or groups to index with AI. Only images from selected items will be processed.",
+    "indexSender": "Index with AI",
+    "indexGroup": "Index with AI",
+    "selectedCount": "~{{count}} images to index",
+    "indexed": "indexed",
+    "noImages": "no images",
+    "unindexedCount": "{{count}} to index",
+    "noSelection": "No items selected",
+    "startButton": "Start Indexing",
+    "inProgress": "Indexing in progress..."
+  },
   "notFound": {
     "title": "404",
     "message": "Oops! Page not found",

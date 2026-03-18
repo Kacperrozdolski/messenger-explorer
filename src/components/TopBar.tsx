@@ -28,6 +28,7 @@ interface TopBarProps {
   onFileTypeChange: (ft: FileTypeFilter) => void;
   onSelectMonth: (month: string | null) => void;
   timelineData: TimelineEntry[];
+  onOpenIndexing?: () => void;
 }
 
 interface Suggestion {
@@ -59,6 +60,7 @@ const TopBar = ({
   onFileTypeChange,
   onSelectMonth,
   timelineData,
+  onOpenIndexing,
 }: TopBarProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -366,6 +368,17 @@ const TopBar = ({
           <List className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* AI Indexing */}
+      {onOpenIndexing && (
+        <button
+          onClick={onOpenIndexing}
+          className="p-1.5 rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
+          title={t("indexing.title", "Selective AI Indexing")}
+        >
+          <Brain className="h-3.5 w-3.5" />
+        </button>
+      )}
 
       {/* Settings */}
       <button

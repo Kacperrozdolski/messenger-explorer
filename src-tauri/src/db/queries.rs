@@ -382,6 +382,71 @@ pub fn get_sources(conn: &Connection) -> Result<Vec<SourceInfo>, String> {
     Ok(result)
 }
 
+#[derive(Debug, Serialize)]
+pub struct UnindexedCounts {
+    pub senders: Vec<UnindexedItemCount>,
+    pub conversations: Vec<UnindexedItemCount>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UnindexedItemCount {
+    pub id: i64,
+    pub total_images: i64,
+    pub unindexed: i64,
+}
+
+pub fn get_unindexed_counts(conn: &Connection) -> Result<UnindexedCounts, String> {
+    let mut sender_stmt = conn
+        .prepare(
+            "SELECT m.sender_id,
+                    COUNT(*) as total_images,
+                    SUM(CASE WHEN me.media_id IS NULL THEN 1 ELSE 0 END) as unindexed
+             FROM media m
+             LEFT JOIN media_embeddings me ON me.media_id = m.id
+             WHERE m.file_type = 'image'
+             GROUP BY m.sender_id",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let senders: Vec<UnindexedItemCount> = sender_stmt
+        .query_map([], |row| {
+            Ok(UnindexedItemCount {
+                id: row.get(0)?,
+                total_images: row.get(1)?,
+                unindexed: row.get(2)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    let mut conv_stmt = conn
+        .prepare(
+            "SELECT m.conversation_id,
+                    COUNT(*) as total_images,
+                    SUM(CASE WHEN me.media_id IS NULL THEN 1 ELSE 0 END) as unindexed
+             FROM media m
+             LEFT JOIN media_embeddings me ON me.media_id = m.id
+             WHERE m.file_type = 'image'
+             GROUP BY m.conversation_id",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let conversations: Vec<UnindexedItemCount> = conv_stmt
+        .query_map([], |row| {
+            Ok(UnindexedItemCount {
+                id: row.get(0)?,
+                total_images: row.get(1)?,
+                unindexed: row.get(2)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    Ok(UnindexedCounts { senders, conversations })
+}
+
 pub fn get_albums(conn: &Connection) -> Result<Vec<AlbumInfo>, String> {
     let mut stmt = conn
         .prepare(

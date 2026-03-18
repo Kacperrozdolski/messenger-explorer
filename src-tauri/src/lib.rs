@@ -4,7 +4,7 @@ mod parser;
 mod pdf_export;
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -14,6 +14,7 @@ use tauri::{Emitter, Manager};
 use db::queries::{
     self, AlbumInfo, ConversationInfo, FilterFacets, ImportStatus, MediaContext, MediaFilters,
     MediaItem, MediaPage, MonthPageFilters, SenderInfo, SourceInfo, TimelineEntry,
+    UnindexedCounts,
 };
 use db::writer::{self as db_writer, ImportStats};
 
@@ -29,6 +30,18 @@ struct ClipState {
     model: Mutex<Option<clip::ClipModel>>,
     indexing: AtomicBool,
     cancel_flag: AtomicBool,
+    /// Live progress counters updated by the indexing thread.
+    progress_indexed: AtomicU64,
+    progress_total: AtomicU64,
+    /// Which sender/conversation IDs are being indexed (empty = all).
+    /// Stored so the frontend can restore the selection after navigating away.
+    indexing_scope: Mutex<IndexingScope>,
+}
+
+#[derive(Clone, Default, serde::Serialize)]
+struct IndexingScope {
+    sender_ids: Vec<i64>,
+    conversation_ids: Vec<i64>,
 }
 
 /// Decode percent-encoded URL path back to a filesystem path.
@@ -482,6 +495,16 @@ fn cmd_get_indexing_status(
 ) -> Result<IndexingProgress, String> {
     let is_running = clip_state.indexing.load(Ordering::Relaxed);
 
+    // While indexing is running, return the live progress from the indexing thread
+    // instead of querying the DB (which would show the full unfiltered counts).
+    if is_running {
+        return Ok(IndexingProgress {
+            indexed: clip_state.progress_indexed.load(Ordering::Relaxed),
+            total: clip_state.progress_total.load(Ordering::Relaxed),
+            is_running: true,
+        });
+    }
+
     let conn = db_state.conn.lock().map_err(|e| e.to_string())?;
     let indexed: u64 = conn
         .query_row("SELECT COUNT(*) FROM media_embeddings", [], |row| row.get(0))
@@ -497,7 +520,7 @@ fn cmd_get_indexing_status(
     Ok(IndexingProgress {
         indexed,
         total,
-        is_running,
+        is_running: false,
     })
 }
 
@@ -526,6 +549,12 @@ fn cmd_start_indexing(
 
     clip_state.indexing.store(true, Ordering::Relaxed);
     clip_state.cancel_flag.store(false, Ordering::Relaxed);
+    clip_state.progress_indexed.store(0, Ordering::Relaxed);
+    clip_state.progress_total.store(0, Ordering::Relaxed);
+    {
+        let mut scope = clip_state.indexing_scope.lock().map_err(|e| e.to_string())?;
+        *scope = IndexingScope::default(); // empty = index all
+    }
 
     let db_path = db_state.db_path.clone();
     let models_dir = clip_state.models_dir.clone();
@@ -547,6 +576,9 @@ fn cmd_start_indexing(
 
             let app_for_progress = app.clone();
             let count = clip::run_indexing(&mut model, &conn, cancel_flag, |indexed, total| {
+                let cs = app_for_progress.state::<ClipState>();
+                cs.progress_indexed.store(indexed, Ordering::Relaxed);
+                cs.progress_total.store(total, Ordering::Relaxed);
                 let _ = app_for_progress.emit(
                     "indexing-progress",
                     IndexingProgress {
@@ -555,7 +587,7 @@ fn cmd_start_indexing(
                         is_running: true,
                     },
                 );
-            })?;
+            }, &[], &[])?;
 
             Ok(count)
         })();
@@ -595,6 +627,121 @@ fn cmd_start_indexing(
 #[tauri::command]
 fn cmd_cancel_indexing(clip_state: tauri::State<'_, ClipState>) -> Result<(), String> {
     clip_state.cancel_flag.store(true, Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn cmd_get_unindexed_counts(db_state: tauri::State<'_, DbState>) -> Result<UnindexedCounts, String> {
+    let conn = db_state.conn.lock().map_err(|e| e.to_string())?;
+    queries::get_unindexed_counts(&conn)
+}
+
+#[tauri::command]
+fn cmd_get_indexing_scope(clip_state: tauri::State<'_, ClipState>) -> Result<IndexingScope, String> {
+    let scope = clip_state.indexing_scope.lock().map_err(|e| e.to_string())?;
+    Ok(scope.clone())
+}
+
+#[tauri::command]
+fn cmd_start_indexing_filtered(
+    app_handle: tauri::AppHandle,
+    db_state: tauri::State<'_, DbState>,
+    clip_state: tauri::State<'_, ClipState>,
+    sender_ids: Vec<i64>,
+    conversation_ids: Vec<i64>,
+) -> Result<(), String> {
+    if clip_state.indexing.load(Ordering::Relaxed) {
+        return Err("Indexing is already running".to_string());
+    }
+
+    clip::init_ort(&clip_state.models_dir)?;
+
+    clip_state.indexing.store(true, Ordering::Relaxed);
+    clip_state.cancel_flag.store(false, Ordering::Relaxed);
+    clip_state.progress_indexed.store(0, Ordering::Relaxed);
+    clip_state.progress_total.store(0, Ordering::Relaxed);
+    {
+        let mut scope = clip_state.indexing_scope.lock().map_err(|e| e.to_string())?;
+        *scope = IndexingScope {
+            sender_ids: sender_ids.clone(),
+            conversation_ids: conversation_ids.clone(),
+        };
+    }
+
+    let db_path = db_state.db_path.clone();
+    let models_dir = clip_state.models_dir.clone();
+    let app = app_handle.clone();
+
+    std::thread::spawn(move || {
+        let result = (|| -> Result<u64, String> {
+            let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
+            conn.execute_batch("PRAGMA foreign_keys = OFF;")
+                .map_err(|e| e.to_string())?;
+
+            let mut model = clip::ClipModel::load(&models_dir)?;
+            log::info!(
+                "CLIP model loaded for filtered indexing ({} senders, {} conversations)",
+                sender_ids.len(),
+                conversation_ids.len()
+            );
+
+            let clip_state = app.state::<ClipState>();
+            let cancel_flag = &clip_state.cancel_flag;
+
+            let app_for_progress = app.clone();
+            let count = clip::run_indexing(
+                &mut model,
+                &conn,
+                cancel_flag,
+                |indexed, total| {
+                    let cs = app_for_progress.state::<ClipState>();
+                    cs.progress_indexed.store(indexed, Ordering::Relaxed);
+                    cs.progress_total.store(total, Ordering::Relaxed);
+                    let _ = app_for_progress.emit(
+                        "indexing-progress",
+                        IndexingProgress {
+                            indexed,
+                            total,
+                            is_running: true,
+                        },
+                    );
+                },
+                &sender_ids,
+                &conversation_ids,
+            )?;
+
+            Ok(count)
+        })();
+
+        let clip_state = app.state::<ClipState>();
+        clip_state.indexing.store(false, Ordering::Relaxed);
+
+        match result {
+            Ok(count) => {
+                log::info!("Filtered indexing complete: {} images processed", count);
+                let _ = app.emit(
+                    "indexing-progress",
+                    IndexingProgress {
+                        indexed: count,
+                        total: count,
+                        is_running: false,
+                    },
+                );
+            }
+            Err(e) => {
+                log::error!("Filtered indexing failed: {}", e);
+                let _ = app.emit(
+                    "indexing-progress",
+                    IndexingProgress {
+                        indexed: 0,
+                        total: 0,
+                        is_running: false,
+                    },
+                );
+            }
+        }
+    });
+
     Ok(())
 }
 
@@ -882,6 +1029,9 @@ pub fn run() {
                 model: Mutex::new(None),
                 indexing: AtomicBool::new(false),
                 cancel_flag: AtomicBool::new(false),
+                progress_indexed: AtomicU64::new(0),
+                progress_total: AtomicU64::new(0),
+                indexing_scope: Mutex::new(IndexingScope::default()),
             });
 
             Ok(())
@@ -921,7 +1071,10 @@ pub fn run() {
             cmd_get_indexing_status,
             cmd_has_clip_models,
             cmd_start_indexing,
+            cmd_start_indexing_filtered,
             cmd_cancel_indexing,
+            cmd_get_unindexed_counts,
+            cmd_get_indexing_scope,
             cmd_ai_search,
             cmd_clear_embeddings,
         ])
