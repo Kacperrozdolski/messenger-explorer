@@ -412,6 +412,8 @@ const ArchiveSidebar = ({
   const [renameValue, setRenameValue] = useState("");
   const [deleteAlbumId, setDeleteAlbumId] = useState<number | null>(null);
   const [colorPickerAlbumId, setColorPickerAlbumId] = useState<number | null>(null);
+  const [removeSenderId, setRemoveSenderId] = useState<number | null>(null);
+  const [removeConversationId, setRemoveConversationId] = useState<number | null>(null);
 
   const { data: hasModels } = useQuery({
     queryKey: ["has-clip-models"],
@@ -432,6 +434,37 @@ const ArchiveSidebar = ({
       api.updateAlbumColor(id, color),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["albums"] });
+    },
+  });
+
+  const invalidateAllData = () => {
+    queryClient.invalidateQueries({ queryKey: ["senders"] });
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    queryClient.invalidateQueries({ queryKey: ["filter-facets"] });
+    queryClient.invalidateQueries({ queryKey: ["media"] });
+    queryClient.invalidateQueries({ queryKey: ["media-month"] });
+    queryClient.invalidateQueries({ queryKey: ["media-count"] });
+    queryClient.invalidateQueries({ queryKey: ["timeline"] });
+    queryClient.invalidateQueries({ queryKey: ["albums"] });
+    queryClient.invalidateQueries({ queryKey: ["import-status"] });
+    queryClient.invalidateQueries({ queryKey: ["indexing-status"] });
+  };
+
+  const removeSender = useMutation({
+    mutationFn: (id: number) => api.removeSender(id),
+    onSuccess: (_, deletedId) => {
+      invalidateAllData();
+      if (selectedSender === deletedId) onSelectSender(null);
+      setRemoveSenderId(null);
+    },
+  });
+
+  const removeConversation = useMutation({
+    mutationFn: (id: number) => api.removeConversation(id),
+    onSuccess: (_, deletedId) => {
+      invalidateAllData();
+      if (selectedChat === deletedId) onSelectChat(null);
+      setRemoveConversationId(null);
     },
   });
 
@@ -572,14 +605,21 @@ const ArchiveSidebar = ({
                     onSelect={() => onSelectChat(null)}
                   />
                 </ContextMenuTrigger>
-                {hasModels && (
-                  <ContextMenuContent>
+                <ContextMenuContent>
+                  {hasModels && (
                     <ContextMenuItem onSelect={() => onOpenIndexing?.([], [selectedSource.id])}>
                       <Brain className="h-4 w-4 mr-2" />
                       {t("indexing.indexGroup", "Index with AI")}
                     </ContextMenuItem>
-                  </ContextMenuContent>
-                )}
+                  )}
+                  <ContextMenuItem
+                    onSelect={() => setRemoveConversationId(selectedSource.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("sidebar.removeConversation")}
+                  </ContextMenuItem>
+                </ContextMenuContent>
               </ContextMenu>
             )}
             {topSources.map((item) => (
@@ -593,14 +633,21 @@ const ArchiveSidebar = ({
                     }
                   />
                 </ContextMenuTrigger>
-                {hasModels && (
-                  <ContextMenuContent>
+                <ContextMenuContent>
+                  {hasModels && (
                     <ContextMenuItem onSelect={() => onOpenIndexing?.([], [item.id])}>
                       <Brain className="h-4 w-4 mr-2" />
                       {t("indexing.indexGroup", "Index with AI")}
                     </ContextMenuItem>
-                  </ContextMenuContent>
-                )}
+                  )}
+                  <ContextMenuItem
+                    onSelect={() => setRemoveConversationId(item.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("sidebar.removeConversation")}
+                  </ContextMenuItem>
+                </ContextMenuContent>
               </ContextMenu>
             ))}
             {allSorted.length > TOP_N && (
@@ -628,14 +675,21 @@ const ArchiveSidebar = ({
                     onSelect={() => onSelectSender(null)}
                   />
                 </ContextMenuTrigger>
-                {hasModels && (
-                  <ContextMenuContent>
+                <ContextMenuContent>
+                  {hasModels && (
                     <ContextMenuItem onSelect={() => onOpenIndexing?.([selectedSenderObj.id])}>
                       <Brain className="h-4 w-4 mr-2" />
                       {t("indexing.indexSender", "Index with AI")}
                     </ContextMenuItem>
-                  </ContextMenuContent>
-                )}
+                  )}
+                  <ContextMenuItem
+                    onSelect={() => setRemoveSenderId(selectedSenderObj.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("sidebar.removeSender")}
+                  </ContextMenuItem>
+                </ContextMenuContent>
               </ContextMenu>
             )}
             {topSenders.map((s) => (
@@ -649,14 +703,21 @@ const ArchiveSidebar = ({
                     }
                   />
                 </ContextMenuTrigger>
-                {hasModels && (
-                  <ContextMenuContent>
+                <ContextMenuContent>
+                  {hasModels && (
                     <ContextMenuItem onSelect={() => onOpenIndexing?.([s.id])}>
                       <Brain className="h-4 w-4 mr-2" />
                       {t("indexing.indexSender", "Index with AI")}
                     </ContextMenuItem>
-                  </ContextMenuContent>
-                )}
+                  )}
+                  <ContextMenuItem
+                    onSelect={() => setRemoveSenderId(s.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("sidebar.removeSender")}
+                  </ContextMenuItem>
+                </ContextMenuContent>
               </ContextMenu>
             ))}
             {sortedSenders.length > TOP_N && (
@@ -1008,6 +1069,52 @@ const ArchiveSidebar = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {t("albums.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={removeSenderId !== null}
+        onOpenChange={(open) => { if (!open) setRemoveSenderId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("sidebar.removeSenderConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("sidebar.removeSenderConfirmDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("albums.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (removeSenderId !== null) removeSender.mutate(removeSenderId); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("settings.remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={removeConversationId !== null}
+        onOpenChange={(open) => { if (!open) setRemoveConversationId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("sidebar.removeConversationConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("sidebar.removeConversationConfirmDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("albums.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (removeConversationId !== null) removeConversation.mutate(removeConversationId); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("settings.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

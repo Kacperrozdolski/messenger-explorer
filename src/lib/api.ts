@@ -333,6 +333,14 @@ export async function getStorageInfo(): Promise<StorageInfo> {
   return invoke("cmd_get_storage_info");
 }
 
+export async function removeSender(senderId: number): Promise<void> {
+  return invoke("cmd_remove_sender", { senderId });
+}
+
+export async function removeConversation(conversationId: number): Promise<void> {
+  return invoke("cmd_remove_conversation", { conversationId });
+}
+
 export async function clearDatabase(): Promise<void> {
   return invoke("cmd_clear_database");
 }

@@ -350,6 +350,26 @@ fn cmd_cleanup_zip_extract(extracted_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn cmd_remove_sender(
+    state: tauri::State<'_, DbState>,
+    sender_id: i64,
+) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db::schema::clear_sender(&conn, sender_id).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn cmd_remove_conversation(
+    state: tauri::State<'_, DbState>,
+    conversation_id: i64,
+) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db::schema::clear_conversation(&conn, conversation_id).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 fn cmd_get_conversations(state: tauri::State<'_, DbState>) -> Result<Vec<ConversationInfo>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     queries::get_conversations(&conn)
@@ -1042,6 +1062,8 @@ pub fn run() {
             cmd_add_source,
             cmd_get_sources,
             cmd_remove_source,
+            cmd_remove_sender,
+            cmd_remove_conversation,
             cmd_detect_format,
             cmd_extract_zip,
             cmd_extract_zips,

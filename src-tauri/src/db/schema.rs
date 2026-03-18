@@ -164,6 +164,127 @@ pub fn clear_all(conn: &Connection) -> Result<(), rusqlite::Error> {
     Ok(())
 }
 
+/// Delete all media from a specific sender (cascading manually).
+pub fn clear_sender(conn: &Connection, sender_id: i64) -> Result<(), rusqlite::Error> {
+    // Delete context_messages for media from this sender
+    conn.execute(
+        "DELETE FROM context_messages WHERE media_id IN (
+            SELECT id FROM media WHERE sender_id = ?1
+        )",
+        rusqlite::params![sender_id],
+    )?;
+
+    // Delete embeddings for media from this sender
+    conn.execute(
+        "DELETE FROM media_embeddings WHERE media_id IN (
+            SELECT id FROM media WHERE sender_id = ?1
+        )",
+        rusqlite::params![sender_id],
+    )?;
+
+    // Delete album_media for media from this sender
+    conn.execute(
+        "DELETE FROM album_media WHERE media_id IN (
+            SELECT id FROM media WHERE sender_id = ?1
+        )",
+        rusqlite::params![sender_id],
+    )?;
+
+    // Delete media from this sender
+    conn.execute(
+        "DELETE FROM media WHERE sender_id = ?1",
+        rusqlite::params![sender_id],
+    )?;
+
+    // Delete conversation_participants for this sender
+    conn.execute(
+        "DELETE FROM conversation_participants WHERE sender_id = ?1",
+        rusqlite::params![sender_id],
+    )?;
+
+    // Delete context_messages authored by this sender (in other media's context)
+    conn.execute(
+        "DELETE FROM context_messages WHERE sender_id = ?1",
+        rusqlite::params![sender_id],
+    )?;
+
+    // Delete the sender record itself
+    conn.execute(
+        "DELETE FROM senders WHERE id = ?1",
+        rusqlite::params![sender_id],
+    )?;
+
+    // Clean up orphaned conversations (conversations with no media left)
+    conn.execute_batch(
+        "DELETE FROM conversation_participants WHERE conversation_id NOT IN (
+            SELECT DISTINCT conversation_id FROM media
+        );
+        DELETE FROM conversations WHERE id NOT IN (
+            SELECT DISTINCT conversation_id FROM media
+        )"
+    )?;
+
+    Ok(())
+}
+
+/// Delete all media from a specific conversation (cascading manually).
+pub fn clear_conversation(conn: &Connection, conversation_id: i64) -> Result<(), rusqlite::Error> {
+    // Delete context_messages for media in this conversation
+    conn.execute(
+        "DELETE FROM context_messages WHERE media_id IN (
+            SELECT id FROM media WHERE conversation_id = ?1
+        )",
+        rusqlite::params![conversation_id],
+    )?;
+
+    // Delete embeddings for media in this conversation
+    conn.execute(
+        "DELETE FROM media_embeddings WHERE media_id IN (
+            SELECT id FROM media WHERE conversation_id = ?1
+        )",
+        rusqlite::params![conversation_id],
+    )?;
+
+    // Delete album_media for media in this conversation
+    conn.execute(
+        "DELETE FROM album_media WHERE media_id IN (
+            SELECT id FROM media WHERE conversation_id = ?1
+        )",
+        rusqlite::params![conversation_id],
+    )?;
+
+    // Delete media in this conversation
+    conn.execute(
+        "DELETE FROM media WHERE conversation_id = ?1",
+        rusqlite::params![conversation_id],
+    )?;
+
+    // Delete conversation_participants
+    conn.execute(
+        "DELETE FROM conversation_participants WHERE conversation_id = ?1",
+        rusqlite::params![conversation_id],
+    )?;
+
+    // Delete the conversation itself
+    conn.execute(
+        "DELETE FROM conversations WHERE id = ?1",
+        rusqlite::params![conversation_id],
+    )?;
+
+    // Clean up orphaned senders
+    conn.execute_batch(
+        "DELETE FROM senders WHERE id NOT IN (
+            SELECT DISTINCT sender_id FROM media
+            UNION
+            SELECT DISTINCT sender_id FROM conversation_participants
+            UNION
+            SELECT DISTINCT sender_id FROM context_messages
+        )"
+    )?;
+
+    Ok(())
+}
+
 /// Delete only data from a specific source path (cascading manually).
 pub fn clear_source(conn: &Connection, source_path: &str) -> Result<(), rusqlite::Error> {
     // Delete context_messages for media in conversations from this source

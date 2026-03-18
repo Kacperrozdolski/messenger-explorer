@@ -18,7 +18,13 @@
     "gifs": "gify",
     "albums": "Albumy",
     "activeFilters": "Filtry",
-    "clearAll": "Wyczyść"
+    "clearAll": "Wyczyść",
+    "removeSender": "Usuń nadawcę",
+    "removeConversation": "Usuń źródło",
+    "removeSenderConfirm": "Usunąć nadawcę?",
+    "removeSenderConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów od tego nadawcy. Twoje oryginalne pliki eksportu nie zostaną zmienione.",
+    "removeConversationConfirm": "Usunąć źródło?",
+    "removeConversationConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów z tej konwersacji. Twoje oryginalne pliki eksportu nie zostaną zmienione."
   },
   "albums": {
     "addToAlbum": "Dodaj do albumu",

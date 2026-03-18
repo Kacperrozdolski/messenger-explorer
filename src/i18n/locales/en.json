@@ -18,7 +18,13 @@
     "gifs": "gifs",
     "albums": "Albums",
     "activeFilters": "Filters",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "removeSender": "Remove sender",
+    "removeConversation": "Remove source",
+    "removeSenderConfirm": "Remove sender?",
+    "removeSenderConfirmDesc": "This will permanently remove all media from this sender. Your original export files will not be affected.",
+    "removeConversationConfirm": "Remove source?",
+    "removeConversationConfirmDesc": "This will permanently remove all media from this conversation. Your original export files will not be affected."
   },
   "albums": {
     "addToAlbum": "Add to Album",
