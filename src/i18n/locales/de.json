@@ -123,6 +123,7 @@
     "aiSearchDesc": "Indexieren Sie Ihre Bilder mit KI, um nach visuellen Inhalten zu suchen (z.B. \"Berge\", \"Memes\", \"Sonnenuntergang\").",
     "aiModelsNotFound": "CLIP-Modelldateien nicht gefunden. Legen Sie clip-visual.onnx, clip-textual.onnx und tokenizer.json im Modellverzeichnis ab.",
     "aiNotIndexed": "Noch keine Bilder indexiert.",
+    "aiLoadingModel": "KI-Modell wird geladen...",
     "aiIndexing": "Indexierung... {{indexed}} / {{total}} ({{pct}}%)",
     "aiIndexed": "{{indexed}} / {{total}} Bilder indexiert.",
     "aiCancel": "Abbrechen",

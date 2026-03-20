@@ -123,6 +123,7 @@
     "aiSearchDesc": "使用AI索引您的图像，按视觉内容搜索（如「山脉」、「表情包」、「日落」）。",
     "aiModelsNotFound": "未找到CLIP模型文件。请将clip-visual.onnx、clip-textual.onnx和tokenizer.json放入models目录。",
     "aiNotIndexed": "尚未索引任何图像。",
+    "aiLoadingModel": "正在加载AI模型...",
     "aiIndexing": "索引中... {{indexed}} / {{total}} ({{pct}}%)",
     "aiIndexed": "{{indexed}} / {{total}} 张图像已索引。",
     "aiCancel": "取消",

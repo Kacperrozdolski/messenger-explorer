@@ -367,7 +367,15 @@ const SelectiveIndexingDialog = ({
             {/* Progress bar when running */}
             {isRunning && (() => {
               const progress = indexingProgress ?? indexingStatus;
-              if (!progress || progress.total === 0) return null;
+              if (!progress) return null;
+              if (progress.status === "loading_model") {
+                return (
+                  <p className="text-[12px] text-muted-foreground text-center">
+                    {t("settings.aiLoadingModel", "Loading AI model...")}
+                  </p>
+                );
+              }
+              if (progress.total === 0) return null;
               const pct = Math.round((progress.indexed / progress.total) * 100);
               return (
                 <div className="space-y-1.5">

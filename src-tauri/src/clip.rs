@@ -1,16 +1,16 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Once;
+use std::sync::OnceLock;
 
 use image::GenericImageView;
 use ndarray::Array4;
+use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
 use ort::value::Tensor;
 use safetensors::SafeTensors;
 use tokenizers::Tokenizer;
 
-static ORT_INIT: Once = Once::new();
-static mut ORT_INIT_ERROR: Option<String> = None;
+static ORT_INIT: OnceLock<Result<(), String>> = OnceLock::new();
 
 /// Initialize ONNX Runtime by pointing to the shared library.
 /// Must be called before any Session is created. Safe to call multiple times.
@@ -31,18 +31,29 @@ pub fn init_ort(lib_dir: &Path) -> Result<(), String> {
     std::env::set_var("ORT_DYLIB_PATH", &lib_path);
     log::info!("Set ORT_DYLIB_PATH={}", lib_path.display());
 
-    ORT_INIT.call_once(|| {
-        let builder = ort::init();
-        builder.commit();
-        log::info!("ONNX Runtime initialized from {}", lib_dir.display());
+    let result = ORT_INIT.get_or_init(|| {
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ort::init().commit();
+        })) {
+            Ok(()) => {
+                log::info!("ONNX Runtime initialized from {}", lib_dir.display());
+                Ok(())
+            }
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<String>() {
+                    format!("ONNX Runtime initialization panicked: {}", s)
+                } else if let Some(s) = e.downcast_ref::<&str>() {
+                    format!("ONNX Runtime initialization panicked: {}", s)
+                } else {
+                    "ONNX Runtime initialization panicked (unknown error)".to_string()
+                };
+                log::error!("{}", msg);
+                Err(msg)
+            }
+        }
     });
 
-    unsafe {
-        if let Some(ref e) = ORT_INIT_ERROR {
-            return Err(e.clone());
-        }
-    }
-    Ok(())
+    result.clone()
 }
 
 const IMAGE_SIZE: usize = 224;
@@ -85,15 +96,19 @@ impl ClipModel {
             return Err(format!("Dense weights not found: {}", dense_path.display()));
         }
 
+        log::info!("Loading visual encoder...");
         let visual = Self::create_session(&visual_path)?;
+        log::info!("Loading text encoder...");
         let textual = Self::create_session(&textual_path)?;
 
+        log::info!("Loading tokenizer...");
         let tokenizer = Tokenizer::from_file(&tokenizer_path)
             .map_err(|e| format!("Failed to load tokenizer: {}", e))?;
 
+        log::info!("Loading dense projection weights...");
         let dense_weights = Self::load_dense_weights(&dense_path)?;
 
-        log::info!("CLIP models loaded from {}", models_dir.display());
+        log::info!("All CLIP models loaded from {}", models_dir.display());
         Ok(Self {
             visual,
             textual,
@@ -128,6 +143,7 @@ impl ClipModel {
     }
 
     fn create_session(model_path: &Path) -> Result<Session, String> {
+        log::info!("Creating ONNX session for {}...", model_path.display());
         let mut builder =
             Session::builder().map_err(|e| format!("Failed to create session builder: {}", e))?;
         // Limit ONNX to 2 threads to avoid starving the UI
@@ -137,11 +153,15 @@ impl ClipModel {
         builder = builder
             .with_inter_threads(1)
             .map_err(|e| format!("Failed to set inter threads: {}", e))?;
-        let model_bytes = std::fs::read(model_path)
-            .map_err(|e| format!("Failed to read model file {}: {}", model_path.display(), e))?;
-        builder
-            .commit_from_memory(&model_bytes)
-            .map_err(|e| format!("Failed to load model {}: {}", model_path.display(), e))
+        // Use basic optimizations only — Level3 (default) takes minutes on large models
+        builder = builder
+            .with_optimization_level(GraphOptimizationLevel::Level1)
+            .map_err(|e| format!("Failed to set optimization level: {}", e))?;
+        let session = builder
+            .commit_from_file(model_path)
+            .map_err(|e| format!("Failed to load model {}: {}", model_path.display(), e))?;
+        log::info!("ONNX session created for {}", model_path.display());
+        Ok(session)
     }
 
     pub fn encode_image(&mut self, image_path: &Path) -> Result<Vec<f32>, String> {

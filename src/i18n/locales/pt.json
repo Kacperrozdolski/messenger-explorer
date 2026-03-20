@@ -123,6 +123,7 @@
     "aiSearchDesc": "Indexe suas imagens com IA para pesquisar por conteúdo visual (ex. \"montanhas\", \"memes\", \"pôr do sol\").",
     "aiModelsNotFound": "Arquivos do modelo CLIP não encontrados. Coloque clip-visual.onnx, clip-textual.onnx e tokenizer.json no diretório de modelos.",
     "aiNotIndexed": "Nenhuma imagem indexada ainda.",
+    "aiLoadingModel": "Carregando modelo de IA...",
     "aiIndexing": "Indexando... {{indexed}} / {{total}} ({{pct}}%)",
     "aiIndexed": "{{indexed}} / {{total}} imagens indexadas.",
     "aiCancel": "Cancelar",

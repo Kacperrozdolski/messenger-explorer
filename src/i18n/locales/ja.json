@@ -123,6 +123,7 @@
     "aiSearchDesc": "AIで画像をインデックス化し、視覚的な内容で検索できます（例：「山」「ミーム」「夕日」）。",
     "aiModelsNotFound": "CLIPモデルファイルが見つかりません。clip-visual.onnx、clip-textual.onnx、tokenizer.jsonをmodelsディレクトリに配置してください。",
     "aiNotIndexed": "まだインデックス化された画像がありません。",
+    "aiLoadingModel": "AIモデルを読み込み中...",
     "aiIndexing": "インデックス中... {{indexed}} / {{total}} ({{pct}}%)",
     "aiIndexed": "{{indexed}} / {{total}} 画像がインデックス化済み。",
     "aiCancel": "キャンセル",

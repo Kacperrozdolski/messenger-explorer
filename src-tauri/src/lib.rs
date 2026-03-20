@@ -535,6 +535,11 @@ struct IndexingProgress {
     indexed: u64,
     total: u64,
     is_running: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+    /// Optional status message (e.g. "loading_model")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    status: Option<String>,
 }
 
 #[tauri::command]
@@ -551,6 +556,8 @@ fn cmd_get_indexing_status(
             indexed: clip_state.progress_indexed.load(Ordering::Relaxed),
             total: clip_state.progress_total.load(Ordering::Relaxed),
             is_running: true,
+            error: None,
+            status: None,
         });
     }
 
@@ -570,6 +577,8 @@ fn cmd_get_indexing_status(
         indexed,
         total,
         is_running: false,
+        error: None,
+        status: None,
     })
 }
 
@@ -579,6 +588,7 @@ fn cmd_has_clip_models(clip_state: tauri::State<'_, ClipState>) -> Result<bool, 
     let found = dir.join("clip-visual.onnx").exists()
         && dir.join("clip-textual.onnx").exists()
         && dir.join("tokenizer.json").exists()
+        && dir.join("dense.safetensors").exists()
         && dir.join("onnxruntime.dll").exists();
     Ok(found)
 }
@@ -610,13 +620,26 @@ fn cmd_start_indexing(
     let app = app_handle.clone();
 
     std::thread::spawn(move || {
-        let result = (|| -> Result<u64, String> {
+        // Emit "loading model" status so the UI shows something useful
+        let _ = app.emit(
+            "indexing-progress",
+            IndexingProgress {
+                indexed: 0,
+                total: 0,
+                is_running: true,
+                error: None,
+                status: Some("loading_model".to_string()),
+            },
+        );
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<u64, String> {
             // Open a separate DB connection for the indexing thread
             let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
             conn.execute_batch("PRAGMA foreign_keys = OFF;")
                 .map_err(|e| e.to_string())?;
 
             // Load model in this thread (ORT already initialized)
+            log::info!("Loading CLIP model...");
             let mut model = clip::ClipModel::load(&models_dir)?;
             log::info!("CLIP model loaded in indexing thread");
 
@@ -634,18 +657,21 @@ fn cmd_start_indexing(
                         indexed,
                         total,
                         is_running: true,
+                        error: None,
+                        status: None,
                     },
                 );
             }, &[], &[])?;
 
             Ok(count)
-        })();
+        }));
 
+        // Always reset indexing flag, even if the thread panicked
         let clip_state = app.state::<ClipState>();
         clip_state.indexing.store(false, Ordering::Relaxed);
 
         match result {
-            Ok(count) => {
+            Ok(Ok(count)) => {
                 log::info!("Indexing complete: {} images processed", count);
                 let _ = app.emit(
                     "indexing-progress",
@@ -653,10 +679,12 @@ fn cmd_start_indexing(
                         indexed: count,
                         total: count,
                         is_running: false,
+                        error: None,
+                        status: None,
                     },
                 );
             }
-            Err(e) => {
+            Ok(Err(e)) => {
                 log::error!("Indexing failed: {}", e);
                 let _ = app.emit(
                     "indexing-progress",
@@ -664,6 +692,28 @@ fn cmd_start_indexing(
                         indexed: 0,
                         total: 0,
                         is_running: false,
+                        error: Some(e),
+                        status: None,
+                    },
+                );
+            }
+            Err(panic_err) => {
+                let msg = if let Some(s) = panic_err.downcast_ref::<String>() {
+                    format!("Indexing thread panicked: {}", s)
+                } else if let Some(s) = panic_err.downcast_ref::<&str>() {
+                    format!("Indexing thread panicked: {}", s)
+                } else {
+                    "Indexing thread panicked (unknown error)".to_string()
+                };
+                log::error!("{}", msg);
+                let _ = app.emit(
+                    "indexing-progress",
+                    IndexingProgress {
+                        indexed: 0,
+                        total: 0,
+                        is_running: false,
+                        error: Some(msg),
+                        status: None,
                     },
                 );
             }
@@ -722,11 +772,24 @@ fn cmd_start_indexing_filtered(
     let app = app_handle.clone();
 
     std::thread::spawn(move || {
-        let result = (|| -> Result<u64, String> {
+        // Emit "loading model" status so the UI shows something useful
+        let _ = app.emit(
+            "indexing-progress",
+            IndexingProgress {
+                indexed: 0,
+                total: 0,
+                is_running: true,
+                error: None,
+                status: Some("loading_model".to_string()),
+            },
+        );
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<u64, String> {
             let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
             conn.execute_batch("PRAGMA foreign_keys = OFF;")
                 .map_err(|e| e.to_string())?;
 
+            log::info!("Loading CLIP model for filtered indexing...");
             let mut model = clip::ClipModel::load(&models_dir)?;
             log::info!(
                 "CLIP model loaded for filtered indexing ({} senders, {} conversations)",
@@ -752,6 +815,8 @@ fn cmd_start_indexing_filtered(
                             indexed,
                             total,
                             is_running: true,
+                            error: None,
+                            status: None,
                         },
                     );
                 },
@@ -760,13 +825,14 @@ fn cmd_start_indexing_filtered(
             )?;
 
             Ok(count)
-        })();
+        }));
 
+        // Always reset indexing flag, even if the thread panicked
         let clip_state = app.state::<ClipState>();
         clip_state.indexing.store(false, Ordering::Relaxed);
 
         match result {
-            Ok(count) => {
+            Ok(Ok(count)) => {
                 log::info!("Filtered indexing complete: {} images processed", count);
                 let _ = app.emit(
                     "indexing-progress",
@@ -774,10 +840,12 @@ fn cmd_start_indexing_filtered(
                         indexed: count,
                         total: count,
                         is_running: false,
+                        error: None,
+                        status: None,
                     },
                 );
             }
-            Err(e) => {
+            Ok(Err(e)) => {
                 log::error!("Filtered indexing failed: {}", e);
                 let _ = app.emit(
                     "indexing-progress",
@@ -785,6 +853,28 @@ fn cmd_start_indexing_filtered(
                         indexed: 0,
                         total: 0,
                         is_running: false,
+                        error: Some(e),
+                        status: None,
+                    },
+                );
+            }
+            Err(panic_err) => {
+                let msg = if let Some(s) = panic_err.downcast_ref::<String>() {
+                    format!("Indexing thread panicked: {}", s)
+                } else if let Some(s) = panic_err.downcast_ref::<&str>() {
+                    format!("Indexing thread panicked: {}", s)
+                } else {
+                    "Indexing thread panicked (unknown error)".to_string()
+                };
+                log::error!("{}", msg);
+                let _ = app.emit(
+                    "indexing-progress",
+                    IndexingProgress {
+                        indexed: 0,
+                        total: 0,
+                        is_running: false,
+                        error: Some(msg),
+                        status: None,
                     },
                 );
             }

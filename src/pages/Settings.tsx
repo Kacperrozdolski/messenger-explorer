@@ -242,6 +242,9 @@ const Settings = () => {
                         const status = indexingProgress || indexingStatus;
                         if (!status) return t("settings.aiNotIndexed", "No images indexed yet.");
                         if (status.is_running) {
+                          if (status.status === "loading_model") {
+                            return t("settings.aiLoadingModel", "Loading AI model...");
+                          }
                           const pct = status.total > 0 ? Math.round((status.indexed / status.total) * 100) : 0;
                           return t("settings.aiIndexing", {
                             defaultValue: "Indexing... {{indexed}} / {{total}} ({{pct}}%)",
@@ -273,6 +276,19 @@ const Settings = () => {
                               style={{ width: `${pct}%` }}
                             />
                           </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Error */}
+                    {(() => {
+                      const status = indexingProgress || indexingStatus;
+                      if (status?.error) {
+                        return (
+                          <p className="text-[12px] text-destructive bg-destructive/10 rounded-md p-3 font-mono break-all">
+                            {status.error}
+                          </p>
                         );
                       }
                       return null;

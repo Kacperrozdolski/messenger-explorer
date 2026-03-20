@@ -415,6 +415,8 @@ export interface IndexingProgress {
   indexed: number;
   total: number;
   is_running: boolean;
+  error?: string;
+  status?: string;
 }
 
 export async function getIndexingStatus(): Promise<IndexingProgress> {
