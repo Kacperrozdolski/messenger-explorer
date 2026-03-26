@@ -24,8 +24,7 @@
     "removeSenderConfirm": "Remove sender?",
     "removeSenderConfirmDesc": "This will permanently remove all media from this sender. Your original export files will not be affected.",
     "removeConversationConfirm": "Remove source?",
-    "removeConversationConfirmDesc": "This will permanently remove all media from this conversation. Your original export files will not be affected.",
-    "aiPrefix": "AI:"
+    "removeConversationConfirmDesc": "This will permanently remove all media from this conversation. Your original export files will not be affected."
   },
   "albums": {
     "addToAlbum": "Add to Album",
@@ -42,7 +41,6 @@
     "color": "Color",
     "changeColor": "Change Color",
     "empty": "No albums yet. Right-click a photo to create one.",
-    "emptyAlbum": "This album is empty",
     "exportPdf": "Export as PDF",
     "exporting": "Exporting...",
     "exportDone": "Exported {{count}} photos to PDF",
@@ -52,7 +50,6 @@
   "topbar": {
     "search": "Search messages...",
     "searchInMessages": "Search \"{{query}}\" in messages",
-    "aiSearch": "AI Search \"{{query}}\"",
     "filterByGroup": "Filter by group",
     "filterBySender": "Filter by sender",
     "filterByMediaType": "Media type",
@@ -60,8 +57,7 @@
     "items": "{{count}} items",
     "newestFirst": "Newest First",
     "oldestFirst": "Oldest First",
-    "bySender": "By Sender",
-    "aiSearchHint": "Visual content"
+    "bySender": "By Sender"
   },
   "gallery": {
     "noMatch": "No images match your filters",
@@ -76,10 +72,8 @@
     "title": "Chat Context"
   },
   "import": {
-    "description": "Select your data export folders or zip files to get started. You can add multiple sources at once.",
     "importComplete": "Import complete!",
     "stats": "{{conversations}} conversations, {{media}} media files, {{senders}} senders",
-    "detectingFormat": "Detecting format...",
     "selectFolder": "Select Export Folder",
     "selectZip": "Select Zip File",
     "addAnother": "Add Another Folder",
@@ -118,34 +112,7 @@
     "language": "Language",
     "languageDesc": "Choose the display language for the application",
     "conversations": "conversations",
-    "media": "media",
-    "aiSearch": "AI Search",
-    "aiSearchDesc": "Index your images with AI to search by visual content (e.g. \"mountains\", \"memes\", \"sunset\").",
-    "aiModelsNotFound": "CLIP model files not found. Place clip-visual.onnx, clip-textual.onnx, and tokenizer.json in the models directory.",
-    "aiNotIndexed": "No images indexed yet.",
-    "aiLoadingModel": "Loading AI model...",
-    "aiIndexing": "Indexing... {{indexed}} / {{total}} ({{pct}}%)",
-    "aiIndexed": "{{indexed}} / {{total}} images indexed.",
-    "aiCancel": "Cancel",
-    "aiResume": "Resume Indexing",
-    "aiBuildIndex": "Build Index",
-    "aiReset": "Reset",
-    "aiResetTitle": "Reset AI Index",
-    "aiResetDesc": "This will delete all image embeddings. You'll need to re-index to use AI search.",
-    "aiResetConfirm": "Reset Index"
-  },
-  "indexing": {
-    "title": "Selective AI Indexing",
-    "description": "Select senders or groups to index with AI. Only images from selected items will be processed.",
-    "indexSender": "Index with AI",
-    "indexGroup": "Index with AI",
-    "selectedCount": "~{{count}} images to index",
-    "indexed": "indexed",
-    "noImages": "no images",
-    "unindexedCount": "{{count}} to index",
-    "noSelection": "No items selected",
-    "startButton": "Start Indexing",
-    "inProgress": "Indexing in progress..."
+    "media": "media"
   },
   "notFound": {
     "title": "404",
@@ -158,7 +125,6 @@
   "tutorial": {
     "title": "How to Download Your Data",
     "openGuide": "How do I get my data?",
-    "close": "Got it",
     "intro": "Follow the steps below for your platform to download your data export.",
     "tabFacebook": "Facebook",
     "tabMessenger": "Messenger",

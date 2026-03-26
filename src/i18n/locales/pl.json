@@ -24,8 +24,7 @@
     "removeSenderConfirm": "Usunąć nadawcę?",
     "removeSenderConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów od tego nadawcy. Twoje oryginalne pliki eksportu nie zostaną zmienione.",
     "removeConversationConfirm": "Usunąć źródło?",
-    "removeConversationConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów z tej konwersacji. Twoje oryginalne pliki eksportu nie zostaną zmienione.",
-    "aiPrefix": "AI:"
+    "removeConversationConfirmDesc": "Spowoduje to trwałe usunięcie wszystkich mediów z tej konwersacji. Twoje oryginalne pliki eksportu nie zostaną zmienione."
   },
   "albums": {
     "addToAlbum": "Dodaj do albumu",
@@ -42,7 +41,6 @@
     "color": "Kolor",
     "changeColor": "Zmień kolor",
     "empty": "Brak albumów. Kliknij prawym przyciskiem myszy na zdjęcie, aby utworzyć album.",
-    "emptyAlbum": "Ten album jest pusty",
     "exportPdf": "Eksportuj jako PDF",
     "exporting": "Eksportowanie...",
     "exportDone": "Wyeksportowano {{count}} zdjęć do PDF",
@@ -52,7 +50,6 @@
   "topbar": {
     "search": "Szukaj w wiadomościach...",
     "searchInMessages": "Szukaj \"{{query}}\" w wiadomościach",
-    "aiSearch": "Wyszukiwanie AI \"{{query}}\"",
     "filterByGroup": "Filtruj wg grupy",
     "filterBySender": "Filtruj wg nadawcy",
     "filterByMediaType": "Typ mediów",
@@ -60,8 +57,7 @@
     "items": "{{count}} elementów",
     "newestFirst": "Najnowsze",
     "oldestFirst": "Najstarsze",
-    "bySender": "Wg nadawcy",
-    "aiSearchHint": "Treść wizualna"
+    "bySender": "Wg nadawcy"
   },
   "gallery": {
     "noMatch": "Brak wyników dla wybranych filtrów",
@@ -76,10 +72,8 @@
     "title": "Kontekst rozmowy"
   },
   "import": {
-    "description": "Wybierz foldery eksportu danych lub pliki zip, aby rozpocząć. Możesz dodać wiele źródeł naraz.",
     "importComplete": "Import zakończony!",
     "stats": "{{conversations}} rozmów, {{media}} plików, {{senders}} nadawców",
-    "detectingFormat": "Wykrywanie formatu...",
     "selectFolder": "Wybierz folder eksportu",
     "selectZip": "Wybierz plik Zip",
     "addAnother": "Dodaj kolejny folder",
@@ -118,34 +112,7 @@
     "language": "Język",
     "languageDesc": "Wybierz język wyświetlania aplikacji",
     "conversations": "rozmów",
-    "media": "mediów",
-    "aiSearch": "Wyszukiwanie AI",
-    "aiSearchDesc": "Indeksuj obrazy za pomocą AI, aby wyszukiwać po treści wizualnej (np. \"góry\", \"memy\", \"zachód słońca\").",
-    "aiModelsNotFound": "Nie znaleziono plików modelu CLIP. Umieść pliki clip-visual.onnx, clip-textual.onnx i tokenizer.json w katalogu modeli.",
-    "aiNotIndexed": "Brak zaindeksowanych obrazów.",
-    "aiLoadingModel": "Ładowanie modelu AI...",
-    "aiIndexing": "Indeksowanie... {{indexed}} / {{total}} ({{pct}}%)",
-    "aiIndexed": "{{indexed}} / {{total}} obrazów zaindeksowanych.",
-    "aiCancel": "Anuluj",
-    "aiResume": "Wznów indeksowanie",
-    "aiBuildIndex": "Zbuduj indeks",
-    "aiReset": "Resetuj",
-    "aiResetTitle": "Resetuj indeks AI",
-    "aiResetDesc": "Spowoduje to usunięcie wszystkich osadzeń obrazów. Będziesz musiał ponownie zaindeksować, aby korzystać z wyszukiwania AI.",
-    "aiResetConfirm": "Resetuj indeks"
-  },
-  "indexing": {
-    "title": "Selektywne indeksowanie AI",
-    "description": "Wybierz nadawców lub grupy do indeksowania za pomocą AI. Przetwarzane będą tylko obrazy z wybranych elementów.",
-    "indexSender": "Indeksuj za pomocą AI",
-    "indexGroup": "Indeksuj za pomocą AI",
-    "selectedCount": "~{{count}} obrazów do zaindeksowania",
-    "indexed": "zaindeksowano",
-    "noImages": "brak obrazów",
-    "unindexedCount": "{{count}} do zaindeksowania",
-    "noSelection": "Nie wybrano elementów",
-    "startButton": "Rozpocznij indeksowanie",
-    "inProgress": "Indeksowanie w toku..."
+    "media": "mediów"
   },
   "notFound": {
     "title": "404",
@@ -158,7 +125,6 @@
   "tutorial": {
     "title": "Jak pobrać swoje dane",
     "openGuide": "Jak pobrać moje dane?",
-    "close": "Rozumiem",
     "intro": "Wykonaj poniższe kroki dla swojej platformy, aby pobrać eksport danych.",
     "tabFacebook": "Facebook",
     "tabMessenger": "Messenger",

@@ -24,8 +24,7 @@
     "removeSenderConfirm": "送信者を削除しますか？",
     "removeSenderConfirmDesc": "この送信者のすべてのメディアが完全に削除されます。元のエクスポートファイルは影響を受けません。",
     "removeConversationConfirm": "ソースを削除しますか？",
-    "removeConversationConfirmDesc": "この会話のすべてのメディアが完全に削除されます。元のエクスポートファイルは影響を受けません。",
-    "aiPrefix": "AI:"
+    "removeConversationConfirmDesc": "この会話のすべてのメディアが完全に削除されます。元のエクスポートファイルは影響を受けません。"
   },
   "albums": {
     "addToAlbum": "アルバムに追加",
@@ -42,7 +41,6 @@
     "color": "カラー",
     "changeColor": "色を変更",
     "empty": "アルバムがありません。写真を右クリックして作成してください。",
-    "emptyAlbum": "このアルバムは空です",
     "exportPdf": "PDFとしてエクスポート",
     "exporting": "エクスポート中...",
     "exportDone": "{{count}}枚の写真をPDFにエクスポートしました",
@@ -52,7 +50,6 @@
   "topbar": {
     "search": "メッセージを検索...",
     "searchInMessages": "メッセージで「{{query}}」を検索",
-    "aiSearch": "AI検索「{{query}}」",
     "filterByGroup": "グループで絞り込む",
     "filterBySender": "送信者で絞り込む",
     "filterByMediaType": "メディアタイプ",
@@ -60,8 +57,7 @@
     "items": "{{count}} 件",
     "newestFirst": "新しい順",
     "oldestFirst": "古い順",
-    "bySender": "送信者別",
-    "aiSearchHint": "ビジュアルコンテンツ"
+    "bySender": "送信者別"
   },
   "gallery": {
     "noMatch": "フィルターに一致する画像がありません",
@@ -76,10 +72,8 @@
     "title": "チャットコンテキスト"
   },
   "import": {
-    "description": "データエクスポートフォルダまたはzipファイルを選択して開始します。複数のソースを一度に追加できます。",
     "importComplete": "インポート完了！",
     "stats": "{{conversations}} 会話、{{media}} メディアファイル、{{senders}} 送信者",
-    "detectingFormat": "フォーマットを検出中...",
     "selectFolder": "エクスポートフォルダを選択",
     "selectZip": "Zipファイルを選択",
     "addAnother": "別のフォルダを追加",
@@ -118,34 +112,7 @@
     "language": "言語",
     "languageDesc": "アプリケーションの表示言語を選択",
     "conversations": "会話",
-    "media": "メディア",
-    "aiSearch": "AI検索",
-    "aiSearchDesc": "AIで画像をインデックス化し、視覚的な内容で検索できます（例：「山」「ミーム」「夕日」）。",
-    "aiModelsNotFound": "CLIPモデルファイルが見つかりません。clip-visual.onnx、clip-textual.onnx、tokenizer.jsonをmodelsディレクトリに配置してください。",
-    "aiNotIndexed": "まだインデックス化された画像がありません。",
-    "aiLoadingModel": "AIモデルを読み込み中...",
-    "aiIndexing": "インデックス中... {{indexed}} / {{total}} ({{pct}}%)",
-    "aiIndexed": "{{indexed}} / {{total}} 画像がインデックス化済み。",
-    "aiCancel": "キャンセル",
-    "aiResume": "インデックスを再開",
-    "aiBuildIndex": "インデックスを作成",
-    "aiReset": "リセット",
-    "aiResetTitle": "AIインデックスをリセット",
-    "aiResetDesc": "すべての画像埋め込みが削除されます。AI検索を使用するには再インデックスが必要です。",
-    "aiResetConfirm": "インデックスをリセット"
-  },
-  "indexing": {
-    "title": "選択的AIインデックス",
-    "description": "AIでインデックスする送信者またはグループを選択します。選択した項目の画像のみが処理されます。",
-    "indexSender": "AIでインデックス",
-    "indexGroup": "AIでインデックス",
-    "selectedCount": "~{{count}} 枚の画像をインデックス",
-    "indexed": "インデックス済み",
-    "noImages": "画像なし",
-    "unindexedCount": "{{count}} 件のインデックス待ち",
-    "noSelection": "項目が選択されていません",
-    "startButton": "インデックスを開始",
-    "inProgress": "インデックス中..."
+    "media": "メディア"
   },
   "notFound": {
     "title": "404",
@@ -158,7 +125,6 @@
   "tutorial": {
     "title": "データのダウンロード方法",
     "openGuide": "データを取得するには？",
-    "close": "わかりました",
     "intro": "お使いのプラットフォームに合わせて、以下の手順でデータエクスポートをダウンロードしてください。",
     "tabFacebook": "Facebook",
     "tabMessenger": "Messenger",

@@ -13,7 +13,15 @@
       "Bash(cargo check:*)",
       "Bash(grep -r \"infinite\\\\|pagination\\\\|scroll\\\\|virtualiz\" /c/Users/Kacper/Documents/_explorer/tauri --include=*.ts --include=*.tsx -i)",
       "Bash(grep -n \"onChange=\" src/components/*.tsx)",
-      "Bash(grep -n \"new.*=\" src/components/*.tsx)"
+      "Bash(grep -n \"new.*=\" src/components/*.tsx)",
+      "Bash(python3:*)",
+      "Bash(sort grep:*)",
+      "Bash(sort -u comm -23 /tmp/ui_files.txt /tmp/ui_used.txt)",
+      "Bash(xargs wc:*)",
+      "Bash(grep -oh \"className=[^]*\\\\|className={[^}]*}\" /c/Users/Kacper/Documents/_explorer/tauri/src/**/*.tsx)",
+      "Bash(node -e \":*)",
+      "Bash(npm uninstall:*)",
+      "Bash(grep -r \"\\\\.html\\\\|\\\\.innerHTML\\\\|dangerouslySetInnerHTML\\\\|text-rendering\" /c/Users/Kacper/Documents/_explorer/tauri/src --include=*.tsx --include=*.ts)"
     ]
   }
 }

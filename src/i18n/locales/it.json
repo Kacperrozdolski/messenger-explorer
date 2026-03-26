@@ -24,8 +24,7 @@
     "removeSenderConfirm": "Rimuovere il mittente?",
     "removeSenderConfirmDesc": "Tutti i media di questo mittente saranno eliminati permanentemente. I file di esportazione originali non saranno interessati.",
     "removeConversationConfirm": "Rimuovere la fonte?",
-    "removeConversationConfirmDesc": "Tutti i media di questa conversazione saranno eliminati permanentemente. I file di esportazione originali non saranno interessati.",
-    "aiPrefix": "IA:"
+    "removeConversationConfirmDesc": "Tutti i media di questa conversazione saranno eliminati permanentemente. I file di esportazione originali non saranno interessati."
   },
   "albums": {
     "addToAlbum": "Aggiungi all'album",
@@ -42,7 +41,6 @@
     "color": "Colore",
     "changeColor": "Cambia colore",
     "empty": "Nessun album. Fai clic destro su una foto per crearne uno.",
-    "emptyAlbum": "Questo album è vuoto",
     "exportPdf": "Esporta come PDF",
     "exporting": "Esportazione...",
     "exportDone": "{{count}} foto esportate in PDF",
@@ -52,7 +50,6 @@
   "topbar": {
     "search": "Cerca nei messaggi...",
     "searchInMessages": "Cerca \"{{query}}\" nei messaggi",
-    "aiSearch": "Ricerca IA \"{{query}}\"",
     "filterByGroup": "Filtra per gruppo",
     "filterBySender": "Filtra per mittente",
     "filterByMediaType": "Tipo di media",
@@ -60,8 +57,7 @@
     "items": "{{count}} elementi",
     "newestFirst": "Più recenti",
     "oldestFirst": "Più vecchi",
-    "bySender": "Per mittente",
-    "aiSearchHint": "Contenuto visivo"
+    "bySender": "Per mittente"
   },
   "gallery": {
     "noMatch": "Nessuna immagine corrisponde ai tuoi filtri",
@@ -76,10 +72,8 @@
     "title": "Contesto della chat"
   },
   "import": {
-    "description": "Seleziona le cartelle di esportazione dati o i file zip per iniziare. Puoi aggiungere più fonti contemporaneamente.",
     "importComplete": "Importazione completata!",
     "stats": "{{conversations}} conversazioni, {{media}} file multimediali, {{senders}} mittenti",
-    "detectingFormat": "Rilevamento formato...",
     "selectFolder": "Seleziona cartella di esportazione",
     "selectZip": "Seleziona file Zip",
     "addAnother": "Aggiungi un'altra cartella",
@@ -118,34 +112,7 @@
     "language": "Lingua",
     "languageDesc": "Scegli la lingua di visualizzazione dell'applicazione",
     "conversations": "conversazioni",
-    "media": "media",
-    "aiSearch": "Ricerca IA",
-    "aiSearchDesc": "Indicizza le tue immagini con l'IA per cercare per contenuto visivo (es. \"montagne\", \"meme\", \"tramonto\").",
-    "aiModelsNotFound": "File del modello CLIP non trovati. Posiziona clip-visual.onnx, clip-textual.onnx e tokenizer.json nella directory dei modelli.",
-    "aiNotIndexed": "Nessuna immagine indicizzata.",
-    "aiLoadingModel": "Caricamento del modello AI...",
-    "aiIndexing": "Indicizzazione... {{indexed}} / {{total}} ({{pct}}%)",
-    "aiIndexed": "{{indexed}} / {{total}} immagini indicizzate.",
-    "aiCancel": "Annulla",
-    "aiResume": "Riprendi indicizzazione",
-    "aiBuildIndex": "Crea indice",
-    "aiReset": "Reimposta",
-    "aiResetTitle": "Reimposta indice IA",
-    "aiResetDesc": "Questo eliminerà tutti gli embedding delle immagini. Dovrai re-indicizzare per usare la ricerca IA.",
-    "aiResetConfirm": "Reimposta indice"
-  },
-  "indexing": {
-    "title": "Indicizzazione selettiva con IA",
-    "description": "Seleziona mittenti o gruppi da indicizzare con l'IA. Verranno elaborate solo le immagini degli elementi selezionati.",
-    "indexSender": "Indicizza con IA",
-    "indexGroup": "Indicizza con IA",
-    "selectedCount": "~{{count}} immagini da indicizzare",
-    "indexed": "indicizzato",
-    "noImages": "nessuna immagine",
-    "unindexedCount": "{{count}} da indicizzare",
-    "noSelection": "Nessun elemento selezionato",
-    "startButton": "Avvia indicizzazione",
-    "inProgress": "Indicizzazione in corso..."
+    "media": "media"
   },
   "notFound": {
     "title": "404",
@@ -158,7 +125,6 @@
   "tutorial": {
     "title": "Come scaricare i tuoi dati",
     "openGuide": "Come ottengo i miei dati?",
-    "close": "Capito",
     "intro": "Segui i passaggi qui sotto per la tua piattaforma per scaricare la tua esportazione dati.",
     "tabFacebook": "Facebook",
     "tabMessenger": "Messenger",

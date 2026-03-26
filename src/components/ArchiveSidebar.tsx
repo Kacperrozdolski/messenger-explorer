@@ -40,7 +40,6 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-// Collapsible no longer used — YearRow handles expand/collapse manually
 import {
   ContextMenu,
   ContextMenuTrigger,

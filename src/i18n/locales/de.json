@@ -24,8 +24,7 @@
     "removeSenderConfirm": "Absender entfernen?",
     "removeSenderConfirmDesc": "Alle Medien dieses Absenders werden dauerhaft gelöscht. Ihre Original-Exportdateien bleiben unberührt.",
     "removeConversationConfirm": "Quelle entfernen?",
-    "removeConversationConfirmDesc": "Alle Medien dieser Unterhaltung werden dauerhaft gelöscht. Ihre Original-Exportdateien bleiben unberührt.",
-    "aiPrefix": "KI:"
+    "removeConversationConfirmDesc": "Alle Medien dieser Unterhaltung werden dauerhaft gelöscht. Ihre Original-Exportdateien bleiben unberührt."
   },
   "albums": {
     "addToAlbum": "Zum Album hinzufügen",
@@ -42,7 +41,6 @@
     "color": "Farbe",
     "changeColor": "Farbe ändern",
     "empty": "Noch keine Alben. Rechtsklicken Sie auf ein Foto, um eines zu erstellen.",
-    "emptyAlbum": "Dieses Album ist leer",
     "exportPdf": "Als PDF exportieren",
     "exporting": "Exportiere...",
     "exportDone": "{{count}} Fotos als PDF exportiert",
@@ -52,7 +50,6 @@
   "topbar": {
     "search": "Nachrichten durchsuchen...",
     "searchInMessages": "\"{{query}}\" in Nachrichten suchen",
-    "aiSearch": "KI-Suche \"{{query}}\"",
     "filterByGroup": "Nach Gruppe filtern",
     "filterBySender": "Nach Absender filtern",
     "filterByMediaType": "Medientyp",
@@ -60,8 +57,7 @@
     "items": "{{count}} Elemente",
     "newestFirst": "Neueste zuerst",
     "oldestFirst": "Älteste zuerst",
-    "bySender": "Nach Absender",
-    "aiSearchHint": "Visueller Inhalt"
+    "bySender": "Nach Absender"
   },
   "gallery": {
     "noMatch": "Keine Bilder entsprechen Ihren Filtern",
@@ -76,10 +72,8 @@
     "title": "Chat-Kontext"
   },
   "import": {
-    "description": "Wählen Sie Ihre Datenexport-Ordner oder Zip-Dateien aus, um zu beginnen. Sie können mehrere Quellen gleichzeitig hinzufügen.",
     "importComplete": "Import abgeschlossen!",
     "stats": "{{conversations}} Unterhaltungen, {{media}} Mediendateien, {{senders}} Absender",
-    "detectingFormat": "Format wird erkannt...",
     "selectFolder": "Exportordner auswählen",
     "selectZip": "Zip-Datei auswählen",
     "addAnother": "Weiteren Ordner hinzufügen",
@@ -118,34 +112,7 @@
     "language": "Sprache",
     "languageDesc": "Wählen Sie die Anzeigesprache der Anwendung",
     "conversations": "Unterhaltungen",
-    "media": "Medien",
-    "aiSearch": "KI-Suche",
-    "aiSearchDesc": "Indexieren Sie Ihre Bilder mit KI, um nach visuellen Inhalten zu suchen (z.B. \"Berge\", \"Memes\", \"Sonnenuntergang\").",
-    "aiModelsNotFound": "CLIP-Modelldateien nicht gefunden. Legen Sie clip-visual.onnx, clip-textual.onnx und tokenizer.json im Modellverzeichnis ab.",
-    "aiNotIndexed": "Noch keine Bilder indexiert.",
-    "aiLoadingModel": "KI-Modell wird geladen...",
-    "aiIndexing": "Indexierung... {{indexed}} / {{total}} ({{pct}}%)",
-    "aiIndexed": "{{indexed}} / {{total}} Bilder indexiert.",
-    "aiCancel": "Abbrechen",
-    "aiResume": "Indexierung fortsetzen",
-    "aiBuildIndex": "Index erstellen",
-    "aiReset": "Zurücksetzen",
-    "aiResetTitle": "KI-Index zurücksetzen",
-    "aiResetDesc": "Alle Bild-Embeddings werden gelöscht. Sie müssen erneut indexieren, um die KI-Suche zu nutzen.",
-    "aiResetConfirm": "Index zurücksetzen"
-  },
-  "indexing": {
-    "title": "Selektive KI-Indexierung",
-    "description": "Wählen Sie Absender oder Gruppen zur KI-Indexierung. Nur Bilder der ausgewählten Elemente werden verarbeitet.",
-    "indexSender": "Mit KI indexieren",
-    "indexGroup": "Mit KI indexieren",
-    "selectedCount": "~{{count}} Bilder zu indexieren",
-    "indexed": "indexiert",
-    "noImages": "keine Bilder",
-    "unindexedCount": "{{count}} zu indexieren",
-    "noSelection": "Keine Elemente ausgewählt",
-    "startButton": "Indexierung starten",
-    "inProgress": "Indexierung läuft..."
+    "media": "Medien"
   },
   "notFound": {
     "title": "404",
@@ -158,7 +125,6 @@
   "tutorial": {
     "title": "So laden Sie Ihre Daten herunter",
     "openGuide": "Wie bekomme ich meine Daten?",
-    "close": "Verstanden",
     "intro": "Befolgen Sie die folgenden Schritte für Ihre Plattform, um Ihren Datenexport herunterzuladen.",
     "tabFacebook": "Facebook",
     "tabMessenger": "Messenger",

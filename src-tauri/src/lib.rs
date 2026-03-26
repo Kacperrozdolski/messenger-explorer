@@ -4,8 +4,6 @@ mod pdf_export;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 use rusqlite::Connection;
 use tauri::Manager;
 
@@ -513,11 +511,18 @@ fn cmd_show_in_folder(path: String) -> Result<(), String> {
         return Err(format!("File does not exist: {}", path));
     }
 
+    // Security: canonicalize to resolve symlinks / traversal before passing to shell
+    let canonical = std::fs::canonicalize(&file_path)
+        .map_err(|e| format!("Cannot resolve path: {}", e))?;
+
     #[cfg(target_os = "windows")]
     {
-        let path_str = file_path.to_string_lossy().replace('/', "\\");
+        // Use OsString to build the /select, argument without shell interpretation.
+        // explorer.exe requires /select,<path> as a single token.
+        let canonical_str = canonical.to_string_lossy().replace('/', "\\");
+        let select_arg = format!("/select,{}", canonical_str);
         std::process::Command::new("explorer")
-            .raw_arg(format!("/select,\"{}\"", path_str))
+            .arg(&select_arg)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -526,14 +531,14 @@ fn cmd_show_in_folder(path: String) -> Result<(), String> {
     {
         std::process::Command::new("open")
             .arg("-R")
-            .arg(&file_path)
+            .arg(&canonical)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
 
     #[cfg(target_os = "linux")]
     {
-        if let Some(parent) = file_path.parent() {
+        if let Some(parent) = canonical.parent() {
             std::process::Command::new("xdg-open")
                 .arg(parent)
                 .spawn()
@@ -662,8 +667,35 @@ pub fn run() {
                     .unwrap();
             }
 
-            let mime = guess_mime(&file_path);
-            let file_size = match std::fs::metadata(&file_path) {
+            // Security: canonicalize and reject path traversal attempts.
+            // Only allow known media file extensions to prevent arbitrary file reads.
+            let canonical = match std::fs::canonicalize(&file_path) {
+                Ok(p) => p,
+                Err(_) => {
+                    return tauri::http::Response::builder()
+                        .status(403)
+                        .body(Vec::new())
+                        .unwrap();
+                }
+            };
+            let allowed_ext = canonical
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.to_lowercase())
+                .map(|e| matches!(
+                    e.as_str(),
+                    "jpg" | "jpeg" | "png" | "gif" | "webp" | "bmp" | "mp4" | "webm" | "mov" | "avi"
+                ))
+                .unwrap_or(false);
+            if !allowed_ext {
+                return tauri::http::Response::builder()
+                    .status(403)
+                    .body(Vec::new())
+                    .unwrap();
+            }
+
+            let mime = guess_mime(&canonical);
+            let file_size = match std::fs::metadata(&canonical) {
                 Ok(m) => m.len(),
                 Err(_) => {
                     return tauri::http::Response::builder()
@@ -681,7 +713,7 @@ pub fn run() {
                     let length = end - start + 1;
 
                     use std::io::{Read, Seek, SeekFrom};
-                    let mut file = match std::fs::File::open(&file_path) {
+                    let mut file = match std::fs::File::open(&canonical) {
                         Ok(f) => f,
                         Err(_) => {
                             return tauri::http::Response::builder()
@@ -700,18 +732,20 @@ pub fn run() {
                         .header("Content-Length", length.to_string())
                         .header("Content-Range", format!("bytes {}-{}/{}", start, end, file_size))
                         .header("Accept-Ranges", "bytes")
+                        .header("X-Content-Type-Options", "nosniff")
                         .body(buf)
                         .unwrap();
                 }
             }
 
             // Full read for non-range requests (images, gifs — typically small)
-            match std::fs::read(&file_path) {
+            match std::fs::read(&canonical) {
                 Ok(bytes) => tauri::http::Response::builder()
                     .status(200)
                     .header("Content-Type", mime)
                     .header("Content-Length", file_size.to_string())
                     .header("Accept-Ranges", "bytes")
+                    .header("X-Content-Type-Options", "nosniff")
                     .body(bytes)
                     .unwrap(),
                 Err(_) => tauri::http::Response::builder()

@@ -24,8 +24,7 @@
     "removeSenderConfirm": "移除发送者？",
     "removeSenderConfirmDesc": "该发送者的所有媒体将被永久删除。您的原始导出文件不会受到影响。",
     "removeConversationConfirm": "移除来源？",
-    "removeConversationConfirmDesc": "该对话的所有媒体将被永久删除。您的原始导出文件不会受到影响。",
-    "aiPrefix": "AI:"
+    "removeConversationConfirmDesc": "该对话的所有媒体将被永久删除。您的原始导出文件不会受到影响。"
   },
   "albums": {
     "addToAlbum": "添加到相册",
@@ -42,7 +41,6 @@
     "color": "颜色",
     "changeColor": "更改颜色",
     "empty": "暂无相册。右键点击照片以创建相册。",
-    "emptyAlbum": "此相册为空",
     "exportPdf": "导出为PDF",
     "exporting": "正在导出...",
     "exportDone": "已导出 {{count}} 张照片为PDF",
@@ -52,7 +50,6 @@
   "topbar": {
     "search": "搜索消息...",
     "searchInMessages": "在消息中搜索\"{{query}}\"",
-    "aiSearch": "AI搜索\"{{query}}\"",
     "filterByGroup": "按群组筛选",
     "filterBySender": "按发送者筛选",
     "filterByMediaType": "媒体类型",
@@ -60,8 +57,7 @@
     "items": "{{count}} 项",
     "newestFirst": "最新优先",
     "oldestFirst": "最早优先",
-    "bySender": "按发送者",
-    "aiSearchHint": "视觉内容"
+    "bySender": "按发送者"
   },
   "gallery": {
     "noMatch": "没有匹配的图片",
@@ -76,10 +72,8 @@
     "title": "聊天上下文"
   },
   "import": {
-    "description": "选择您的数据导出文件夹或 zip 文件以开始。您可以一次添加多个来源。",
     "importComplete": "导入完成！",
     "stats": "{{conversations}} 个对话，{{media}} 个媒体文件，{{senders}} 个发送者",
-    "detectingFormat": "正在检测格式...",
     "selectFolder": "选择导出文件夹",
     "selectZip": "选择Zip文件",
     "addAnother": "添加另一个文件夹",
@@ -118,34 +112,7 @@
     "language": "语言",
     "languageDesc": "选择应用程序的显示语言",
     "conversations": "对话",
-    "media": "媒体",
-    "aiSearch": "AI搜索",
-    "aiSearchDesc": "使用AI索引您的图像，按视觉内容搜索（如「山脉」、「表情包」、「日落」）。",
-    "aiModelsNotFound": "未找到CLIP模型文件。请将clip-visual.onnx、clip-textual.onnx和tokenizer.json放入models目录。",
-    "aiNotIndexed": "尚未索引任何图像。",
-    "aiLoadingModel": "正在加载AI模型...",
-    "aiIndexing": "索引中... {{indexed}} / {{total}} ({{pct}}%)",
-    "aiIndexed": "{{indexed}} / {{total}} 张图像已索引。",
-    "aiCancel": "取消",
-    "aiResume": "继续索引",
-    "aiBuildIndex": "创建索引",
-    "aiReset": "重置",
-    "aiResetTitle": "重置AI索引",
-    "aiResetDesc": "这将删除所有图像嵌入。您需要重新索引才能使用AI搜索。",
-    "aiResetConfirm": "重置索引"
-  },
-  "indexing": {
-    "title": "选择性AI索引",
-    "description": "选择要使用AI索引的发送者或群组。仅处理所选项目的图像。",
-    "indexSender": "使用AI索引",
-    "indexGroup": "使用AI索引",
-    "selectedCount": "~{{count}} 张图像待索引",
-    "indexed": "已索引",
-    "noImages": "无图像",
-    "unindexedCount": "{{count}} 待索引",
-    "noSelection": "未选择任何项目",
-    "startButton": "开始索引",
-    "inProgress": "索引进行中..."
+    "media": "媒体"
   },
   "notFound": {
     "title": "404",
@@ -158,7 +125,6 @@
   "tutorial": {
     "title": "如何下载你的数据",
     "openGuide": "如何获取我的数据？",
-    "close": "知道了",
     "intro": "请根据你使用的平台，按照以下步骤下载你的数据导出。",
     "tabFacebook": "Facebook",
     "tabMessenger": "Messenger",
