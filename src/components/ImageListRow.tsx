@@ -45,6 +45,7 @@ const ImageListRow = ({ image, onClick, albums, activeAlbumId }: ImageListRowPro
             src={image.src}
             alt={t("gallery.photoBy", { sender: image.sender })}
             className="h-12 w-12 rounded object-cover shrink-0"
+            loading="lazy"
           />
         )}
         <div className="flex-1 min-w-0">

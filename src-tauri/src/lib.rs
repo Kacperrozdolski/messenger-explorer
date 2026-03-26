@@ -1,20 +1,17 @@
-mod clip;
 mod db;
 mod parser;
 mod pdf_export;
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 use rusqlite::Connection;
-use tauri::{Emitter, Manager};
+use tauri::Manager;
 
 use db::queries::{
     self, AlbumInfo, ConversationInfo, FilterFacets, ImportStatus, MediaContext, MediaFilters,
     MediaItem, MediaPage, MonthPageFilters, SenderInfo, SourceInfo, TimelineEntry,
-    UnindexedCounts,
 };
 use db::writer::{self as db_writer, ImportStats};
 
@@ -22,26 +19,6 @@ use db::writer::{self as db_writer, ImportStats};
 struct DbState {
     db_path: PathBuf,
     conn: Mutex<Connection>,
-}
-
-/// Managed state for CLIP AI search.
-struct ClipState {
-    models_dir: PathBuf,
-    model: Mutex<Option<clip::ClipModel>>,
-    indexing: AtomicBool,
-    cancel_flag: AtomicBool,
-    /// Live progress counters updated by the indexing thread.
-    progress_indexed: AtomicU64,
-    progress_total: AtomicU64,
-    /// Which sender/conversation IDs are being indexed (empty = all).
-    /// Stored so the frontend can restore the selection after navigating away.
-    indexing_scope: Mutex<IndexingScope>,
-}
-
-#[derive(Clone, Default, serde::Serialize)]
-struct IndexingScope {
-    sender_ids: Vec<i64>,
-    conversation_ids: Vec<i64>,
 }
 
 /// Decode percent-encoded URL path back to a filesystem path.
@@ -528,406 +505,6 @@ struct ExportPdfResult {
     skipped_count: usize,
 }
 
-// --- AI Search commands ---
-
-#[derive(Clone, serde::Serialize)]
-struct IndexingProgress {
-    indexed: u64,
-    total: u64,
-    is_running: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<String>,
-    /// Optional status message (e.g. "loading_model")
-    #[serde(skip_serializing_if = "Option::is_none")]
-    status: Option<String>,
-}
-
-#[tauri::command]
-fn cmd_get_indexing_status(
-    db_state: tauri::State<'_, DbState>,
-    clip_state: tauri::State<'_, ClipState>,
-) -> Result<IndexingProgress, String> {
-    let is_running = clip_state.indexing.load(Ordering::Relaxed);
-
-    // While indexing is running, return the live progress from the indexing thread
-    // instead of querying the DB (which would show the full unfiltered counts).
-    if is_running {
-        return Ok(IndexingProgress {
-            indexed: clip_state.progress_indexed.load(Ordering::Relaxed),
-            total: clip_state.progress_total.load(Ordering::Relaxed),
-            is_running: true,
-            error: None,
-            status: None,
-        });
-    }
-
-    let conn = db_state.conn.lock().map_err(|e| e.to_string())?;
-    let indexed: u64 = conn
-        .query_row("SELECT COUNT(*) FROM media_embeddings", [], |row| row.get(0))
-        .unwrap_or(0);
-    let total: u64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM media WHERE file_type = 'image'",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
-
-    Ok(IndexingProgress {
-        indexed,
-        total,
-        is_running: false,
-        error: None,
-        status: None,
-    })
-}
-
-#[tauri::command]
-fn cmd_has_clip_models(clip_state: tauri::State<'_, ClipState>) -> Result<bool, String> {
-    let dir = &clip_state.models_dir;
-    let found = dir.join("clip-visual.onnx").exists()
-        && dir.join("clip-textual.onnx").exists()
-        && dir.join("tokenizer.json").exists()
-        && dir.join("dense.safetensors").exists()
-        && dir.join("onnxruntime.dll").exists();
-    Ok(found)
-}
-
-#[tauri::command]
-fn cmd_start_indexing(
-    app_handle: tauri::AppHandle,
-    db_state: tauri::State<'_, DbState>,
-    clip_state: tauri::State<'_, ClipState>,
-) -> Result<(), String> {
-    if clip_state.indexing.load(Ordering::Relaxed) {
-        return Err("Indexing is already running".to_string());
-    }
-
-    // Pre-initialize ORT on the calling thread
-    clip::init_ort(&clip_state.models_dir)?;
-
-    clip_state.indexing.store(true, Ordering::Relaxed);
-    clip_state.cancel_flag.store(false, Ordering::Relaxed);
-    clip_state.progress_indexed.store(0, Ordering::Relaxed);
-    clip_state.progress_total.store(0, Ordering::Relaxed);
-    {
-        let mut scope = clip_state.indexing_scope.lock().map_err(|e| e.to_string())?;
-        *scope = IndexingScope::default(); // empty = index all
-    }
-
-    let db_path = db_state.db_path.clone();
-    let models_dir = clip_state.models_dir.clone();
-    let app = app_handle.clone();
-
-    std::thread::spawn(move || {
-        // Emit "loading model" status so the UI shows something useful
-        let _ = app.emit(
-            "indexing-progress",
-            IndexingProgress {
-                indexed: 0,
-                total: 0,
-                is_running: true,
-                error: None,
-                status: Some("loading_model".to_string()),
-            },
-        );
-
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<u64, String> {
-            // Open a separate DB connection for the indexing thread
-            let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
-            conn.execute_batch("PRAGMA foreign_keys = OFF;")
-                .map_err(|e| e.to_string())?;
-
-            // Load model in this thread (ORT already initialized)
-            log::info!("Loading CLIP model...");
-            let mut model = clip::ClipModel::load(&models_dir)?;
-            log::info!("CLIP model loaded in indexing thread");
-
-            let clip_state = app.state::<ClipState>();
-            let cancel_flag = &clip_state.cancel_flag;
-
-            let app_for_progress = app.clone();
-            let count = clip::run_indexing(&mut model, &conn, cancel_flag, |indexed, total| {
-                let cs = app_for_progress.state::<ClipState>();
-                cs.progress_indexed.store(indexed, Ordering::Relaxed);
-                cs.progress_total.store(total, Ordering::Relaxed);
-                let _ = app_for_progress.emit(
-                    "indexing-progress",
-                    IndexingProgress {
-                        indexed,
-                        total,
-                        is_running: true,
-                        error: None,
-                        status: None,
-                    },
-                );
-            }, &[], &[])?;
-
-            Ok(count)
-        }));
-
-        // Always reset indexing flag, even if the thread panicked
-        let clip_state = app.state::<ClipState>();
-        clip_state.indexing.store(false, Ordering::Relaxed);
-
-        match result {
-            Ok(Ok(count)) => {
-                log::info!("Indexing complete: {} images processed", count);
-                let _ = app.emit(
-                    "indexing-progress",
-                    IndexingProgress {
-                        indexed: count,
-                        total: count,
-                        is_running: false,
-                        error: None,
-                        status: None,
-                    },
-                );
-            }
-            Ok(Err(e)) => {
-                log::error!("Indexing failed: {}", e);
-                let _ = app.emit(
-                    "indexing-progress",
-                    IndexingProgress {
-                        indexed: 0,
-                        total: 0,
-                        is_running: false,
-                        error: Some(e),
-                        status: None,
-                    },
-                );
-            }
-            Err(panic_err) => {
-                let msg = if let Some(s) = panic_err.downcast_ref::<String>() {
-                    format!("Indexing thread panicked: {}", s)
-                } else if let Some(s) = panic_err.downcast_ref::<&str>() {
-                    format!("Indexing thread panicked: {}", s)
-                } else {
-                    "Indexing thread panicked (unknown error)".to_string()
-                };
-                log::error!("{}", msg);
-                let _ = app.emit(
-                    "indexing-progress",
-                    IndexingProgress {
-                        indexed: 0,
-                        total: 0,
-                        is_running: false,
-                        error: Some(msg),
-                        status: None,
-                    },
-                );
-            }
-        }
-    });
-
-    Ok(())
-}
-
-#[tauri::command]
-fn cmd_cancel_indexing(clip_state: tauri::State<'_, ClipState>) -> Result<(), String> {
-    clip_state.cancel_flag.store(true, Ordering::Relaxed);
-    Ok(())
-}
-
-#[tauri::command]
-fn cmd_get_unindexed_counts(db_state: tauri::State<'_, DbState>) -> Result<UnindexedCounts, String> {
-    let conn = db_state.conn.lock().map_err(|e| e.to_string())?;
-    queries::get_unindexed_counts(&conn)
-}
-
-#[tauri::command]
-fn cmd_get_indexing_scope(clip_state: tauri::State<'_, ClipState>) -> Result<IndexingScope, String> {
-    let scope = clip_state.indexing_scope.lock().map_err(|e| e.to_string())?;
-    Ok(scope.clone())
-}
-
-#[tauri::command]
-fn cmd_start_indexing_filtered(
-    app_handle: tauri::AppHandle,
-    db_state: tauri::State<'_, DbState>,
-    clip_state: tauri::State<'_, ClipState>,
-    sender_ids: Vec<i64>,
-    conversation_ids: Vec<i64>,
-) -> Result<(), String> {
-    if clip_state.indexing.load(Ordering::Relaxed) {
-        return Err("Indexing is already running".to_string());
-    }
-
-    clip::init_ort(&clip_state.models_dir)?;
-
-    clip_state.indexing.store(true, Ordering::Relaxed);
-    clip_state.cancel_flag.store(false, Ordering::Relaxed);
-    clip_state.progress_indexed.store(0, Ordering::Relaxed);
-    clip_state.progress_total.store(0, Ordering::Relaxed);
-    {
-        let mut scope = clip_state.indexing_scope.lock().map_err(|e| e.to_string())?;
-        *scope = IndexingScope {
-            sender_ids: sender_ids.clone(),
-            conversation_ids: conversation_ids.clone(),
-        };
-    }
-
-    let db_path = db_state.db_path.clone();
-    let models_dir = clip_state.models_dir.clone();
-    let app = app_handle.clone();
-
-    std::thread::spawn(move || {
-        // Emit "loading model" status so the UI shows something useful
-        let _ = app.emit(
-            "indexing-progress",
-            IndexingProgress {
-                indexed: 0,
-                total: 0,
-                is_running: true,
-                error: None,
-                status: Some("loading_model".to_string()),
-            },
-        );
-
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<u64, String> {
-            let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
-            conn.execute_batch("PRAGMA foreign_keys = OFF;")
-                .map_err(|e| e.to_string())?;
-
-            log::info!("Loading CLIP model for filtered indexing...");
-            let mut model = clip::ClipModel::load(&models_dir)?;
-            log::info!(
-                "CLIP model loaded for filtered indexing ({} senders, {} conversations)",
-                sender_ids.len(),
-                conversation_ids.len()
-            );
-
-            let clip_state = app.state::<ClipState>();
-            let cancel_flag = &clip_state.cancel_flag;
-
-            let app_for_progress = app.clone();
-            let count = clip::run_indexing(
-                &mut model,
-                &conn,
-                cancel_flag,
-                |indexed, total| {
-                    let cs = app_for_progress.state::<ClipState>();
-                    cs.progress_indexed.store(indexed, Ordering::Relaxed);
-                    cs.progress_total.store(total, Ordering::Relaxed);
-                    let _ = app_for_progress.emit(
-                        "indexing-progress",
-                        IndexingProgress {
-                            indexed,
-                            total,
-                            is_running: true,
-                            error: None,
-                            status: None,
-                        },
-                    );
-                },
-                &sender_ids,
-                &conversation_ids,
-            )?;
-
-            Ok(count)
-        }));
-
-        // Always reset indexing flag, even if the thread panicked
-        let clip_state = app.state::<ClipState>();
-        clip_state.indexing.store(false, Ordering::Relaxed);
-
-        match result {
-            Ok(Ok(count)) => {
-                log::info!("Filtered indexing complete: {} images processed", count);
-                let _ = app.emit(
-                    "indexing-progress",
-                    IndexingProgress {
-                        indexed: count,
-                        total: count,
-                        is_running: false,
-                        error: None,
-                        status: None,
-                    },
-                );
-            }
-            Ok(Err(e)) => {
-                log::error!("Filtered indexing failed: {}", e);
-                let _ = app.emit(
-                    "indexing-progress",
-                    IndexingProgress {
-                        indexed: 0,
-                        total: 0,
-                        is_running: false,
-                        error: Some(e),
-                        status: None,
-                    },
-                );
-            }
-            Err(panic_err) => {
-                let msg = if let Some(s) = panic_err.downcast_ref::<String>() {
-                    format!("Indexing thread panicked: {}", s)
-                } else if let Some(s) = panic_err.downcast_ref::<&str>() {
-                    format!("Indexing thread panicked: {}", s)
-                } else {
-                    "Indexing thread panicked (unknown error)".to_string()
-                };
-                log::error!("{}", msg);
-                let _ = app.emit(
-                    "indexing-progress",
-                    IndexingProgress {
-                        indexed: 0,
-                        total: 0,
-                        is_running: false,
-                        error: Some(msg),
-                        status: None,
-                    },
-                );
-            }
-        }
-    });
-
-    Ok(())
-}
-
-#[derive(serde::Serialize)]
-struct AiSearchResult {
-    media_id: i64,
-    score: f32,
-}
-
-#[tauri::command]
-fn cmd_ai_search(
-    db_state: tauri::State<'_, DbState>,
-    clip_state: tauri::State<'_, ClipState>,
-    query: String,
-    limit: Option<usize>,
-) -> Result<Vec<AiSearchResult>, String> {
-    let limit = limit.unwrap_or(100);
-
-    // Load model if not loaded yet
-    {
-        let mut model_guard = clip_state.model.lock().map_err(|e| e.to_string())?;
-        if model_guard.is_none() {
-            let m = clip::ClipModel::load(&clip_state.models_dir)?;
-            *model_guard = Some(m);
-        }
-    }
-
-    let mut model_guard = clip_state.model.lock().map_err(|e| e.to_string())?;
-    let model = model_guard.as_mut().ok_or("CLIP model not loaded")?;
-
-    let conn = db_state.conn.lock().map_err(|e| e.to_string())?;
-    let results = clip::search_by_text(model, &conn, &query, limit)?;
-
-    Ok(results
-        .into_iter()
-        .map(|(media_id, score)| AiSearchResult { media_id, score })
-        .collect())
-}
-
-#[tauri::command]
-fn cmd_clear_embeddings(db_state: tauri::State<'_, DbState>) -> Result<(), String> {
-    let conn = db_state.conn.lock().map_err(|e| e.to_string())?;
-    conn.execute_batch("DELETE FROM media_embeddings;")
-        .map_err(|e| e.to_string())?;
-    conn.execute_batch("VACUUM;").map_err(|e| e.to_string())?;
-    Ok(())
-}
 
 #[tauri::command]
 fn cmd_show_in_folder(path: String) -> Result<(), String> {
@@ -1164,9 +741,10 @@ pub fn run() {
                 PRAGMA foreign_keys = OFF;
                 PRAGMA journal_mode = WAL;
                 PRAGMA synchronous = NORMAL;
-                PRAGMA cache_size = -16000;
+                PRAGMA cache_size = -32000;
                 PRAGMA mmap_size = 268435456;
                 PRAGMA temp_store = MEMORY;
+                PRAGMA optimize;
             ").expect("Failed to set pragmas");
             db::schema::initialize(&conn)
                 .expect("Failed to initialize database schema");
@@ -1174,42 +752,6 @@ pub fn run() {
             app.manage(DbState {
                 db_path,
                 conn: Mutex::new(conn),
-            });
-
-            // Initialize CLIP state
-            let models_dir = {
-                let resource = app
-                    .path()
-                    .resource_dir()
-                    .unwrap_or_else(|_| app_data.clone())
-                    .join("models");
-                // Check all required files exist at resource path
-                let has_all = resource.join("clip-visual.onnx").exists()
-                    && resource.join("clip-textual.onnx").exists()
-                    && resource.join("tokenizer.json").exists()
-                    && resource.join("onnxruntime.dll").exists();
-                if has_all {
-                    resource
-                } else {
-                    // Dev mode fallback: models live next to src/
-                    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("models")
-                }
-            };
-            // Set ORT_DYLIB_PATH early so ort can find the DLL
-            let ort_dll = models_dir.join("onnxruntime.dll");
-            if ort_dll.exists() {
-                std::env::set_var("ORT_DYLIB_PATH", &ort_dll);
-                eprintln!("[SETUP] ORT_DYLIB_PATH set to {}", ort_dll.display());
-            }
-
-            app.manage(ClipState {
-                models_dir,
-                model: Mutex::new(None),
-                indexing: AtomicBool::new(false),
-                cancel_flag: AtomicBool::new(false),
-                progress_indexed: AtomicU64::new(0),
-                progress_total: AtomicU64::new(0),
-                indexing_scope: Mutex::new(IndexingScope::default()),
             });
 
             Ok(())
@@ -1248,15 +790,6 @@ pub fn run() {
             cmd_export_album_pdf,
             cmd_export_album_folder,
             cmd_show_in_folder,
-            cmd_get_indexing_status,
-            cmd_has_clip_models,
-            cmd_start_indexing,
-            cmd_start_indexing_filtered,
-            cmd_cancel_indexing,
-            cmd_get_unindexed_counts,
-            cmd_get_indexing_scope,
-            cmd_ai_search,
-            cmd_clear_embeddings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

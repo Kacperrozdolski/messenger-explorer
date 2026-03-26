@@ -8,7 +8,12 @@
       "Bash(cd \"C:\\\\Users\\\\Kacper\\\\Documents\\\\explorer\\\\tauri\\\\src-tauri\" && cargo check 2>&1)",
       "Bash(bun run:*)",
       "Bash(npm run:*)",
-      "Bash(cd \"C:/Users/Kacper/Documents/_explorer/tauri/src-tauri\" && cargo clean)"
+      "Bash(cd \"C:/Users/Kacper/Documents/_explorer/tauri/src-tauri\" && cargo clean)",
+      "Bash(npx tsc:*)",
+      "Bash(cargo check:*)",
+      "Bash(grep -r \"infinite\\\\|pagination\\\\|scroll\\\\|virtualiz\" /c/Users/Kacper/Documents/_explorer/tauri --include=*.ts --include=*.tsx -i)",
+      "Bash(grep -n \"onChange=\" src/components/*.tsx)",
+      "Bash(grep -n \"new.*=\" src/components/*.tsx)"
     ]
   }
 }

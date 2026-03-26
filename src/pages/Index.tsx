@@ -7,7 +7,6 @@ import TopBar from "@/components/TopBar";
 import Gallery from "@/components/Gallery";
 import ContextModal from "@/components/ContextModal";
 import ImportDialog from "@/components/ImportDialog";
-import SelectiveIndexingDialog from "@/components/SelectiveIndexingDialog";
 import * as api from "@/lib/api";
 import type {
   SortOption,
@@ -35,53 +34,11 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<ImageEntry | null>(null);
-  const [aiSearchQuery, setAiSearchQuery] = useState<string | null>(null);
-  const [aiSearchResults, setAiSearchResults] = useState<ImageEntry[] | null>(null);
-
-  // Selective AI indexing dialog
-  const [indexingDialogOpen, setIndexingDialogOpen] = useState(false);
-  const [indexingInitialSenderIds, setIndexingInitialSenderIds] = useState<number[]>([]);
-  const [indexingInitialConvIds, setIndexingInitialConvIds] = useState<number[]>([]);
-
-  const handleOpenIndexing = useCallback((senderIds: number[] = [], convIds: number[] = []) => {
-    setIndexingInitialSenderIds(senderIds);
-    setIndexingInitialConvIds(convIds);
-    setIndexingDialogOpen(true);
-  }, []);
-
-  const handleAiSearch = useCallback(async (query: string) => {
-    setAiSearchQuery(query);
-    setSearch("");
-    try {
-      const results = await api.aiSearch(query, 200);
-      const mediaIds = results.map((r) => r.media_id);
-      if (mediaIds.length === 0) {
-        setAiSearchResults([]);
-        return;
-      }
-      // Fetch only the specific media items by ID, preserving AI ranking order
-      const mediaItems = await api.getMediaByIds(mediaIds);
-      const mediaMap = new Map(mediaItems.map((m) => [m.id, m]));
-      const ranked = mediaIds
-        .map((id) => mediaMap.get(id))
-        .filter((m): m is ImageEntry => m !== undefined);
-      setAiSearchResults(ranked);
-    } catch (e) {
-      console.error("AI search failed:", e);
-      setAiSearchResults([]);
-    }
-  }, []);
-
-  const handleClearAiSearch = useCallback(() => {
-    setAiSearchQuery(null);
-    setAiSearchResults(null);
-  }, []);
 
   const handleSearchCommit = useCallback((query: string) => {
     setCommittedSearch(query);
     setSearch("");
-    handleClearAiSearch();
-  }, [handleClearAiSearch]);
+  }, []);
 
   const handleClearSearch = useCallback(() => {
     setCommittedSearch("");
@@ -99,23 +56,6 @@ const Index = () => {
   });
 
   const hasData = status?.has_data ?? false;
-
-  // Check if AI search is available (has indexed images)
-  const { data: indexingStatus } = useQuery({
-    queryKey: ["indexing-status"],
-    queryFn: api.getIndexingStatus,
-    enabled: hasData,
-    staleTime: 5000,
-  });
-
-  const { data: hasClipModels } = useQuery({
-    queryKey: ["has-clip-models"],
-    queryFn: api.hasClipModels,
-    enabled: hasData,
-    staleTime: Infinity,
-  });
-
-  const aiSearchAvailable = (indexingStatus?.indexed ?? 0) > 0;
 
   // Shared filter params
   const filterParams = useMemo(() => ({
@@ -144,109 +84,30 @@ const Index = () => {
     staleTime: 2_000,
   });
 
-  // Client-side filtering & facets for AI search results
-  const aiFilteredResults = useMemo(() => {
-    if (!aiSearchResults) return null;
-    return aiSearchResults.filter((m) => {
-      if (selectedChatId != null && m.chatId !== selectedChatId) return false;
-      if (selectedSenderId != null && m.senderId !== selectedSenderId) return false;
-      if (fileType !== "all" && m.fileType !== fileType) return false;
-      if (selectedMonth != null) {
-        const d = new Date(m.timestamp);
-        const y = d.getUTCFullYear().toString();
-        const ym = `${y}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-        if (selectedMonth.length === 4 ? y !== selectedMonth : ym !== selectedMonth) return false;
-      }
-      return true;
-    });
-  }, [aiSearchResults, selectedChatId, selectedSenderId, fileType, selectedMonth]);
-
-  const aiFacets = useMemo(() => {
-    if (!aiSearchResults) return null;
-    // Compute facets from the full AI results (not filtered by the dimension being faceted)
-    const convMap = new Map<number, { name: string; type: string; count: number }>();
-    const senderMap = new Map<number, { name: string; count: number }>();
-    const monthMap = new Map<string, number>();
-    const ftMap: Record<string, number> = { image: 0, video: 0, gif: 0 };
-
-    // For facets, apply all filters EXCEPT the one being faceted (like the backend does)
-    const applyFilters = (item: ImageEntry, exclude: string) => {
-      if (exclude !== "conversation" && selectedChatId != null && item.chatId !== selectedChatId) return false;
-      if (exclude !== "sender" && selectedSenderId != null && item.senderId !== selectedSenderId) return false;
-      if (exclude !== "fileType" && fileType !== "all" && item.fileType !== fileType) return false;
-      if (exclude !== "month" && selectedMonth != null) {
-        const d = new Date(item.timestamp);
-        const y = d.getUTCFullYear().toString();
-        const ym = `${y}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-        if (selectedMonth.length === 4 ? y !== selectedMonth : ym !== selectedMonth) return false;
-      }
-      return true;
-    };
-
-    for (const m of aiSearchResults) {
-      if (applyFilters(m, "conversation")) {
-        const prev = convMap.get(m.chatId);
-        convMap.set(m.chatId, { name: m.chat, type: m.chatType, count: (prev?.count ?? 0) + 1 });
-      }
-      if (applyFilters(m, "sender")) {
-        const prev = senderMap.get(m.senderId);
-        senderMap.set(m.senderId, { name: m.sender, count: (prev?.count ?? 0) + 1 });
-      }
-      if (applyFilters(m, "month")) {
-        const d = new Date(m.timestamp);
-        const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-        monthMap.set(ym, (monthMap.get(ym) ?? 0) + 1);
-      }
-      if (applyFilters(m, "fileType")) {
-        ftMap[m.fileType] = (ftMap[m.fileType] ?? 0) + 1;
-      }
-    }
-
-    return { convMap, senderMap, monthMap, ftMap };
-  }, [aiSearchResults, selectedChatId, selectedSenderId, fileType, selectedMonth]);
-
   const conversations = useMemo(() => {
-    if (aiFacets) {
-      return Array.from(aiFacets.convMap.entries())
-        .map(([id, { name, type, count }]) => ({ id, name, type: type as "group" | "dm", mediaCount: count }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-    }
     return (facets?.conversations ?? []).map((c) => ({
       id: c.id,
       name: c.title,
       type: c.chat_type as "group" | "dm",
       mediaCount: c.media_count,
     }));
-  }, [facets?.conversations, aiFacets]);
+  }, [facets?.conversations]);
 
   const senders = useMemo(() => {
-    if (aiFacets) {
-      return Array.from(aiFacets.senderMap.entries())
-        .map(([id, { name, count }]) => ({ id, name, mediaCount: count }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-    }
     return (facets?.senders ?? []).map((s) => ({
       id: s.id,
       name: s.name,
       mediaCount: s.media_count,
     }));
-  }, [facets?.senders, aiFacets]);
+  }, [facets?.senders]);
 
   const timeline = useMemo(() => {
-    if (aiFacets) {
-      return Array.from(aiFacets.monthMap.entries())
-        .map(([month_key, count]) => ({ label: month_key, month_key, count }))
-        .sort((a, b) => b.month_key.localeCompare(a.month_key));
-    }
     return facets?.timeline ?? [];
-  }, [facets?.timeline, aiFacets]);
+  }, [facets?.timeline]);
 
   const fileTypeCounts: FileTypeCounts | null = useMemo(() => {
-    if (aiFacets) {
-      return { image: aiFacets.ftMap.image ?? 0, video: aiFacets.ftMap.video ?? 0, gif: aiFacets.ftMap.gif ?? 0 };
-    }
     return facets?.file_type_counts ?? null;
-  }, [aiFacets, facets?.file_type_counts]);
+  }, [facets?.file_type_counts]);
 
   const { data: albums = [] } = useQuery({
     queryKey: ["albums"],
@@ -361,7 +222,6 @@ const Index = () => {
     queryClient.invalidateQueries({ queryKey: ["media-month"] });
     queryClient.invalidateQueries({ queryKey: ["filter-facets"] });
     queryClient.invalidateQueries({ queryKey: ["albums"] });
-    queryClient.invalidateQueries({ queryKey: ["indexing-status"] });
   };
 
   if (statusLoading) {
@@ -396,9 +256,6 @@ const Index = () => {
         onSelectAlbum={setSelectedAlbumId}
         searchQuery={committedSearch}
         onClearSearch={handleClearSearch}
-        aiSearchQuery={aiSearchQuery}
-        onClearAiSearch={handleClearAiSearch}
-        onOpenIndexing={hasClipModels ? handleOpenIndexing : undefined}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -406,15 +263,11 @@ const Index = () => {
           search={search}
           onSearchChange={setSearch}
           onSearchCommit={handleSearchCommit}
-          onAiSearch={handleAiSearch}
-          onClearAiSearch={handleClearAiSearch}
-          aiSearchAvailable={aiSearchAvailable}
-          aiSearchQuery={aiSearchQuery}
           sort={sort}
           onSortChange={setSort}
           view={view}
           onViewChange={setView}
-          resultCount={aiSearchQuery ? (aiFilteredResults?.length ?? 0) : totalCount}
+          resultCount={totalCount}
           conversations={conversations}
           senders={senders}
           onSelectChat={setSelectedChatId}
@@ -422,12 +275,11 @@ const Index = () => {
           onFileTypeChange={setFileType}
           onSelectMonth={setSelectedMonth}
           timelineData={timeline}
-          onOpenIndexing={hasClipModels ? handleOpenIndexing : undefined}
         />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           <Gallery
-            images={aiSearchQuery ? (aiFilteredResults ?? []) : images}
+            images={images}
             view={view}
             onImageClick={setModalImage}
             albums={albums}
@@ -435,6 +287,7 @@ const Index = () => {
             onLoadMore={handleLoadMore}
             hasMore={hasNextPage ?? false}
             isLoadingMore={isFetchingNextPage}
+            scrollContainerRef={scrollRef}
           />
         </div>
       </div>
@@ -442,15 +295,6 @@ const Index = () => {
       {modalImage && (
         <ContextModal image={modalImage} onClose={handleModalClose} />
       )}
-
-      <SelectiveIndexingDialog
-        open={indexingDialogOpen}
-        onOpenChange={setIndexingDialogOpen}
-        conversations={conversations}
-        senders={senders}
-        initialSenderIds={indexingInitialSenderIds}
-        initialConversationIds={indexingInitialConvIds}
-      />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-const CURRENT_SCHEMA_VERSION: i32 = 6;
+const CURRENT_SCHEMA_VERSION: i32 = 8;
 
 /// Initialize the database schema. Creates tables if they don't exist.
 /// Handles migration from old schema versions by recreating tables.
@@ -63,6 +63,27 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         )?;
     }
 
+    if version >= 6 && version < 7 {
+        // v6 -> v7: remove AI search embeddings table
+        conn.execute_batch(
+            "DROP TABLE IF EXISTS media_embeddings;"
+        )?;
+    }
+
+    if version >= 7 && version < 8 {
+        // v7 -> v8: add normalized search columns + missing indexes
+        conn.execute_batch(
+            "ALTER TABLE media ADD COLUMN message_content_lower TEXT;
+             UPDATE media SET message_content_lower = LOWER(message_content) WHERE message_content IS NOT NULL;
+             CREATE INDEX IF NOT EXISTS idx_media_content_lower ON media(message_content_lower);
+             ALTER TABLE context_messages ADD COLUMN content_lower TEXT;
+             UPDATE context_messages SET content_lower = LOWER(content);
+             CREATE INDEX IF NOT EXISTS idx_context_content_lower ON context_messages(content_lower);
+             CREATE INDEX IF NOT EXISTS idx_conversations_source_path ON conversations(source_path);
+             CREATE INDEX IF NOT EXISTS idx_media_conv_sender ON media(conversation_id, sender_id);"
+        )?;
+    }
+
     if version < CURRENT_SCHEMA_VERSION {
         // Update version
         if version == 0 {
@@ -113,6 +134,7 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
             timestamp_ms        INTEGER NOT NULL,
             creation_timestamp  INTEGER,
             message_content     TEXT,
+            message_content_lower TEXT,
             year_month          TEXT
         );
 
@@ -121,6 +143,7 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
             media_id     INTEGER NOT NULL REFERENCES media(id),
             sender_id    INTEGER NOT NULL REFERENCES senders(id),
             content      TEXT NOT NULL,
+            content_lower TEXT,
             timestamp_ms INTEGER NOT NULL,
             position     INTEGER NOT NULL
         );
@@ -132,6 +155,10 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         CREATE INDEX IF NOT EXISTS idx_context_media ON context_messages(media_id);
         CREATE INDEX IF NOT EXISTS idx_context_content ON context_messages(media_id, content);
         CREATE INDEX IF NOT EXISTS idx_media_year_month ON media(year_month);
+        CREATE INDEX IF NOT EXISTS idx_media_content_lower ON media(message_content_lower);
+        CREATE INDEX IF NOT EXISTS idx_context_content_lower ON context_messages(content_lower);
+        CREATE INDEX IF NOT EXISTS idx_conversations_source_path ON conversations(source_path);
+        CREATE INDEX IF NOT EXISTS idx_media_conv_sender ON media(conversation_id, sender_id);
 
         CREATE TABLE IF NOT EXISTS albums (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -148,11 +175,6 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         );
         CREATE INDEX IF NOT EXISTS idx_album_media_album ON album_media(album_id);
         CREATE INDEX IF NOT EXISTS idx_album_media_media ON album_media(media_id);
-
-        CREATE TABLE IF NOT EXISTS media_embeddings (
-            media_id  INTEGER PRIMARY KEY REFERENCES media(id),
-            embedding BLOB NOT NULL
-        );
         ",
     )?;
     Ok(())
@@ -162,7 +184,6 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
 pub fn clear_all(conn: &Connection) -> Result<(), rusqlite::Error> {
     conn.execute_batch(
         "
-        DELETE FROM media_embeddings;
         DELETE FROM album_media;
         DELETE FROM albums;
         DELETE FROM context_messages;
@@ -185,7 +206,6 @@ pub fn clear_sender(conn: &Connection, sender_id: i64) -> Result<(), rusqlite::E
     )?;
     conn.execute_batch(
         "DELETE FROM context_messages WHERE media_id IN (SELECT id FROM _doomed_media);
-         DELETE FROM media_embeddings WHERE media_id IN (SELECT id FROM _doomed_media);
          DELETE FROM album_media WHERE media_id IN (SELECT id FROM _doomed_media);"
     )?;
     conn.execute("DELETE FROM context_messages WHERE sender_id = ?1", rusqlite::params![sender_id])?;
@@ -210,7 +230,6 @@ pub fn clear_conversation(conn: &Connection, conversation_id: i64) -> Result<(),
     )?;
     conn.execute_batch(
         "DELETE FROM context_messages WHERE media_id IN (SELECT id FROM _doomed_media);
-         DELETE FROM media_embeddings WHERE media_id IN (SELECT id FROM _doomed_media);
          DELETE FROM album_media WHERE media_id IN (SELECT id FROM _doomed_media);"
     )?;
     conn.execute("DELETE FROM media WHERE conversation_id = ?1", rusqlite::params![conversation_id])?;
@@ -239,7 +258,6 @@ pub fn clear_source(conn: &Connection, source_path: &str) -> Result<(), rusqlite
     )?;
     conn.execute_batch(
         "DELETE FROM context_messages WHERE media_id IN (SELECT id FROM _doomed_media);
-         DELETE FROM media_embeddings WHERE media_id IN (SELECT id FROM _doomed_media);
          DELETE FROM album_media WHERE media_id IN (SELECT id FROM _doomed_media);"
     )?;
     conn.execute(

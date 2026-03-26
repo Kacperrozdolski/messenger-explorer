@@ -87,6 +87,128 @@ pub struct MediaFilters {
     pub offset: Option<i64>,
 }
 
+// ── Shared WHERE-clause builder ─────────────────────────────────────────
+
+struct WhereClause {
+    sql: String,
+    params: Vec<Box<dyn rusqlite::types::ToSql>>,
+    /// Whether an album JOIN is needed (replaces the old IN-subquery).
+    needs_album_join: bool,
+    /// Whether the search touches context_messages (needs a semi-join).
+    needs_search_join: bool,
+    search_pattern: Option<String>,
+}
+
+/// Build a reusable WHERE clause from MediaFilters.
+/// `exclude` lets facet queries skip one dimension (e.g. "file_type").
+fn build_where(filters: &MediaFilters, exclude: &str) -> WhereClause {
+    let mut sql = String::from("WHERE 1=1");
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut needs_album_join = false;
+    let mut needs_search_join = false;
+    let mut search_pattern: Option<String> = None;
+
+    if exclude != "conversation_id" {
+        if let Some(cid) = filters.conversation_id {
+            sql.push_str(" AND m.conversation_id = ?");
+            params.push(Box::new(cid));
+        }
+    }
+    if exclude != "sender_id" {
+        if let Some(sid) = filters.sender_id {
+            sql.push_str(" AND m.sender_id = ?");
+            params.push(Box::new(sid));
+        }
+    }
+    if exclude != "file_type" {
+        if let Some(ref ft) = filters.file_type {
+            sql.push_str(" AND m.file_type = ?");
+            params.push(Box::new(ft.clone()));
+        }
+    }
+    if exclude != "month" {
+        if let Some(ref month) = filters.month {
+            if month.len() == 4 {
+                sql.push_str(" AND m.year_month LIKE ?");
+                params.push(Box::new(format!("{}-%", month)));
+            } else {
+                sql.push_str(" AND m.year_month = ?");
+                params.push(Box::new(month.clone()));
+            }
+        }
+    }
+    if exclude != "album_id" {
+        if filters.album_id.is_some() {
+            needs_album_join = true;
+        }
+    }
+    if exclude != "search" {
+        if let Some(ref search) = filters.search {
+            let trimmed = search.trim();
+            if trimmed.len() >= 2 {
+                let pattern = format!("%{}%", trimmed.to_lowercase());
+                // Use pre-lowered columns — avoids LOWER() at query time
+                sql.push_str(
+                    " AND (m.message_content_lower LIKE ? OR _ctx_search.media_id IS NOT NULL)",
+                );
+                params.push(Box::new(pattern.clone()));
+                needs_search_join = true;
+                search_pattern = Some(pattern);
+            }
+        }
+    }
+
+    WhereClause { sql, params, needs_album_join, needs_search_join, search_pattern }
+}
+
+/// Build the FROM + JOIN clause using a WhereClause.
+/// `base_joins` are extra JOINs the caller always needs (e.g. senders/conversations).
+fn build_from(wc: &WhereClause, base_joins: &str) -> String {
+    let mut from = format!("FROM media m{}", base_joins);
+    if wc.needs_album_join {
+        from.push_str(" INNER JOIN album_media am ON am.media_id = m.id");
+    }
+    if wc.needs_search_join {
+        from.push_str(
+            " LEFT JOIN (SELECT DISTINCT cm.media_id FROM context_messages cm WHERE cm.content_lower LIKE ?) _ctx_search ON _ctx_search.media_id = m.id"
+        );
+    }
+    from
+}
+
+fn param_refs_with_joins<'a>(
+    wc: &'a WhereClause,
+    album_id_param: &'a Option<i64>,
+    extra_where_sql: &mut String,
+) -> Vec<&'a dyn rusqlite::types::ToSql> {
+    let mut refs: Vec<&dyn rusqlite::types::ToSql> = Vec::new();
+
+    // FROM-level params come first in SQLite's binding order:
+    // search join param
+    if wc.needs_search_join {
+        if let Some(ref pattern) = wc.search_pattern {
+            refs.push(pattern as &dyn rusqlite::types::ToSql);
+        }
+    }
+
+    // Album id for the join — we add a WHERE condition
+    if wc.needs_album_join {
+        if let Some(ref aid) = album_id_param {
+            extra_where_sql.push_str(" AND am.album_id = ?");
+            refs.push(aid as &dyn rusqlite::types::ToSql);
+        }
+    }
+
+    // WHERE-level params
+    for p in &wc.params {
+        refs.push(p.as_ref());
+    }
+
+    refs
+}
+
+// ── Public query functions ──────────────────────────────────────────────
+
 pub fn get_import_status(conn: &Connection) -> Result<ImportStatus, String> {
     let media_count: i64 = conn
         .query_row("SELECT COUNT(*) FROM media", [], |row| row.get(0))
@@ -109,7 +231,7 @@ pub fn get_conversations(conn: &Connection) -> Result<Vec<ConversationInfo>, Str
              FROM conversations c
              LEFT JOIN media m ON m.conversation_id = c.id
              GROUP BY c.id
-             ORDER BY c.title",
+             ORDER BY c.title COLLATE NOCASE",
         )
         .map_err(|e| e.to_string())?;
 
@@ -124,11 +246,7 @@ pub fn get_conversations(conn: &Connection) -> Result<Vec<ConversationInfo>, Str
         })
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_senders(conn: &Connection) -> Result<Vec<SenderInfo>, String> {
@@ -138,7 +256,7 @@ pub fn get_senders(conn: &Connection) -> Result<Vec<SenderInfo>, String> {
              FROM senders s
              INNER JOIN media m ON m.sender_id = s.id
              GROUP BY s.id
-             ORDER BY s.name",
+             ORDER BY s.name COLLATE NOCASE",
         )
         .map_err(|e| e.to_string())?;
 
@@ -152,83 +270,39 @@ pub fn get_senders(conn: &Connection) -> Result<Vec<SenderInfo>, String> {
         })
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaItem>, String> {
-    let mut sql = String::from(
-        "SELECT m.id, m.file_path, s.name, m.timestamp_ms, c.title, c.chat_type, m.file_type, m.conversation_id, m.sender_id
-         FROM media m
-         INNER JOIN senders s ON s.id = m.sender_id
-         INNER JOIN conversations c ON c.id = m.conversation_id
-         WHERE 1=1",
-    );
-    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let wc = build_where(filters, "");
+    let base_joins = "\n INNER JOIN senders s ON s.id = m.sender_id\n INNER JOIN conversations c ON c.id = m.conversation_id";
+    let from = build_from(&wc, base_joins);
 
-    if let Some(cid) = filters.conversation_id {
-        sql.push_str(" AND m.conversation_id = ?");
-        params.push(Box::new(cid));
-    }
-    if let Some(sid) = filters.sender_id {
-        sql.push_str(" AND m.sender_id = ?");
-        params.push(Box::new(sid));
-    }
-    if let Some(ref ft) = filters.file_type {
-        sql.push_str(" AND m.file_type = ?");
-        params.push(Box::new(ft.clone()));
-    }
-    if let Some(ref month) = filters.month {
-        if month.len() == 4 {
-            // Year-only filter: "YYYY" — match year_month prefix
-            sql.push_str(" AND m.year_month LIKE ?");
-            params.push(Box::new(format!("{}-%", month)));
-        } else {
-            // Month filter: "YYYY-MM"
-            sql.push_str(" AND m.year_month = ?");
-            params.push(Box::new(month.clone()));
-        }
-    }
-    if let Some(aid) = filters.album_id {
-        sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
-        params.push(Box::new(aid));
-    }
-    if let Some(ref search) = filters.search {
-        let trimmed = search.trim();
-        if trimmed.len() >= 2 {
-            let pattern = format!("%{}%", trimmed.to_lowercase());
-            sql.push_str(
-                " AND (LOWER(COALESCE(m.message_content, '')) LIKE ?
-                   OR m.id IN (SELECT cm.media_id FROM context_messages cm
-                               WHERE LOWER(cm.content) LIKE ?))",
-            );
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern));
-        }
-    }
+    let mut extra_where = String::new();
+    let album_id = filters.album_id;
+    let mut param_list = param_refs_with_joins(&wc, &album_id, &mut extra_where);
 
     // Sort
-    match filters.sort.as_str() {
-        "date-asc" => sql.push_str(" ORDER BY m.timestamp_ms ASC"),
-        "sender" => sql.push_str(" ORDER BY s.name ASC, m.timestamp_ms DESC"),
-        _ => sql.push_str(" ORDER BY m.timestamp_ms DESC"), // date-desc default
-    }
+    let order = match filters.sort.as_str() {
+        "date-asc" => " ORDER BY m.timestamp_ms ASC",
+        "sender" => " ORDER BY s.name COLLATE NOCASE ASC, m.timestamp_ms DESC",
+        _ => " ORDER BY m.timestamp_ms DESC",
+    };
 
-    // Pagination
     let limit = filters.limit.unwrap_or(500);
     let offset = filters.offset.unwrap_or(0);
-    sql.push_str(" LIMIT ? OFFSET ?");
-    params.push(Box::new(limit));
-    params.push(Box::new(offset));
+
+    let sql = format!(
+        "SELECT m.id, m.file_path, s.name, m.timestamp_ms, c.title, c.chat_type, m.file_type, m.conversation_id, m.sender_id\n {}\n {}{}{} LIMIT ? OFFSET ?",
+        from, wc.sql, extra_where, order
+    );
+
+    param_list.push(&limit);
+    param_list.push(&offset);
 
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
-    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
-
     let rows = stmt
-        .query_map(param_refs.as_slice(), |row| {
+        .query_map(param_list.as_slice(), |row| {
             Ok(MediaItem {
                 id: row.get(0)?,
                 file_path: row.get(1)?,
@@ -243,15 +317,10 @@ pub fn get_media(conn: &Connection, filters: &MediaFilters) -> Result<Vec<MediaI
         })
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_context(conn: &Connection, media_id: i64) -> Result<MediaContext, String> {
-    // Get the media item itself
     let media = conn
         .query_row(
             "SELECT m.id, m.file_path, s.name, m.timestamp_ms, c.title, c.chat_type, m.file_type, m.conversation_id, m.sender_id
@@ -276,7 +345,6 @@ pub fn get_context(conn: &Connection, media_id: i64) -> Result<MediaContext, Str
         )
         .map_err(|e| format!("Media not found: {}", e))?;
 
-    // Get context messages
     let mut stmt = conn
         .prepare(
             "SELECT s.name, cm.content, cm.timestamp_ms, cm.position
@@ -323,9 +391,7 @@ pub fn get_context(conn: &Connection, media_id: i64) -> Result<MediaContext, Str
 pub fn get_timeline(conn: &Connection) -> Result<Vec<TimelineEntry>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT
-                m.year_month as month_key,
-                COUNT(*) as count
+            "SELECT m.year_month as month_key, COUNT(*) as count
              FROM media m
              GROUP BY m.year_month
              ORDER BY month_key DESC",
@@ -335,7 +401,6 @@ pub fn get_timeline(conn: &Connection) -> Result<Vec<TimelineEntry>, String> {
     let rows = stmt
         .query_map([], |row| {
             let month_key: String = row.get(0)?;
-            // Convert "2024-03" to "Mar 2024" for display
             let label = format_month_label(&month_key);
             Ok(TimelineEntry {
                 label,
@@ -345,11 +410,7 @@ pub fn get_timeline(conn: &Connection) -> Result<Vec<TimelineEntry>, String> {
         })
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_sources(conn: &Connection) -> Result<Vec<SourceInfo>, String> {
@@ -376,76 +437,7 @@ pub fn get_sources(conn: &Connection) -> Result<Vec<SourceInfo>, String> {
         })
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
-}
-
-#[derive(Debug, Serialize)]
-pub struct UnindexedCounts {
-    pub senders: Vec<UnindexedItemCount>,
-    pub conversations: Vec<UnindexedItemCount>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct UnindexedItemCount {
-    pub id: i64,
-    pub total_images: i64,
-    pub unindexed: i64,
-}
-
-pub fn get_unindexed_counts(conn: &Connection) -> Result<UnindexedCounts, String> {
-    let mut sender_stmt = conn
-        .prepare(
-            "SELECT m.sender_id,
-                    COUNT(*) as total_images,
-                    SUM(CASE WHEN me.media_id IS NULL THEN 1 ELSE 0 END) as unindexed
-             FROM media m
-             LEFT JOIN media_embeddings me ON me.media_id = m.id
-             WHERE m.file_type = 'image'
-             GROUP BY m.sender_id",
-        )
-        .map_err(|e| e.to_string())?;
-
-    let senders: Vec<UnindexedItemCount> = sender_stmt
-        .query_map([], |row| {
-            Ok(UnindexedItemCount {
-                id: row.get(0)?,
-                total_images: row.get(1)?,
-                unindexed: row.get(2)?,
-            })
-        })
-        .map_err(|e| e.to_string())?
-        .filter_map(|r| r.ok())
-        .collect();
-
-    let mut conv_stmt = conn
-        .prepare(
-            "SELECT m.conversation_id,
-                    COUNT(*) as total_images,
-                    SUM(CASE WHEN me.media_id IS NULL THEN 1 ELSE 0 END) as unindexed
-             FROM media m
-             LEFT JOIN media_embeddings me ON me.media_id = m.id
-             WHERE m.file_type = 'image'
-             GROUP BY m.conversation_id",
-        )
-        .map_err(|e| e.to_string())?;
-
-    let conversations: Vec<UnindexedItemCount> = conv_stmt
-        .query_map([], |row| {
-            Ok(UnindexedItemCount {
-                id: row.get(0)?,
-                total_images: row.get(1)?,
-                unindexed: row.get(2)?,
-            })
-        })
-        .map_err(|e| e.to_string())?
-        .filter_map(|r| r.ok())
-        .collect();
-
-    Ok(UnindexedCounts { senders, conversations })
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_albums(conn: &Connection) -> Result<Vec<AlbumInfo>, String> {
@@ -472,64 +464,25 @@ pub fn get_albums(conn: &Connection) -> Result<Vec<AlbumInfo>, String> {
         })
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_media_count(conn: &Connection, filters: &MediaFilters) -> Result<i64, String> {
-    let mut sql = String::from(
-        "SELECT COUNT(*)
-         FROM media m
-         INNER JOIN senders s ON s.id = m.sender_id
-         INNER JOIN conversations c ON c.id = m.conversation_id
-         WHERE 1=1",
+    let wc = build_where(filters, "");
+    // Count query doesn't need the senders/conversations JOIN unless search or sender filter.
+    // But for simplicity and to keep the WHERE clause working, we include minimal joins.
+    let from = build_from(&wc, "");
+
+    let mut extra_where = String::new();
+    let album_id = filters.album_id;
+    let param_list = param_refs_with_joins(&wc, &album_id, &mut extra_where);
+
+    let sql = format!(
+        "SELECT COUNT(*)\n {}\n {}{}",
+        from, wc.sql, extra_where
     );
-    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
 
-    if let Some(cid) = filters.conversation_id {
-        sql.push_str(" AND m.conversation_id = ?");
-        params.push(Box::new(cid));
-    }
-    if let Some(sid) = filters.sender_id {
-        sql.push_str(" AND m.sender_id = ?");
-        params.push(Box::new(sid));
-    }
-    if let Some(ref ft) = filters.file_type {
-        sql.push_str(" AND m.file_type = ?");
-        params.push(Box::new(ft.clone()));
-    }
-    if let Some(ref month) = filters.month {
-        if month.len() == 4 {
-            sql.push_str(" AND m.year_month LIKE ?");
-            params.push(Box::new(format!("{}-%", month)));
-        } else {
-            sql.push_str(" AND m.year_month = ?");
-            params.push(Box::new(month.clone()));
-        }
-    }
-    if let Some(aid) = filters.album_id {
-        sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
-        params.push(Box::new(aid));
-    }
-    if let Some(ref search) = filters.search {
-        let trimmed = search.trim();
-        if trimmed.len() >= 2 {
-            let pattern = format!("%{}%", trimmed.to_lowercase());
-            sql.push_str(
-                " AND (LOWER(COALESCE(m.message_content, '')) LIKE ?
-                   OR m.id IN (SELECT cm.media_id FROM context_messages cm
-                               WHERE LOWER(cm.content) LIKE ?))",
-            );
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern));
-        }
-    }
-
-    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
-    conn.query_row(&sql, param_refs.as_slice(), |row| row.get(0))
+    conn.query_row(&sql, param_list.as_slice(), |row| row.get(0))
         .map_err(|e| e.to_string())
 }
 
@@ -566,11 +519,7 @@ pub fn get_media_by_ids(conn: &Connection, ids: &[i64]) -> Result<Vec<MediaItem>
         })
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_media_albums(conn: &Connection, media_id: i64) -> Result<Vec<i64>, String> {
@@ -582,11 +531,7 @@ pub fn get_media_albums(conn: &Connection, media_id: i64) -> Result<Vec<i64>, St
         .query_map(rusqlite::params![media_id], |row| row.get(0))
         .map_err(|e| e.to_string())?;
 
-    let mut result = Vec::new();
-    for row in rows {
-        result.push(row.map_err(|e| e.to_string())?);
-    }
-    Ok(result)
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 // --- Faceted filter support ---
@@ -606,136 +551,74 @@ pub struct FilterFacets {
     pub file_type_counts: FileTypeCounts,
 }
 
-struct WhereClause {
-    sql: String,
-    params: Vec<Box<dyn rusqlite::types::ToSql>>,
-}
+/// Helper to run a facet query using the shared WHERE builder.
+fn run_facet_query<T, F>(
+    conn: &Connection,
+    filters: &MediaFilters,
+    exclude: &str,
+    select: &str,
+    extra_joins: &str,
+    group_order: &str,
+    map_fn: F,
+) -> Result<Vec<T>, String>
+where
+    F: FnMut(&rusqlite::Row<'_>) -> rusqlite::Result<T>,
+{
+    let wc = build_where(filters, exclude);
+    let from = build_from(&wc, extra_joins);
 
-fn build_media_where(filters: &MediaFilters, exclude: &str) -> WhereClause {
-    let mut sql = String::from("WHERE 1=1");
-    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut extra_where = String::new();
+    let album_id = filters.album_id;
+    let param_list = param_refs_with_joins(&wc, &album_id, &mut extra_where);
 
-    if exclude != "conversation_id" {
-        if let Some(cid) = filters.conversation_id {
-            sql.push_str(" AND m.conversation_id = ?");
-            params.push(Box::new(cid));
-        }
-    }
-    if exclude != "sender_id" {
-        if let Some(sid) = filters.sender_id {
-            sql.push_str(" AND m.sender_id = ?");
-            params.push(Box::new(sid));
-        }
-    }
-    if exclude != "file_type" {
-        if let Some(ref ft) = filters.file_type {
-            sql.push_str(" AND m.file_type = ?");
-            params.push(Box::new(ft.clone()));
-        }
-    }
-    if exclude != "month" {
-        if let Some(ref month) = filters.month {
-            if month.len() == 4 {
-                sql.push_str(" AND m.year_month LIKE ?");
-                params.push(Box::new(format!("{}-%", month)));
-            } else {
-                sql.push_str(" AND m.year_month = ?");
-                params.push(Box::new(month.clone()));
-            }
-        }
-    }
-    if exclude != "album_id" {
-        if let Some(aid) = filters.album_id {
-            sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
-            params.push(Box::new(aid));
-        }
-    }
-    if exclude != "search" {
-        if let Some(ref search) = filters.search {
-            let trimmed = search.trim();
-            if trimmed.len() >= 2 {
-                let pattern = format!("%{}%", trimmed.to_lowercase());
-                sql.push_str(
-                    " AND (LOWER(COALESCE(m.message_content, '')) LIKE ?
-                       OR m.id IN (SELECT cm.media_id FROM context_messages cm
-                                   WHERE LOWER(cm.content) LIKE ?))",
-                );
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-            }
-        }
-    }
+    let sql = format!(
+        "SELECT {}\n {}\n {}{} {}",
+        select, from, wc.sql, extra_where, group_order
+    );
 
-    WhereClause { sql, params }
+    let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map(param_list.as_slice(), map_fn)
+        .map_err(|e| e.to_string())?;
+
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 pub fn get_filter_facets(conn: &Connection, filters: &MediaFilters) -> Result<FilterFacets, String> {
     // Conversations facet: apply all filters except conversation_id
-    let conversations = {
-        let wc = build_media_where(filters, "conversation_id");
-        let sql = format!(
-            "SELECT c.id, c.title, c.chat_type, COUNT(m.id) as media_count
-             FROM media m
-             INNER JOIN conversations c ON c.id = m.conversation_id
-             INNER JOIN senders s ON s.id = m.sender_id
-             {} GROUP BY c.id ORDER BY c.title",
-            wc.sql
-        );
-        let param_refs: Vec<&dyn rusqlite::types::ToSql> = wc.params.iter().map(|p| p.as_ref()).collect();
-        let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
-        let rows = stmt.query_map(param_refs.as_slice(), |row| {
-            Ok(ConversationInfo {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                chat_type: row.get(2)?,
-                media_count: row.get(3)?,
-            })
-        }).map_err(|e| e.to_string())?;
-        let mut result = Vec::new();
-        for row in rows { result.push(row.map_err(|e| e.to_string())?); }
-        result
-    };
+    let conversations = run_facet_query(
+        conn, filters, "conversation_id",
+        "c.id, c.title, c.chat_type, COUNT(m.id) as media_count",
+        "\n INNER JOIN conversations c ON c.id = m.conversation_id",
+        "GROUP BY c.id ORDER BY c.title COLLATE NOCASE",
+        |row| Ok(ConversationInfo {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            chat_type: row.get(2)?,
+            media_count: row.get(3)?,
+        }),
+    )?;
 
     // Senders facet: apply all filters except sender_id
-    let senders = {
-        let wc = build_media_where(filters, "sender_id");
-        let sql = format!(
-            "SELECT s.id, s.name, COUNT(m.id) as media_count
-             FROM media m
-             INNER JOIN senders s ON s.id = m.sender_id
-             INNER JOIN conversations c ON c.id = m.conversation_id
-             {} GROUP BY s.id ORDER BY s.name",
-            wc.sql
-        );
-        let param_refs: Vec<&dyn rusqlite::types::ToSql> = wc.params.iter().map(|p| p.as_ref()).collect();
-        let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
-        let rows = stmt.query_map(param_refs.as_slice(), |row| {
-            Ok(SenderInfo {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                media_count: row.get(2)?,
-            })
-        }).map_err(|e| e.to_string())?;
-        let mut result = Vec::new();
-        for row in rows { result.push(row.map_err(|e| e.to_string())?); }
-        result
-    };
+    let senders = run_facet_query(
+        conn, filters, "sender_id",
+        "s.id, s.name, COUNT(m.id) as media_count",
+        "\n INNER JOIN senders s ON s.id = m.sender_id",
+        "GROUP BY s.id ORDER BY s.name COLLATE NOCASE",
+        |row| Ok(SenderInfo {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            media_count: row.get(2)?,
+        }),
+    )?;
 
     // Timeline facet: apply all filters except month
-    let timeline = {
-        let wc = build_media_where(filters, "month");
-        let sql = format!(
-            "SELECT m.year_month as month_key,
-                    COUNT(*) as count
-             FROM media m
-             INNER JOIN senders s ON s.id = m.sender_id
-             INNER JOIN conversations c ON c.id = m.conversation_id
-             {} GROUP BY m.year_month ORDER BY month_key DESC",
-            wc.sql
-        );
-        let param_refs: Vec<&dyn rusqlite::types::ToSql> = wc.params.iter().map(|p| p.as_ref()).collect();
-        let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
-        let rows = stmt.query_map(param_refs.as_slice(), |row| {
+    let timeline = run_facet_query(
+        conn, filters, "month",
+        "m.year_month as month_key, COUNT(*) as count",
+        "",
+        "GROUP BY m.year_month ORDER BY month_key DESC",
+        |row| {
             let month_key: String = row.get(0)?;
             let label = format_month_label(&month_key);
             Ok(TimelineEntry {
@@ -743,40 +626,27 @@ pub fn get_filter_facets(conn: &Connection, filters: &MediaFilters) -> Result<Fi
                 month_key,
                 count: row.get(1)?,
             })
-        }).map_err(|e| e.to_string())?;
-        let mut result = Vec::new();
-        for row in rows { result.push(row.map_err(|e| e.to_string())?); }
-        result
-    };
+        },
+    )?;
 
     // File type facet: apply all filters except file_type
-    let file_type_counts = {
-        let wc = build_media_where(filters, "file_type");
-        let sql = format!(
-            "SELECT m.file_type, COUNT(*) as count
-             FROM media m
-             INNER JOIN senders s ON s.id = m.sender_id
-             INNER JOIN conversations c ON c.id = m.conversation_id
-             {} GROUP BY m.file_type",
-            wc.sql
-        );
-        let param_refs: Vec<&dyn rusqlite::types::ToSql> = wc.params.iter().map(|p| p.as_ref()).collect();
-        let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
-        let mut counts = FileTypeCounts { image: 0, video: 0, gif: 0 };
-        let rows = stmt.query_map(param_refs.as_slice(), |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
-        }).map_err(|e| e.to_string())?;
-        for row in rows {
-            let (ft, count) = row.map_err(|e| e.to_string())?;
-            match ft.as_str() {
-                "image" => counts.image = count,
-                "video" => counts.video = count,
-                "gif" => counts.gif = count,
-                _ => {}
-            }
+    let ft_rows = run_facet_query(
+        conn, filters, "file_type",
+        "m.file_type, COUNT(*) as count",
+        "",
+        "GROUP BY m.file_type",
+        |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)),
+    )?;
+
+    let mut file_type_counts = FileTypeCounts { image: 0, video: 0, gif: 0 };
+    for (ft, count) in ft_rows {
+        match ft.as_str() {
+            "image" => file_type_counts.image = count,
+            "video" => file_type_counts.video = count,
+            "gif" => file_type_counts.gif = count,
+            _ => {}
         }
-        counts
-    };
+    }
 
     Ok(FilterFacets {
         conversations,
@@ -810,77 +680,52 @@ pub fn get_media_month_page(
 ) -> Result<MediaPage, String> {
     let is_desc = filters.sort.as_str() != "date-asc";
 
-    // Build common WHERE clause (reused for both queries)
-    let build_where = || -> (String, Vec<Box<dyn rusqlite::types::ToSql>>) {
-        let mut sql = String::from("WHERE 1=1");
-        let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
-
-        if let Some(cid) = filters.conversation_id {
-            sql.push_str(" AND m.conversation_id = ?");
-            params.push(Box::new(cid));
-        }
-        if let Some(sid) = filters.sender_id {
-            sql.push_str(" AND m.sender_id = ?");
-            params.push(Box::new(sid));
-        }
-        if let Some(ref ft) = filters.file_type {
-            sql.push_str(" AND m.file_type = ?");
-            params.push(Box::new(ft.clone()));
-        }
-        if let Some(aid) = filters.album_id {
-            sql.push_str(" AND m.id IN (SELECT media_id FROM album_media WHERE album_id = ?)");
-            params.push(Box::new(aid));
-        }
-        if let Some(ref search) = filters.search {
-            let trimmed = search.trim();
-            if trimmed.len() >= 2 {
-                let pattern = format!("%{}%", trimmed.to_lowercase());
-                sql.push_str(
-                    " AND (LOWER(COALESCE(m.message_content, '')) LIKE ?
-                       OR m.id IN (SELECT cm.media_id FROM context_messages cm
-                                   WHERE LOWER(cm.content) LIKE ?))",
-                );
-                params.push(Box::new(pattern.clone()));
-                params.push(Box::new(pattern));
-            }
-        }
-        (sql, params)
+    // Convert MonthPageFilters to MediaFilters for the shared builder
+    let media_filters = MediaFilters {
+        conversation_id: filters.conversation_id,
+        sender_id: filters.sender_id,
+        file_type: filters.file_type.clone(),
+        month: None, // month is handled by cursor
+        search: filters.search.clone(),
+        album_id: filters.album_id,
+        sort: filters.sort.clone(),
+        limit: None,
+        offset: None,
     };
 
     // Step 1: Get target months
-    let (where_sql, mut months_params) = build_where();
-    let mut months_sql = format!(
-        "SELECT DISTINCT m.year_month as mk
-         FROM media m
-         INNER JOIN senders s ON s.id = m.sender_id
-         INNER JOIN conversations c ON c.id = m.conversation_id
-         {}",
-        where_sql
-    );
+    let wc = build_where(&media_filters, "");
+    let from = build_from(&wc, "");
 
-    if let Some(ref cursor) = filters.cursor_month {
+    let mut extra_where = String::new();
+    let album_id = media_filters.album_id;
+    let mut param_list = param_refs_with_joins(&wc, &album_id, &mut extra_where);
+
+    let cursor_month = filters.cursor_month.clone();
+    if let Some(ref cursor) = cursor_month {
         if is_desc {
-            months_sql.push_str(" AND m.year_month < ?");
+            extra_where.push_str(" AND m.year_month < ?");
         } else {
-            months_sql.push_str(" AND m.year_month > ?");
+            extra_where.push_str(" AND m.year_month > ?");
         }
-        months_params.push(Box::new(cursor.clone()));
+        param_list.push(cursor as &dyn rusqlite::types::ToSql);
     }
 
-    months_sql.push_str(if is_desc { " ORDER BY mk DESC" } else { " ORDER BY mk ASC" });
-    // Fetch one extra month to detect if there's a next page
-    months_sql.push_str(&format!(" LIMIT {}", filters.months_per_page + 1));
+    let limit_months = filters.months_per_page + 1;
 
-    let months_refs: Vec<&dyn rusqlite::types::ToSql> = months_params.iter().map(|p| p.as_ref()).collect();
+    let months_sql = format!(
+        "SELECT DISTINCT m.year_month as mk\n {}\n {}{} ORDER BY mk {} LIMIT ?",
+        from, wc.sql, extra_where,
+        if is_desc { "DESC" } else { "ASC" }
+    );
+    param_list.push(&limit_months);
+
     let mut months_stmt = conn.prepare(&months_sql).map_err(|e| e.to_string())?;
     let month_rows = months_stmt
-        .query_map(months_refs.as_slice(), |row| row.get::<_, String>(0))
+        .query_map(param_list.as_slice(), |row| row.get::<_, String>(0))
         .map_err(|e| e.to_string())?;
 
-    let mut all_months = Vec::new();
-    for row in month_rows {
-        all_months.push(row.map_err(|e| e.to_string())?);
-    }
+    let all_months: Vec<String> = month_rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?;
 
     let has_more = all_months.len() as i64 > filters.months_per_page;
     let target_months: Vec<String> = all_months
@@ -901,29 +746,31 @@ pub fn get_media_month_page(
         None
     };
 
-    // Step 2: Fetch all images from the target months
-    let (where_sql2, mut items_params) = build_where();
+    // Step 2: Fetch all items from target months
+    let wc2 = build_where(&media_filters, "");
+    let base_joins = "\n INNER JOIN senders s ON s.id = m.sender_id\n INNER JOIN conversations c ON c.id = m.conversation_id";
+    let from2 = build_from(&wc2, base_joins);
+
+    let mut extra_where2 = String::new();
+    let album_id2 = media_filters.album_id;
+    let mut param_list2 = param_refs_with_joins(&wc2, &album_id2, &mut extra_where2);
+
     let month_placeholders: String = target_months.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    extra_where2.push_str(&format!(" AND m.year_month IN ({})", month_placeholders));
+
+    for m in &target_months {
+        param_list2.push(m as &dyn rusqlite::types::ToSql);
+    }
+
     let items_sql = format!(
-        "SELECT m.id, m.file_path, s.name, m.timestamp_ms, c.title, c.chat_type, m.file_type, m.conversation_id, m.sender_id
-         FROM media m
-         INNER JOIN senders s ON s.id = m.sender_id
-         INNER JOIN conversations c ON c.id = m.conversation_id
-         {} AND m.year_month IN ({})
-         ORDER BY m.timestamp_ms {}",
-        where_sql2,
-        month_placeholders,
+        "SELECT m.id, m.file_path, s.name, m.timestamp_ms, c.title, c.chat_type, m.file_type, m.conversation_id, m.sender_id\n {}\n {}{} ORDER BY m.timestamp_ms {}",
+        from2, wc2.sql, extra_where2,
         if is_desc { "DESC" } else { "ASC" }
     );
 
-    for m in &target_months {
-        items_params.push(Box::new(m.clone()));
-    }
-
-    let items_refs: Vec<&dyn rusqlite::types::ToSql> = items_params.iter().map(|p| p.as_ref()).collect();
     let mut items_stmt = conn.prepare(&items_sql).map_err(|e| e.to_string())?;
     let item_rows = items_stmt
-        .query_map(items_refs.as_slice(), |row| {
+        .query_map(param_list2.as_slice(), |row| {
             Ok(MediaItem {
                 id: row.get(0)?,
                 file_path: row.get(1)?,
@@ -938,10 +785,7 @@ pub fn get_media_month_page(
         })
         .map_err(|e| e.to_string())?;
 
-    let mut items = Vec::new();
-    for row in item_rows {
-        items.push(row.map_err(|e| e.to_string())?);
-    }
+    let items: Vec<MediaItem> = item_rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?;
 
     Ok(MediaPage { items, next_cursor })
 }

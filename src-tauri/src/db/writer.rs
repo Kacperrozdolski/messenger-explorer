@@ -101,9 +101,10 @@ fn insert_media(
     sender_id: i64,
     media: &ParsedMedia,
 ) -> Result<i64, String> {
+    let content_lower = media.message_content.as_deref().map(|s| s.to_lowercase());
     conn.prepare_cached(
-        "INSERT INTO media (conversation_id, sender_id, file_path, relative_uri, file_type, timestamp_ms, creation_timestamp, message_content, year_month)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, strftime('%Y-%m', datetime(?6 / 1000, 'unixepoch')))",
+        "INSERT INTO media (conversation_id, sender_id, file_path, relative_uri, file_type, timestamp_ms, creation_timestamp, message_content, message_content_lower, year_month)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, strftime('%Y-%m', datetime(?6 / 1000, 'unixepoch')))",
     ).map_err(|e| e.to_string())?
     .execute(rusqlite::params![
         conversation_id,
@@ -114,6 +115,7 @@ fn insert_media(
         media.timestamp_ms,
         media.creation_timestamp,
         media.message_content,
+        content_lower,
     ]).map_err(|e| e.to_string())?;
     Ok(conn.last_insert_rowid())
 }
@@ -126,14 +128,16 @@ fn insert_context_message_cached(
     cache: &mut HashMap<String, i64>,
 ) -> Result<(), String> {
     let sender_id = get_or_create_sender_cached(conn, &ctx.sender_name, cache)?;
+    let content_lower = ctx.content.to_lowercase();
     conn.prepare_cached(
-        "INSERT INTO context_messages (media_id, sender_id, content, timestamp_ms, position)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO context_messages (media_id, sender_id, content, content_lower, timestamp_ms, position)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
     ).map_err(|e| e.to_string())?
     .execute(rusqlite::params![
         media_id,
         sender_id,
         ctx.content,
+        content_lower,
         ctx.timestamp_ms,
         position,
     ]).map_err(|e| e.to_string())?;

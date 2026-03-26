@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, Grid3X3, List, ArrowUpDown, Settings, Users, User, MessageSquare, Brain, X, Image, Video, Sparkles, Calendar } from "lucide-react";
+import { Search, Grid3X3, List, ArrowUpDown, Settings, Users, User, MessageSquare, X, Image, Video, Sparkles, Calendar } from "lucide-react";
 import type { SortOption, ViewMode, ChatSource, SenderInfo, FileTypeFilter } from "@/data/types";
 import type { TimelineEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -12,10 +12,6 @@ interface TopBarProps {
   search: string;
   onSearchChange: (v: string) => void;
   onSearchCommit: (query: string) => void;
-  onAiSearch?: (query: string) => void;
-  onClearAiSearch?: () => void;
-  aiSearchAvailable?: boolean;
-  aiSearchQuery?: string | null;
   sort: SortOption;
   onSortChange: (v: SortOption) => void;
   view: ViewMode;
@@ -28,11 +24,10 @@ interface TopBarProps {
   onFileTypeChange: (ft: FileTypeFilter) => void;
   onSelectMonth: (month: string | null) => void;
   timelineData: TimelineEntry[];
-  onOpenIndexing?: () => void;
 }
 
 interface Suggestion {
-  type: "search" | "group" | "sender" | "ai-search" | "media-type" | "date";
+  type: "search" | "group" | "sender" | "media-type" | "date";
   label: string;
   id?: number;
   value?: string; // for media-type (file type value) or date (month_key/year)
@@ -44,10 +39,6 @@ const TopBar = ({
   search,
   onSearchChange,
   onSearchCommit,
-  onAiSearch,
-  onClearAiSearch,
-  aiSearchAvailable,
-  aiSearchQuery,
   sort,
   onSortChange,
   view,
@@ -60,7 +51,6 @@ const TopBar = ({
   onFileTypeChange,
   onSelectMonth,
   timelineData,
-  onOpenIndexing,
 }: TopBarProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -172,13 +162,8 @@ const TopBar = ({
     // Always add "search in messages" option
     results.push({ type: "search", label: search.trim() });
 
-    // Add AI search option
-    if (aiSearchAvailable) {
-      results.push({ type: "ai-search", label: search.trim() });
-    }
-
     return results;
-  }, [query, conversations, senders, search, aiSearchAvailable, availableYears, timelineData, t, mediaTypeAliases, monthNames]);
+  }, [query, conversations, senders, search, availableYears, timelineData, t, mediaTypeAliases, monthNames]);
 
   // Reset highlight when suggestions change
   useEffect(() => {
@@ -214,8 +199,6 @@ const TopBar = ({
     } else if (suggestion.type === "date") {
       onSelectMonth(suggestion.value!);
       onSearchChange("");
-    } else if (suggestion.type === "ai-search") {
-      onAiSearch?.(suggestion.label);
     } else if (suggestion.type === "search") {
       onSearchCommit(suggestion.label);
     }
@@ -289,7 +272,11 @@ const TopBar = ({
                   e.preventDefault();
                   applySuggestion(s);
                 }}
-                onMouseEnter={() => setHighlightIndex(i)}
+                data-index={i}
+                onMouseEnter={(e) => {
+                  const idx = Number((e.currentTarget as HTMLElement).dataset.index);
+                  setHighlightIndex(idx);
+                }}
                 className={cn(
                   "flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-left transition-colors",
                   i === highlightIndex
@@ -300,7 +287,6 @@ const TopBar = ({
                 {s.type === "group" && <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                 {s.type === "sender" && <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                 {s.type === "search" && <MessageSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
-                {s.type === "ai-search" && <Brain className="h-3.5 w-3.5 text-primary shrink-0" />}
                 {s.type === "media-type" && (
                   s.value === "image" ? <Image className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> :
                   s.value === "video" ? <Video className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> :
@@ -310,8 +296,6 @@ const TopBar = ({
                 <span className="truncate flex-1">
                   {s.type === "search"
                     ? t("topbar.searchInMessages", { query: s.label })
-                    : s.type === "ai-search"
-                    ? t("topbar.aiSearch", { query: s.label, defaultValue: "AI Search \"{{query}}\"" })
                     : s.label}
                 </span>
                 <span className="text-[11px] text-muted-foreground shrink-0">
@@ -319,7 +303,6 @@ const TopBar = ({
                   {s.type === "sender" && t("topbar.filterBySender")}
                   {s.type === "media-type" && t("topbar.filterByMediaType")}
                   {s.type === "date" && t("topbar.filterByDate")}
-                  {s.type === "ai-search" && t("topbar.aiSearchHint")}
                 </span>
               </button>
             ))}
@@ -368,17 +351,6 @@ const TopBar = ({
           <List className="h-3.5 w-3.5" />
         </button>
       </div>
-
-      {/* AI Indexing */}
-      {onOpenIndexing && (
-        <button
-          onClick={onOpenIndexing}
-          className="p-1.5 rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
-          title={t("indexing.title", "Selective AI Indexing")}
-        >
-          <Brain className="h-3.5 w-3.5" />
-        </button>
-      )}
 
       {/* Settings */}
       <button

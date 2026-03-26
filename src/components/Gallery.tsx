@@ -15,6 +15,7 @@ interface GalleryProps {
   onLoadMore: () => void;
   hasMore: boolean;
   isLoadingMore: boolean;
+  scrollContainerRef?: React.RefObject<HTMLDivElement>;
 }
 
 const formatMonthYear = (ts: number) => {
@@ -22,29 +23,45 @@ const formatMonthYear = (ts: number) => {
   return d.toLocaleString(getLocale(), { month: "long", year: "numeric" });
 };
 
-const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore, hasMore, isLoadingMore }: GalleryProps) => {
+const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore, hasMore, isLoadingMore, scrollContainerRef }: GalleryProps) => {
   const { t } = useTranslation();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const onLoadMoreRef = useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;
 
-  // IntersectionObserver for infinite scroll — stable, never tears down
+  // Track whether the sentinel is currently visible so we can re-trigger after loads
+  const sentinelVisibleRef = useRef(false);
+
+  // IntersectionObserver for infinite scroll
+  // Uses the scroll container as root so it detects scrolling within the overflow div
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
+    const root = scrollContainerRef?.current ?? null;
+
     const observer = new IntersectionObserver(
       (entries) => {
+        sentinelVisibleRef.current = entries[0].isIntersecting;
         if (entries[0].isIntersecting) {
           onLoadMoreRef.current();
         }
       },
-      { rootMargin: "400px" },
+      { root, rootMargin: "400px" },
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, []);
+  }, [scrollContainerRef]);
+
+  // After a fetch completes, if sentinel is still visible, load more.
+  // IntersectionObserver only fires on transitions, so if new content doesn't
+  // push the sentinel out of view, it won't fire again on its own.
+  useEffect(() => {
+    if (!isLoadingMore && hasMore && sentinelVisibleRef.current) {
+      onLoadMoreRef.current();
+    }
+  }, [isLoadingMore, hasMore]);
 
   const grouped = useMemo(() => {
     const result: Record<string, ImageEntry[]> = {};

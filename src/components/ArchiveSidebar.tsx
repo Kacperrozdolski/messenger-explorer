@@ -18,7 +18,6 @@ import {
   Palette,
   FileDown,
   FolderOutput,
-  Brain,
 } from "lucide-react";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
@@ -86,9 +85,6 @@ interface ArchiveSidebarProps {
   onSelectAlbum: (id: number | null) => void;
   searchQuery: string;
   onClearSearch: () => void;
-  aiSearchQuery?: string | null;
-  onClearAiSearch?: () => void;
-  onOpenIndexing?: (senderIds?: number[], conversationIds?: number[]) => void;
 }
 
 const TOP_N = 5;
@@ -402,9 +398,6 @@ const ArchiveSidebar = ({
   onSelectAlbum,
   searchQuery,
   onClearSearch,
-  aiSearchQuery,
-  onClearAiSearch,
-  onOpenIndexing,
 }: ArchiveSidebarProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -414,11 +407,6 @@ const ArchiveSidebar = ({
   const [colorPickerAlbumId, setColorPickerAlbumId] = useState<number | null>(null);
   const [removeSenderId, setRemoveSenderId] = useState<number | null>(null);
   const [removeConversationId, setRemoveConversationId] = useState<number | null>(null);
-
-  const { data: hasModels } = useQuery({
-    queryKey: ["has-clip-models"],
-    queryFn: api.hasClipModels,
-  });
 
   const renameAlbum = useMutation({
     mutationFn: ({ id, name }: { id: number; name: string }) =>
@@ -446,7 +434,6 @@ const ArchiveSidebar = ({
     queryClient.invalidateQueries({ queryKey: ["timeline"] });
     queryClient.invalidateQueries({ queryKey: ["albums"] });
     queryClient.invalidateQueries({ queryKey: ["import-status"] });
-    queryClient.invalidateQueries({ queryKey: ["indexing-status"] });
   };
 
   const removeSender = useMutation({
@@ -575,20 +562,19 @@ const ArchiveSidebar = ({
     fileType !== "all" ||
     selectedMonth !== null ||
     selectedAlbumId !== null ||
-    searchQuery !== "" ||
-    !!aiSearchQuery;
+    searchQuery !== "";
 
   const selectedMonthLabel = selectedMonth
     ? (selectedMonth.includes("-") ? formatMonthKeyFull(selectedMonth) : selectedMonth)
     : null;
 
-  const SECTION_TITLES: Record<SectionId, string> = {
+  const SECTION_TITLES: Record<SectionId, string> = useMemo(() => ({
     groups: t("sidebar.groups"),
     senders: t("sidebar.senders"),
     mediaType: t("sidebar.mediaType"),
     timeline: t("sidebar.timeline"),
     albums: t("sidebar.albums"),
-  };
+  }), [t]);
 
   const renderSection = (id: SectionId) => {
     switch (id) {
@@ -605,12 +591,6 @@ const ArchiveSidebar = ({
                   />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  {hasModels && (
-                    <ContextMenuItem onSelect={() => onOpenIndexing?.([], [selectedSource.id])}>
-                      <Brain className="h-4 w-4 mr-2" />
-                      {t("indexing.indexGroup", "Index with AI")}
-                    </ContextMenuItem>
-                  )}
                   <ContextMenuItem
                     onSelect={() => setRemoveConversationId(selectedSource.id)}
                     className="text-destructive focus:text-destructive"
@@ -633,12 +613,6 @@ const ArchiveSidebar = ({
                   />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  {hasModels && (
-                    <ContextMenuItem onSelect={() => onOpenIndexing?.([], [item.id])}>
-                      <Brain className="h-4 w-4 mr-2" />
-                      {t("indexing.indexGroup", "Index with AI")}
-                    </ContextMenuItem>
-                  )}
                   <ContextMenuItem
                     onSelect={() => setRemoveConversationId(item.id)}
                     className="text-destructive focus:text-destructive"
@@ -675,12 +649,6 @@ const ArchiveSidebar = ({
                   />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  {hasModels && (
-                    <ContextMenuItem onSelect={() => onOpenIndexing?.([selectedSenderObj.id])}>
-                      <Brain className="h-4 w-4 mr-2" />
-                      {t("indexing.indexSender", "Index with AI")}
-                    </ContextMenuItem>
-                  )}
                   <ContextMenuItem
                     onSelect={() => setRemoveSenderId(selectedSenderObj.id)}
                     className="text-destructive focus:text-destructive"
@@ -703,12 +671,6 @@ const ArchiveSidebar = ({
                   />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  {hasModels && (
-                    <ContextMenuItem onSelect={() => onOpenIndexing?.([s.id])}>
-                      <Brain className="h-4 w-4 mr-2" />
-                      {t("indexing.indexSender", "Index with AI")}
-                    </ContextMenuItem>
-                  )}
                   <ContextMenuItem
                     onSelect={() => setRemoveSenderId(s.id)}
                     className="text-destructive focus:text-destructive"
@@ -920,7 +882,6 @@ const ArchiveSidebar = ({
                 onSelectMonth(null);
                 onSelectAlbum(null);
                 onClearSearch();
-                onClearAiSearch?.();
               }}
               className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
             >
@@ -1027,21 +988,6 @@ const ArchiveSidebar = ({
               </button>
             </Badge>
           )}
-          {aiSearchQuery && (
-            <Badge
-              variant="secondary"
-              className="text-[11px] px-2 py-0.5 gap-1"
-            >
-              <Brain className="h-3 w-3 shrink-0" />
-              {t("sidebar.aiPrefix")} {aiSearchQuery}
-              <button
-                onClick={onClearAiSearch}
-                className="ml-0.5 hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
           </div>
         </div>
       )}
@@ -1128,19 +1074,15 @@ const ArchiveSidebar = ({
             <DialogTitle>{t("albums.changeColor")}</DialogTitle>
             <DialogDescription />
           </DialogHeader>
-          {colorPickerAlbumId !== null && (() => {
-            const album = albums.find((a) => a.id === colorPickerAlbumId);
-            if (!album) return null;
-            return (
-              <ColorPicker
-                value={album.color}
-                onChange={(color) => {
-                  updateAlbumColor.mutate({ id: colorPickerAlbumId, color });
-                  setColorPickerAlbumId(null);
-                }}
-              />
-            );
-          })()}
+          {colorPickerAlbumId !== null && (
+            <ColorPicker
+              value={albums.find((a) => a.id === colorPickerAlbumId)?.color ?? "#60a5fa"}
+              onChange={(color) => {
+                updateAlbumColor.mutate({ id: colorPickerAlbumId, color });
+                setColorPickerAlbumId(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
