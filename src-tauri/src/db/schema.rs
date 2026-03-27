@@ -37,14 +37,16 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         )?;
     }
 
-    if version >= 3 && version < 4 {
+    if version >= 2 && version < 4 {
         // v3 -> v4: add color column to albums
-        conn.execute_batch(
-            "ALTER TABLE albums ADD COLUMN color TEXT NOT NULL DEFAULT '#60a5fa';"
-        )?;
+        if version >= 3 {
+            conn.execute_batch(
+                "ALTER TABLE albums ADD COLUMN color TEXT NOT NULL DEFAULT '#60a5fa';"
+            )?;
+        }
     }
 
-    if version >= 4 && version < 5 {
+    if version >= 2 && version < 5 {
         // v4 -> v5: add media_embeddings table for AI search
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS media_embeddings (
@@ -54,7 +56,7 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         )?;
     }
 
-    if version >= 5 && version < 6 {
+    if version >= 2 && version < 6 {
         // v5 -> v6: add year_month column for fast timeline queries
         conn.execute_batch(
             "ALTER TABLE media ADD COLUMN year_month TEXT;
@@ -63,14 +65,14 @@ pub fn initialize(conn: &Connection) -> Result<(), rusqlite::Error> {
         )?;
     }
 
-    if version >= 6 && version < 7 {
+    if version >= 2 && version < 7 {
         // v6 -> v7: remove AI search embeddings table
         conn.execute_batch(
             "DROP TABLE IF EXISTS media_embeddings;"
         )?;
     }
 
-    if version >= 7 && version < 8 {
+    if version >= 2 && version < 8 {
         // v7 -> v8: add normalized search columns + missing indexes
         conn.execute_batch(
             "ALTER TABLE media ADD COLUMN message_content_lower TEXT;
