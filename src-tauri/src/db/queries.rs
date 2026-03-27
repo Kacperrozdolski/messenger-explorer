@@ -191,17 +191,17 @@ fn param_refs_with_joins<'a>(
         }
     }
 
-    // Album id for the join — we add a WHERE condition
+    // WHERE-level params (must come before extra_where params to match SQL order)
+    for p in &wc.params {
+        refs.push(p.as_ref());
+    }
+
+    // Album id for the join — appended to extra_where, so its param comes after wc.params
     if wc.needs_album_join {
         if let Some(ref aid) = album_id_param {
             extra_where_sql.push_str(" AND am.album_id = ?");
             refs.push(aid as &dyn rusqlite::types::ToSql);
         }
-    }
-
-    // WHERE-level params
-    for p in &wc.params {
-        refs.push(p.as_ref());
     }
 
     refs

@@ -90,7 +90,7 @@ const Gallery = ({ images, view, onImageClick, albums, activeAlbumId, onLoadMore
             </h2>
 
             {view === "grid" ? (
-              <div className="columns-1 sm:columns-2 xl:columns-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {items.map((img) => (
                   <ImageCard
                     key={img.id}

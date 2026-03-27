@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useInfiniteQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -19,29 +19,77 @@ import type { FileTypeCounts } from "@/lib/api";
 const PAGE_SIZE = 60;
 const MONTHS_PER_PAGE = 3;
 
+interface FilterState {
+  committedSearch: string;
+  selectedChatId: number | null;
+  selectedSenderId: number | null;
+  fileType: FileTypeFilter;
+  selectedMonth: string | null;
+  selectedAlbumId: number | null;
+}
+
+const initialFilters: FilterState = {
+  committedSearch: "",
+  selectedChatId: null,
+  selectedSenderId: null,
+  fileType: "all",
+  selectedMonth: null,
+  selectedAlbumId: null,
+};
+
+type FilterAction =
+  | { type: "SET_SEARCH"; value: string }
+  | { type: "SET_CHAT"; value: number | null }
+  | { type: "SET_SENDER"; value: number | null }
+  | { type: "SET_FILE_TYPE"; value: FileTypeFilter }
+  | { type: "SET_MONTH"; value: string | null }
+  | { type: "SET_ALBUM"; value: number | null }
+  | { type: "CLEAR_ALL" };
+
+function filterReducer(state: FilterState, action: FilterAction): FilterState {
+  switch (action.type) {
+    case "SET_SEARCH":
+      return { ...state, committedSearch: action.value };
+    case "SET_CHAT":
+      return { ...state, selectedChatId: action.value };
+    case "SET_SENDER":
+      return { ...state, selectedSenderId: action.value };
+    case "SET_FILE_TYPE":
+      return { ...state, fileType: action.value };
+    case "SET_MONTH":
+      return { ...state, selectedMonth: action.value };
+    case "SET_ALBUM":
+      return { ...state, selectedAlbumId: action.value };
+    case "CLEAR_ALL":
+      return initialFilters;
+  }
+}
+
 const Index = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [search, setSearch] = useState("");
-  const [committedSearch, setCommittedSearch] = useState("");
+  const [filters, dispatchFilter] = useReducer(filterReducer, initialFilters);
+  const { committedSearch, selectedChatId, selectedSenderId, fileType, selectedMonth, selectedAlbumId } = filters;
   const [sort, setSort] = useState<SortOption>("date-desc");
   const [view, setView] = useState<ViewMode>("grid");
-  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
-  const [selectedSenderId, setSelectedSenderId] = useState<number | null>(null);
-  const [fileType, setFileType] = useState<FileTypeFilter>("all");
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
-  const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<ImageEntry | null>(null);
 
+  const setSelectedChatId = useCallback((v: number | null) => dispatchFilter({ type: "SET_CHAT", value: v }), []);
+  const setSelectedSenderId = useCallback((v: number | null) => dispatchFilter({ type: "SET_SENDER", value: v }), []);
+  const setFileType = useCallback((v: FileTypeFilter) => dispatchFilter({ type: "SET_FILE_TYPE", value: v }), []);
+  const setSelectedMonth = useCallback((v: string | null) => dispatchFilter({ type: "SET_MONTH", value: v }), []);
+  const setSelectedAlbumId = useCallback((v: number | null) => dispatchFilter({ type: "SET_ALBUM", value: v }), []);
+
   const handleSearchCommit = useCallback((query: string) => {
-    setCommittedSearch(query);
+    dispatchFilter({ type: "SET_SEARCH", value: query });
     setSearch("");
   }, []);
 
   const handleClearSearch = useCallback(() => {
-    setCommittedSearch("");
+    dispatchFilter({ type: "SET_SEARCH", value: "" });
   }, []);
 
   const handleModalClose = useCallback(() => {
@@ -132,6 +180,7 @@ const Index = () => {
     fetchNextPage: fetchNextMonthPage,
     hasNextPage: hasNextMonthPage,
     isFetchingNextPage: isFetchingNextMonthPage,
+    isPlaceholderData: isMonthPlaceholder,
   } = useInfiniteQuery({
     queryKey: [
       "media-month",
@@ -162,6 +211,7 @@ const Index = () => {
     fetchNextPage: fetchNextOffsetPage,
     hasNextPage: hasNextOffsetPage,
     isFetchingNextPage: isFetchingNextOffsetPage,
+    isPlaceholderData: isOffsetPlaceholder,
   } = useInfiniteQuery({
     queryKey: [
       "media",
@@ -194,13 +244,20 @@ const Index = () => {
   const fetchNextPage = useMonthPagination ? fetchNextMonthPage : fetchNextOffsetPage;
   const hasNextPage = useMonthPagination ? hasNextMonthPage : hasNextOffsetPage;
   const isFetchingNextPage = useMonthPagination ? isFetchingNextMonthPage : isFetchingNextOffsetPage;
+  const isPlaceholderData = useMonthPagination ? isMonthPlaceholder : isOffsetPlaceholder;
 
   const images = useMemo(
     () => {
-      if (useMonthPagination) {
-        return monthMediaData?.pages.flatMap((p) => p.items) ?? [];
-      }
-      return offsetMediaData?.pages.flat() ?? [];
+      const raw = useMonthPagination
+        ? monthMediaData?.pages.flatMap((p) => p.items) ?? []
+        : offsetMediaData?.pages.flat() ?? [];
+      // Deduplicate by id — guards against race conditions between page fetches
+      const seen = new Set<number>();
+      return raw.filter((img) => {
+        if (seen.has(img.id)) return false;
+        seen.add(img.id);
+        return true;
+      });
     },
     [useMonthPagination, monthMediaData, offsetMediaData],
   );
@@ -210,11 +267,16 @@ const Index = () => {
     scrollRef.current?.scrollTo(0, 0);
   }, [selectedChatId, selectedSenderId, fileType, selectedMonth, committedSearch, sort, selectedAlbumId]);
 
+  const handleClearAll = useCallback(() => {
+    dispatchFilter({ type: "CLEAR_ALL" });
+    setSearch("");
+  }, []);
+
   const handleLoadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
+    if (hasNextPage && !isFetchingNextPage && !isPlaceholderData) {
       fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
 
   const handleImportComplete = () => {
     queryClient.invalidateQueries({ queryKey: ["import-status"] });
@@ -256,6 +318,7 @@ const Index = () => {
         onSelectAlbum={setSelectedAlbumId}
         searchQuery={committedSearch}
         onClearSearch={handleClearSearch}
+        onClearAll={handleClearAll}
       />
 
       <div className="flex-1 flex flex-col min-w-0">

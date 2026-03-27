@@ -84,6 +84,7 @@ interface ArchiveSidebarProps {
   onSelectAlbum: (id: number | null) => void;
   searchQuery: string;
   onClearSearch: () => void;
+  onClearAll: () => void;
 }
 
 const TOP_N = 5;
@@ -397,6 +398,7 @@ const ArchiveSidebar = ({
   onSelectAlbum,
   searchQuery,
   onClearSearch,
+  onClearAll,
 }: ArchiveSidebarProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -874,14 +876,7 @@ const ArchiveSidebar = ({
               {t("sidebar.activeFilters")}
             </span>
             <button
-              onClick={() => {
-                onSelectChat(null);
-                onSelectSender(null);
-                onFileTypeChange("all");
-                onSelectMonth(null);
-                onSelectAlbum(null);
-                onClearSearch();
-              }}
+              onClick={onClearAll}
               className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
             >
               {t("sidebar.clearAll")}

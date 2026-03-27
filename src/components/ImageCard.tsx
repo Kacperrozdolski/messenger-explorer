@@ -46,13 +46,13 @@ const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) =>
       onShowContext={handleClick}
     >
     <div
-      className="group relative overflow-hidden rounded-md cursor-pointer animate-fade-in break-inside-avoid mb-3"
+      className="group relative overflow-hidden rounded-md cursor-pointer animate-fade-in aspect-[4/3]"
       onClick={handleClick}
     >
       {image.fileType === "video" ? (
         <video
           src={image.src}
-          className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           muted
           preload="metadata"
           onMouseEnter={handleVideoMouseEnter}
@@ -62,7 +62,7 @@ const ImageCard = ({ image, onClick, albums, activeAlbumId }: ImageCardProps) =>
         <img
           src={image.src}
           alt={t("gallery.photoBy", { sender: image.sender })}
-          className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
       )}

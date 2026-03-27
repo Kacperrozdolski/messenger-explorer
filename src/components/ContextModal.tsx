@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { X, MessageCircle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,6 +44,16 @@ const ContextModal = ({ image, onClose }: ContextModalProps) => {
     queryKey: ["context", image.id],
     queryFn: () => api.getContext(image.id),
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
